@@ -1,0 +1,11 @@
+LEVEL THREAD SIZE 2
+epeec04.Skt0
+epeec04.Skt1
+
+LEVEL TASK SIZE 2
+epeec04.Skt0
+epeec04.Skt1
+
+LEVEL APPL SIZE 1
+epeec04
+

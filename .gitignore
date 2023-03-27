@@ -1,0 +1,13 @@
+.ipynb_checkpoints
+__pycache__/
+data/
+bin/
+.~lock*
+*.aux
+*.bbl
+*.blg
+*.log
+*.synctex.gz
+*.toc
+*.out
+.vscode/

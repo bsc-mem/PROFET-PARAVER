@@ -1,0 +1,46 @@
+LEVEL THREAD SIZE 16
+s05r1b53.Skt0
+s05r1b53.Skt1
+s05r1b59.Skt0
+s05r1b59.Skt1
+s05r1b60.Skt0
+s05r1b60.Skt1
+s05r1b61.Skt0
+s05r1b61.Skt1
+s05r1b63.Skt0
+s05r1b63.Skt1
+s05r1b64.Skt0
+s05r1b64.Skt1
+s05r1b65.Skt0
+s05r1b65.Skt1
+s05r1b66.Skt0
+s05r1b66.Skt1
+
+LEVEL TASK SIZE 16
+s05r1b53.Skt0
+s05r1b53.Skt1
+s05r1b59.Skt0
+s05r1b59.Skt1
+s05r1b60.Skt0
+s05r1b60.Skt1
+s05r1b61.Skt0
+s05r1b61.Skt1
+s05r1b63.Skt0
+s05r1b63.Skt1
+s05r1b64.Skt0
+s05r1b64.Skt1
+s05r1b65.Skt0
+s05r1b65.Skt1
+s05r1b66.Skt0
+s05r1b66.Skt1
+
+LEVEL APPL SIZE 8
+s05r1b53
+s05r1b59
+s05r1b60
+s05r1b61
+s05r1b63
+s05r1b64
+s05r1b65
+s05r1b66
+

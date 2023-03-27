@@ -1,0 +1,9 @@
+LEVEL THREAD SIZE 1
+testNode.Skt0
+
+LEVEL TASK SIZE 1
+testNode.Skt0
+
+LEVEL APPL SIZE 1
+testNode
+

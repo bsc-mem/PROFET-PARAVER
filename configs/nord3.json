@@ -1,0 +1,6 @@
+{
+    "memory_system": "ddr3_1600",
+    "cpu_model": "xeon_e5_2670",
+    "cpu_freq_ghz": 3,
+    "cache_line_bytes": 64
+}

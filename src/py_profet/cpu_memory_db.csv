@@ -1,0 +1,5 @@
+pmu_type,cpu_microarchitecture,cpu_model,memory_system
+intel,skylake,xeon_6146,ddr4_2666
+intel,cascade_lake,xeon_5218,ddr4_2666
+kunpeng,kunpeng,920,ddr4_2933
+intel,sandybridge_ep,xeon_e5_2670,ddr3_1600

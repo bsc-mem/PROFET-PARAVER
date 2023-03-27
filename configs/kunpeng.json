@@ -1,0 +1,6 @@
+{
+    "memory_system": "ddr4_2933",
+    "cpu_model": "920",
+    "cpu_freq_ghz": 2.6,
+    "cache_line_bytes": 32
+}

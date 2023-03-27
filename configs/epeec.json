@@ -1,0 +1,6 @@
+{
+    "memory_system": "ddr4_2666",
+    "cpu_model": "xeon_5218",
+    "cpu_freq_ghz": 2.3,
+    "cache_line_bytes": 64
+}
