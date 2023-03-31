@@ -64,7 +64,7 @@ def get_trace_df(trace_file_path, row_file_path, precision):
     node_names = get_node_names(row_file_path)
 
     df = []
-    metric_keys = ['wr', 'bw', 'max_bw', 'lat', 'min_lat', 'max_lat']
+    metric_keys = ['wr', 'bw', 'max_bw', 'lat', 'min_lat', 'max_lat', 'stress_score']
     with open(trace_file_path) as f:
         # all_lines = f.readlines()
         first_line = True

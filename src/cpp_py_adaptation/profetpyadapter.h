@@ -48,7 +48,7 @@ class ProfetPyAdapter {
     string getCurvesPath();
     void checkSystemSupported();
 
-    tuple<float, float, float, float> computeMemoryMetrics(float cpuFreqGHz, float writeRatio, float bandwidth, bool displayWarnings);
+    tuple<float, float, float, float, float> computeMemoryMetrics(float cpuFreqGHz, float writeRatio, float bandwidth, bool displayWarnings);
 
     void runDashApp(string traceFilePath, float precision, float cpuFreq);
 

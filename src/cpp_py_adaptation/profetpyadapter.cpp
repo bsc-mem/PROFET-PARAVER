@@ -89,7 +89,7 @@ void ProfetPyAdapter::checkSystemSupported() {
     // raisePyErrorIfNull(curvesPath, "ERROR checking  values.");
 }
 
-tuple<float, float, float, float> ProfetPyAdapter::computeMemoryMetrics(float cpuFreqGHz, float writeRatio, float bandwidth, bool displayWarnings) {
+tuple<float, float, float, float, float> ProfetPyAdapter::computeMemoryMetrics(float cpuFreqGHz, float writeRatio, float bandwidth, bool displayWarnings) {
     // Get dictionary with computed memory values
 
     PyObject* memoryMetricsFn = getFunctionFromProfetIntegration("get_memory_properties_from_bw");
@@ -104,8 +104,9 @@ tuple<float, float, float, float> ProfetPyAdapter::computeMemoryMetrics(float cp
     float latency = getPyDictFloat(memDict, "latency");
     float leadOffLatency = getPyDictFloat(memDict, "lead_off_latency");
     float maxLatency = getPyDictFloat(memDict, "max_latency");
+    float stressScore = getPyDictFloat(memDict, "stress_score");
 
-    return {maxBandwidth, latency, leadOffLatency, maxLatency};
+    return {maxBandwidth, latency, leadOffLatency, maxLatency, stressScore};
 }
 
 void ProfetPyAdapter::runDashApp(string traceFilePath, float precision, float cpuFreq) {

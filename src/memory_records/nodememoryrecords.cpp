@@ -133,8 +133,8 @@ vector<float> NodeMemoryRecords::processMemoryMetrics(ProfetPyAdapter &profetPyA
   // cout << socketID << " " << readBW << " " << writeBW << " " << writeRatio << " " << bandwidth << endl;
 
   // Get computed memory metrics
-  auto [maxBandwidth, latency, leadOffLatency, maxLatency] = profetPyAdapter.computeMemoryMetrics(cpuFreqGHz, writeRatio, bandwidth,
-                                                                                                  displayWarnings);
+  auto [maxBandwidth, latency, leadOffLatency, maxLatency, stressScore] = profetPyAdapter.computeMemoryMetrics(cpuFreqGHz, writeRatio, bandwidth,
+                                                                                                               displayWarnings);
   // cout << maxBandwidth << " " << latency << " " << leadOffLatency << " " << maxLatency << endl;
 
   if (latency == -1) {
@@ -142,9 +142,10 @@ vector<float> NodeMemoryRecords::processMemoryMetrics(ProfetPyAdapter &profetPyA
     if (displayWarnings) {
       cerr << "Warning: Erroneous recorded bandwidth. Setting write ratio to " << -writeRatio * 100 << "% and bandwidth to " << round(-bandwidth) << " GB/s" << endl;
     }
-    return { -writeRatio * 100, -bandwidth, -1, -1, -1, -1 };
+    return { -writeRatio * 100, -bandwidth, -1, -1, -1, -1, -1 };
   }
 
+  // sumMetrics is used for computing the average metrics at the end of the execution
   string id = getFullID(socketID, mcID);
   sumMetrics[id]["n"] += 1;
   sumMetrics[id]["writeRatio"] += writeRatio * 100;
@@ -153,8 +154,9 @@ vector<float> NodeMemoryRecords::processMemoryMetrics(ProfetPyAdapter &profetPyA
   sumMetrics[id]["latency"] += latency;
   sumMetrics[id]["leadOffLatency"] += leadOffLatency;
   sumMetrics[id]["maxLatency"] += maxLatency;
+  sumMetrics[id]["stressScore"] += stressScore;
   
-  vector<float> metrics = {writeRatio * 100, bandwidth, maxBandwidth, latency, leadOffLatency, maxLatency};
+  vector<float> metrics = {writeRatio * 100, bandwidth, maxBandwidth, latency, leadOffLatency, maxLatency, stressScore};
   return metrics;
 }
 
@@ -185,7 +187,8 @@ void NodeMemoryRecords::printFinalMessage() {
         cout << "Average Max. Bandwidth: " << round(metricsSum["maxBandwidth"] * 100 / metricsSum["n"]) / 100 << " GB/s" << endl;
         cout << "Average Latency: " << round(metricsSum["latency"] * 100 / metricsSum["n"]) / 100 << " ns" << endl;
         cout << "Average Lead-off latency: " << round(metricsSum["leadOffLatency"] * 100 / metricsSum["n"]) / 100 << " ns" << endl;
-        cout << "Average Max. Latency: " << round(metricsSum["maxLatency"] * 100 / metricsSum["n"]) / 100 << " ns" << endl << endl;
+        cout << "Average Max. Latency: " << round(metricsSum["maxLatency"] * 100 / metricsSum["n"]) / 100 << " ns" << endl;
+        cout << "Average Stress Score: " << round(metricsSum["stressScore"] * 100 / metricsSum["n"]) / 100 << endl << endl;
     }
 }
 
@@ -199,6 +202,7 @@ void NodeMemoryRecords::initSumMetrics(string id) {
     sumMetrics[id]["latency"] = 0;
     sumMetrics[id]["leadOffLatency"] = 0;
     sumMetrics[id]["maxLatency"] = 0;
+    sumMetrics[id]["stressScore"] = 0;
 }
 
 string NodeMemoryRecords::getFullID(int socketID, int mcID) {
