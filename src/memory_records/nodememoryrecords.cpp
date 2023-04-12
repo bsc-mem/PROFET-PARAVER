@@ -162,7 +162,7 @@ vector<float> NodeMemoryRecords::processMemoryMetrics(ProfetPyAdapter &profetPyA
 
 vector<string> NodeMemoryRecords::getMetricLabels() {
   // TODO it would probably be good to return a map<string, vector<float>> of metrics in "processMemoryMetrics" instead (althought it is very "python dictionary"-like)
-  return {"Write ratio", "Bandwidth", "Maximum bandwidth", "Latency", "Lead-off latency", "Maximum latency"};
+  return {"Write ratio", "Bandwidth", "Maximum bandwidth", "Latency", "Lead-off latency", "Maximum latency", "Stress score"};
 }
 
 void NodeMemoryRecords::printSocketsQueues() {
