@@ -20,6 +20,16 @@ import matplotlib.pyplot as plt
 import dash_daq as daq
 
 
+
+# define a custom continuous color scale for stress score
+stress_score_min, stress_score_max = 0, 1
+stress_score_scale = [
+    (0.0, 'green'),
+    (0.5, 'yellow'),
+    (1.0, 'red'),
+]
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-tf', '--trace-file', dest='trace_file',
@@ -64,10 +74,11 @@ def get_trace_df(trace_file_path, row_file_path, precision):
     node_names = get_node_names(row_file_path)
 
     df = []
-    metric_keys = ['wr', 'bw', 'max_bw', 'lat', 'min_lat', 'max_lat']
+    metric_keys = ['wr', 'bw', 'max_bw', 'lat', 'min_lat', 'max_lat', 'stress_score']
     with open(trace_file_path) as f:
-        # all_lines = f.readlines()
         first_line = True
+        # all_lines = f.readlines()
+        # do not read all lines at once, read them line by line
         for i, line in enumerate(f):
             if first_line:
                 first_line = False
@@ -79,7 +90,6 @@ def get_trace_df(trace_file_path, row_file_path, precision):
             row['node_name'] = node_names[row['node'] - 1]
             row['socket'] = int(sp[3])
             row['mc'] = int(sp[4])
-            # timestamp is at 5th place
             row['timestamp'] = int(sp[5])
 
             # process subsequent metric IDs and values after the timestamp
@@ -111,6 +121,7 @@ def get_trace_df(trace_file_path, row_file_path, precision):
 
         return df
 
+
 def get_curves(curves_path, cpu_freq):
     curves = {}
     # load and process curves
@@ -136,6 +147,20 @@ def get_curves(curves_path, cpu_freq):
                     'latencies': np.array(lats[::-1]) / cpu_freq
                 }
     return curves
+
+
+def get_color_bar_update(toggled_time, labels):
+    if toggled_time:
+        return {
+            'colorbar': {'title': labels['timestamp'],},
+            'colorscale': 'burg',
+        }
+    return {
+        'colorbar': {'title': labels['stress_score'],},
+        'colorscale': stress_score_scale,
+        'cmin': stress_score_min,
+        'cmax': stress_score_max,
+    }
 
 
 def get_dash_app(df):
@@ -234,12 +259,10 @@ def get_application_memory_dots_fig(df, node_name='All', socket='All', mc='All',
         # print(color_list)
         # dots_fig = px.scatter(df[mask], x='bw', y='lat', color='timestamp', color_discrete_map=color_list)
         dots_fig = px.scatter(df[mask], x='bw', y='lat', color='timestamp')
-        marker_opts = {'size': 10, 'opacity': 'slider'}
-        marker_opts = dict(size=10, opacity=opacity)
     else:
-        dots_fig = px.scatter(df[mask], x='bw', y='lat')
-        marker_opts = dict(size=10, opacity=opacity, color='black')
+        dots_fig = px.scatter(df[mask], x='bw', y='lat', color='stress_score', color_continuous_scale=stress_score_scale)
 
+    marker_opts = dict(size=10, opacity=opacity)
     dots_fig.update_traces(marker=marker_opts)
     return dots_fig
 
@@ -248,7 +271,7 @@ def get_application_memory_dots_fig(df, node_name='All', socket='All', mc='All',
 if __name__ == '__main__':
     # read and process arguments
     args = parse_args()
-    labels = {'bw': 'Bandwidth (GB/s)', 'lat': 'Latency (ns)', 'timestamp': 'Timestamp (ns)'}
+    labels = {'bw': 'Bandwidth (GB/s)', 'lat': 'Latency (ns)', 'timestamp': 'Timestamp (ns)', 'stress_score': 'Stress score'}
 
     # load and process trace
     # trace_file = '../prv_profet_visualizations/traces/petar_workshop/xhpcg.mpich-x86-64_10ms.chop1.profet.prv'
@@ -273,10 +296,8 @@ if __name__ == '__main__':
     default_fig.add_trace(dots_fig.data[0])
     default_fig.update_xaxes(title=labels['bw'])
     default_fig.update_yaxes(title=labels['lat'])
-    default_fig.update_coloraxes(
-        colorbar={'title': labels['timestamp'],},
-        colorscale='burg',
-    )
+    color_bar_update = get_color_bar_update(toggled_time=False, labels=labels)
+    default_fig.update_coloraxes(**color_bar_update)
     default_fig.write_image(store_pdf_file_path)
     print('PDF chart file:', store_pdf_file_path)
     print()
@@ -310,10 +331,8 @@ if __name__ == '__main__':
         # labels = {'bw': 'Bandwidth (GB/s)', 'lat': 'Latency (ns)', 'timestamp': 'Timestamp (ns)'}
         fig.update_xaxes(title=labels['bw'])
         fig.update_yaxes(title=labels['lat'])
-        fig.update_coloraxes(
-            colorbar={'title': labels['timestamp'],},
-            colorscale='burg',
-        )
+        color_bar_update = get_color_bar_update(toggled_time, labels)
+        fig.update_coloraxes(**color_bar_update)
 
         return fig
 

@@ -85,5 +85,6 @@ EVENT_TYPE
 0   4    Latency
 0   5    Lead-off latency
 0   6    Maximum latency
+0   7    Stress score
 PRECISION 2
 

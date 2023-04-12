@@ -127,12 +127,14 @@ def get_memory_properties_from_bw(curves_path: str, cpu_freq: float, write_ratio
     curve_obj = Curve(curves_path, read_ratio, display_warnings)
 
     # predicted latency in curve
-    pred_lat = curve_obj.get_lat(bandwidth)
+    pred_lat = curve_obj.get_lat(bandwidth, bw_units='GB/s')
     # maximum latency (in CPU cycles) and bandwidth (GB/s) for the given read ratio
-    max_lat = curve_obj.get_max_lat()
     max_bw = curve_obj.get_max_bw()
+    max_lat = curve_obj.get_max_lat()
     # lead-off latency
     lead_off_lat = curve_obj.get_lead_off_lat()
+    stress_score = curve_obj.get_stress_score(bandwidth, bw_units='GB/s')
+    # print(bandwidth, stress_score)
 
     # print(f'Lat: {pred_lat}; Max. Lat: {max_lat}; Max. BW: {max_bw}; Lead-off Lat: {lead_off_lat}')
 
@@ -141,7 +143,8 @@ def get_memory_properties_from_bw(curves_path: str, cpu_freq: float, write_ratio
         'bandwidth': bandwidth,
         'max_bandwidth': max_bw,
         'latency': pred_lat if pred_lat == -1 else pred_lat / cpu_freq,
-        'max_latency': max_lat / cpu_freq,
         'lead_off_latency': lead_off_lat / cpu_freq,
+        'max_latency': max_lat / cpu_freq,
+        'stress_score': stress_score,
     }
 

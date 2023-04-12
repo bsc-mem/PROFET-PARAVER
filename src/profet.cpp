@@ -297,9 +297,9 @@ bool processAndWriteMemoryMetricsIfPossible(vector<NodeMemoryRecords> &nodes,
     // and it is stored in the PRECISION variable
     vector<int> metrics_int(metrics.size());
     for (long unsigned int i = 0; i < metrics.size(); i++) {
-      if (metrics[i] == -1) {
-        metrics_int[i] = -1;
-      } else {
+      // Do not allow negative metric values, they mean the calculated bandwidth is not theoretically possible.
+      // Warnings are already printed in these cases
+      if (metrics[i] >= 0) {
         // Round metric value to the closest int times 10^precision, paraver will then put the decimals properly
         float pow_10 = pow(10.0f, (float)PRECISION);
         metrics_int[i] = round(metrics[i] * pow_10);

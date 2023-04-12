@@ -32,8 +32,9 @@ def test_with_parameters(raw_file: str, processed_file: str, config_file: str, p
         flags += '--socket '
         # correct_out_traces_dir = 'correct_out_traces_per_socket'
 
-    print(f'./bin/profet {raw_file} {processed_file} {config_file} {flags}')
-    profet_exit_code = os.system(f'./bin/profet {raw_file} {processed_file} {config_file} {flags}')
+    profet_command = f'./bin/profet {raw_file} {processed_file} {config_file} {flags}'
+    print(profet_command)
+    profet_exit_code = os.system(profet_command)
     if profet_exit_code != 0:
         sys.exit(-1)
 
