@@ -53,6 +53,7 @@ string getProjectPath() {
 
 string PROJECT_PATH = getProjectPath();
 int PRECISION = 2; // Decimal precision for memory metrics
+int PROFET_BASE_EVENT_TYPE = 94000000; // Base event type for Profet events in Paraver
 
 
 void printHelp() {
@@ -198,7 +199,7 @@ bool isMemoryEvent(map<int, MemoryEvent> memEventTypes, TEventValue evtValue) {
 }
 
 void addProcessModelHierarchy(map<int, vector<int>> MCsPerSocket, int nNodes, ProcessModel<> &outputProcessModel, bool perSocket) {
-    // Add application, task, thread hierarchy to output process model
+  // Add application, task, thread hierarchy to output process model
   for (int iNode = 0; iNode < nNodes; iNode++) {
     outputProcessModel.addApplication();
     if (perSocket) {
@@ -250,7 +251,7 @@ void writeMemoryMetricsRecord(vector<int> metrics,
       tmpRecord.time = lastPoppedTime;
       tmpRecord.thread = thread;
       tmpRecord.CPU = 0;
-      tmpRecord.URecordInfo.eventRecord.type = iMetric + 1;
+      tmpRecord.URecordInfo.eventRecord.type = PROFET_BASE_EVENT_TYPE + iMetric + 1;
       tmpRecord.URecordInfo.eventRecord.value = metrics[iMetric];
       // Write new record to output trace
       outputTraceBody.write(outputTraceFile, outputProcessModel, outputResourceModel, &tmpRecord);
