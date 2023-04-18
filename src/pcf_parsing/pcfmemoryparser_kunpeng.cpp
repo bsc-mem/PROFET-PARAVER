@@ -9,8 +9,9 @@
 // pcfmemoryparser_kunpeng.cpp
 #include "pcfmemoryparser_kunpeng.h"
 
-PCFMemoryParserKunpeng::PCFMemoryParserKunpeng(string inPCFFilePath) {
+PCFMemoryParserKunpeng::PCFMemoryParserKunpeng(string inPCFFilePath, int base_event_type) {
     this->inPCFFilePath = inPCFFilePath;
+    this->base_event_type = base_event_type;
 }
 
 map<int, MemoryEvent> PCFMemoryParserKunpeng::getMemoryEventTypes() {

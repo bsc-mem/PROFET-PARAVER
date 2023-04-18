@@ -377,7 +377,7 @@ int main(int argc, char *argv[]) {
   string pcfInputFile = regex_replace(inFile, regex(".prv"), ".pcf");
 
   // Map with event type as key and for each type the socket involved and if it is a read or not (thus a write)
-  PCFMemoryParserFactory pcfMemParserFactory(pcfInputFile, pmuType);
+  PCFMemoryParserFactory pcfMemParserFactory(pcfInputFile, pmuType, PROFET_BASE_EVENT_TYPE);
   PCFMemoryParser* pcfMemParser = pcfMemParserFactory.getPCFMemoryParser();
   map<int, MemoryEvent> memEventTypes = pcfMemParser->getMemoryEventTypes();
 
@@ -448,7 +448,7 @@ int main(int argc, char *argv[]) {
 
   dumpTraceHeader(outputTraceFile, traceDate, traceEndTime, traceTimeUnit, outputResourceModel, outputProcessModel, dummyCommunicators);
 
-  // Loop that reads trace file to the end
+  // Loop that reads the trace file to the end
   while (!traceFile.eof()) {
     // Read one line and store records
     myTraceBody.read(traceFile, records, processModel, resourceModel, loadedStates, loadedEvents, metadataManager, traceEndTime);

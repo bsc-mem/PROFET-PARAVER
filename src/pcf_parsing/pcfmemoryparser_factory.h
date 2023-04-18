@@ -21,7 +21,7 @@ class PCFMemoryParserFactory {
   public:
     PCFMemoryParser* pcfMemParser;
 
-    PCFMemoryParserFactory(string inPCFFilePath, string pmuType);
+    PCFMemoryParserFactory(string inPCFFilePath, string pmuType, int base_event_type);
 
     PCFMemoryParser* getPCFMemoryParser();
 };

@@ -12,12 +12,12 @@
 #include "pcfmemoryparser_kunpeng.h"
 
 
-PCFMemoryParserFactory::PCFMemoryParserFactory(string inPCFFilePath, string pmuType) {
+PCFMemoryParserFactory::PCFMemoryParserFactory(string inPCFFilePath, string pmuType, int base_event_type) {
   if (pmuType == "intel") {
-    pcfMemParser = new PCFMemoryParserIntel(inPCFFilePath);
+    pcfMemParser = new PCFMemoryParserIntel(inPCFFilePath, base_event_type);
   }
   else if (pmuType == "kunpeng") {
-    pcfMemParser = new PCFMemoryParserKunpeng(inPCFFilePath);
+    pcfMemParser = new PCFMemoryParserKunpeng(inPCFFilePath, base_event_type);
   }
   else {
     cerr << "ERROR: unknown PMU type " << pmuType << endl;

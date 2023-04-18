@@ -11,8 +11,9 @@
 
 PCFMemoryParser::PCFMemoryParser() {}
 
-PCFMemoryParser::PCFMemoryParser(string inPCFFilePath) {
+PCFMemoryParser::PCFMemoryParser(string inPCFFilePath, int base_event_type) {
     this->inPCFFilePath = inPCFFilePath;
+    this->base_event_type = base_event_type;
 }
 
 void PCFMemoryParser::writeOutput(string outPCFFilePath, vector<string> memoryMetricsLabels, int precision) {
@@ -45,7 +46,7 @@ void PCFMemoryParser::writeOutput(string outPCFFilePath, vector<string> memoryMe
 
   // Define new event types for memory metrics
   for (long unsigned int i = 0; i < memoryMetricsLabels.size(); i++) {
-    outPCFFile.setEventType(i+1, precision, memoryMetricsLabels[i], {});
+    outPCFFile.setEventType(base_event_type + 1, precision, memoryMetricsLabels[i], {});
   }
 
   outPCFFile.dumpToFile(outPCFFilePath);

@@ -16,7 +16,7 @@ using namespace std;
 
 class PCFMemoryParserIntel : public PCFMemoryParser {
   public:
-    PCFMemoryParserIntel(string inPCFFilePath);
+    PCFMemoryParserIntel(string inPCFFilePath, int base_event_type);
 
     // Returns a map with the event type as key and memoryEvent as value
     map<int, MemoryEvent> getMemoryEventTypes();
