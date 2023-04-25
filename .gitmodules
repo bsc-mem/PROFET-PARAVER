@@ -1,0 +1,4 @@
+[submodule "libs/paraver-kernel"]
+	path = libs/paraver-kernel
+	url =  https://git.tools.bsc.es/r/paraver-kernel
+	branch = devel
