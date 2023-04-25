@@ -1,9 +1,26 @@
-LEVEL THREAD SIZE 1
+LEVEL THREAD SIZE 9
+
+
+
+
+
+
+
+
 testNode.Skt0
 
-LEVEL TASK SIZE 1
+LEVEL TASK SIZE 9
+
+
+
+
+
+
+
+
 testNode.Skt0
 
-LEVEL APPL SIZE 1
+LEVEL APPL SIZE 2
+
 testNode
 

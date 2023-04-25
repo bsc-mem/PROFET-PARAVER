@@ -33,19 +33,27 @@ def prv_out_to_df(prv_path, precision):
     with open(prv_path, 'r') as f:
         # skip header
         for line in f.readlines()[1:]:
+            # skip comments and communicator lines
+            if line[0] == '#' or line[0] == 'c':
+                continue
+
             l = list(map(lambda i: int(i), line.split(':')))
-            df.append({
-                'node': l[2],
-                'socket': l[3],
-                'mc': l[4],
-                'time': l[5],
-                'wratio': metric_val(l, 1, precision),
-                'bw': metric_val(l, 2, precision),
-                'max_bw': metric_val(l, 3, precision),
-                'lat': metric_val(l, 4, precision),
-                'min_lat': metric_val(l, 5, precision),
-                'max_lat': metric_val(l, 6, precision),
-            })
+            app_id = l[2]
+            if app_id == 1:
+                df.append({'node': 1, 'time': l[5]})
+            else:
+                df.append({
+                    'node': l[2],
+                    'socket': l[3],
+                    'mc': l[4],
+                    'time': l[5],
+                    'wratio': metric_val(l, 1, precision),
+                    'bw': metric_val(l, 2, precision),
+                    'max_bw': metric_val(l, 3, precision),
+                    'lat': metric_val(l, 4, precision),
+                    'min_lat': metric_val(l, 5, precision),
+                    'max_lat': metric_val(l, 6, precision),
+                })
 
     df = pd.DataFrame(df).ffill()
     # replace negative numbers for nan
@@ -101,6 +109,11 @@ class TestOutput(unittest.TestCase):
 
     def test_consecutive_timestamps(self):
         # assert that timestamps are ascendingly sorted
+        l1, sl = list(self.out_df['time']), list(self.out_df['time'].sort_values())
+        all_diffs = np.array(l1) == np.array(sl)
+        if any(all_diffs):
+            first_diff_idx = np.where(all_diffs)[0][0]
+            print(l1[first_diff_idx], sl[first_diff_idx])
         self.assertEqual(list(self.out_df['time']), list(self.out_df['time'].sort_values()))
 
     def test_contained_timestamps(self):
@@ -110,18 +123,21 @@ class TestOutput(unittest.TestCase):
 
     def test_same_n_nodes(self):
         # assert that the generated file has the correct number of nodes
-        self.assertEqual(self.N_NODES, self.out_df['node'].nunique())
+        ignore_app0_df = self.out_df[self.out_df['node'] > 1]
+        self.assertEqual(self.N_NODES, ignore_app0_df['node'].nunique())
 
     def test_same_n_sockets(self):
         # assert that the generated file has the correct number of socket per node
-        for i_node in self.out_df['node'].unique():
+        ignore_app0_df = self.out_df[self.out_df['node'] > 1]
+        for i_node in ignore_app0_df['node'].unique():
             df_node = self.out_df[self.out_df['node'] == i_node]
             self.assertEqual(self.N_SOCKETS, df_node['socket'].nunique())
 
     def test_same_n_mcs(self):
         # assert that the generated file has the correct number of mc per socket
+        ignore_app0_df = self.out_df[self.out_df['node'] > 1]
         if self.N_MCS != -1:
-            for i_node in self.out_df['node'].unique():
+            for i_node in ignore_app0_df['node'].unique():
                 df_node = self.out_df[self.out_df['node'] == i_node]
                 for i_skt in df_node['socket'].unique():
                     df_skt = df_node[df_node['socket'] == i_skt]
