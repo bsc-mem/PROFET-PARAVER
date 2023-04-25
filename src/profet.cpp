@@ -164,6 +164,7 @@ tuple<string, string, float, int> readConfigFile(string configFile) {
 }
 
 vector<string> getNodeNames(string rowInputFile, int nNodes) {
+  // TODO should use rowfileparser instead of custom read
   // RowFileParser<> inRowFile;
   ifstream input(rowInputFile);
 
@@ -198,27 +199,58 @@ bool isMemoryEvent(map<int, MemoryEvent> memEventTypes, TEventValue evtValue) {
   return false;
 }
 
-void addProcessModelHierarchy(map<int, vector<int>> MCsPerSocket, int nNodes, ProcessModel<> &outputProcessModel, bool perSocket) {
+void addProcessModelHierarchy(map<int, vector<int>> MCsPerSocket, int nNodes, ProcessModel <> &originalProcessModel,
+                              ProcessModel<> &outputProcessModel, bool perSocket) {
+  // Keep hierarchy of the original process model (only the 1st app, we  can ignore the second (memory counters))
+  // We can assume we always have 2 apps.
+  auto originalFirstApplIt = originalProcessModel.cbegin();
+  outputProcessModel.addApplication();
+  // auto taskIt = originalFirstApplIt.cbegin();
+  int iTask = 0;
+  for (auto taskIt = originalFirstApplIt->cbegin(); taskIt != originalFirstApplIt->cend(); taskIt++, iTask++) {
+    // Add task to application 0
+    outputProcessModel.addTask(0);
+    TNodeOrder execNode = taskIt->getNodeExecution();
+    for (long unsigned int iThread = 0; iThread < taskIt->size(); iThread++) {
+      // Add thread to application 0, task iTask
+      outputProcessModel.addThread(0, iTask, execNode);
+    }
+  }
+
   // Add application, task, thread hierarchy to output process model
   for (int iNode = 0; iNode < nNodes; iNode++) {
     outputProcessModel.addApplication();
+    int appID = iNode + 1;
     if (perSocket) {
-      // app=0, task=0, thread=socket
+      // app=node, task=, thread=
       for (const auto &[socketID, memoryControllerIDs] : MCsPerSocket) {
-        outputProcessModel.addTask(iNode);
-        outputProcessModel.addThread(iNode, socketID, iNode);
+        outputProcessModel.addTask(appID);
+        outputProcessModel.addThread(appID, socketID, iNode);
       }
     } else {
-      // app=0, task=socket, thread=mem. controller
+      // app=node, task=socket, thread=mem. controller
       for (const auto &[socketID, memoryControllerIDs] : MCsPerSocket) {
-        outputProcessModel.addTask(iNode);
+        outputProcessModel.addTask(appID);
         for (long unsigned int mcID = 0; mcID < memoryControllerIDs.size(); mcID++) {
           // cout << appID << " " << mcID << endl;
-          outputProcessModel.addThread(iNode, socketID, iNode);
+          outputProcessModel.addThread(appID, socketID, iNode);
           // cout << to_string(outputProcessModel.totalApplications()) << " " << to_string(outputProcessModel.totalTasks()) << " " << to_string(outputProcessModel.totalThreads()) << endl;
         }
       }
     }
+  }
+}
+
+void writePreviousRecords(multimap<TRecordTime, MyRecord> &outputRecords,
+                          unsigned long long smallestTime,
+                          ProcessModel<> outputProcessModel,
+                          ResourceModel<> outputResourceModel,
+                          TraceBodyIO_v1< fstream, MyRecordContainer, ProcessModel<>, ResourceModel<>, TState, TEventType, MyMetadataManager, TTime, MyRecord > &outputTraceBody,
+                          fstream &outputTraceFile) {
+  // Write outputRecords previous or at the same time as smallestTime to the output trace file
+  while (!outputRecords.empty() && outputRecords.begin()->first <= smallestTime) {
+    outputTraceBody.write(outputTraceFile, outputProcessModel, outputResourceModel, &outputRecords.begin()->second);
+    outputRecords.erase(outputRecords.begin());
   }
 }
 
@@ -232,12 +264,15 @@ void writeMemoryMetricsRecord(vector<int> metrics,
                               ResourceModel<> outputResourceModel,
                               TraceBodyIO_v1< fstream, MyRecordContainer, ProcessModel<>, ResourceModel<>, TState, TEventType, MyMetadataManager, TTime, MyRecord > &outputTraceBody,
                               fstream &outputTraceFile) {
-  // Write metrics record to a new prv
+  // Write metrics record to the prv
   int thread;
+  // appID is nodeID + 1, because app 0 is preserved for the original process model
+  // The rest of apps are added for PROFET based on the number of nodes
+  int appID = nodeID + 1;
   if (mcIDcorrespondence == -1) {
-    thread = outputProcessModel.getGlobalThread(nodeID, socketID, 0);
+    thread = outputProcessModel.getGlobalThread(appID, socketID, 0);
   } else {
-    thread = outputProcessModel.getGlobalThread(nodeID, socketID, mcIDcorrespondence);
+    thread = outputProcessModel.getGlobalThread(appID, socketID, mcIDcorrespondence);
   }
   // cout << "Node: " << nodeID << " Socket: " << socketID << " MC: " << mcIDcorrespondence << endl;
   // cout << "Global Thread: " << thread << endl;
@@ -263,6 +298,7 @@ void writeMemoryMetricsRecord(vector<int> metrics,
 bool processAndWriteMemoryMetricsIfPossible(vector<NodeMemoryRecords> &nodes,
                                             ProfetPyAdapter &profetPyAdapter,
                                             bool allowEmptyQueues,
+                                            multimap<TRecordTime, MyRecord> &outputRecords,
                                             ProcessModel<> outputProcessModel,
                                             ResourceModel<> outputResourceModel,
                                             TraceBodyIO_v1< fstream, MyRecordContainer, ProcessModel<>, ResourceModel<>, TState, TEventType, MyMetadataManager, TTime, MyRecord > &outputTraceBody,
@@ -307,6 +343,9 @@ bool processAndWriteMemoryMetricsIfPossible(vector<NodeMemoryRecords> &nodes,
       }
     }
 
+    // Write all trace records that occurred before or at the same time as the current smallest time
+    writePreviousRecords(outputRecords, smallestMCTime, outputProcessModel, outputResourceModel, outputTraceBody, outputTraceFile);
+
     SocketMemoryRecords &socket = node.sockets[smallestTimeSocketID];
     writeMemoryMetricsRecord(metrics_int, smallestTimeINode, smallestTimeSocketID, socket.memoryControllerIDsCorrespondence[smallestTimeMCID],
                              socket.getLastPoppedTime(), lastWrittenMetrics, outputProcessModel, outputResourceModel, outputTraceBody, outputTraceFile);
@@ -317,10 +356,27 @@ bool processAndWriteMemoryMetricsIfPossible(vector<NodeMemoryRecords> &nodes,
   return false;
 }
 
-void writeRowFile(vector<NodeMemoryRecords> &nodes, string rowOutputFile, bool perSocket) {
+void writeRowFile(ProcessModel<> &originalProcessModel, RowFileParser<> inRowParser,
+                  string rowOutputFile, vector<NodeMemoryRecords> &nodes, bool perSocket) {
   RowFileParser<> outRowFile;
+
+  // Copy row file from original file (only app 0)
+  auto originalFirstApplIt = originalProcessModel.cbegin();
+  outRowFile.pushBack(TTraceLevel::APPLICATION, inRowParser.getRowLabel(TTraceLevel::APPLICATION, 0));
+  int iTask = 0;
+  for (auto taskIt = originalFirstApplIt->cbegin(); taskIt != originalFirstApplIt->cend(); taskIt++, iTask++) {
+    // Add task to application 0
+    outRowFile.pushBack(TTraceLevel::TASK, inRowParser.getRowLabel(TTraceLevel::TASK, iTask));
+    for (long unsigned int iThread = 0; iThread < taskIt->size(); iThread++) {
+      // Add thread to application 0, task iTask
+      outRowFile.pushBack(TTraceLevel::THREAD, inRowParser.getRowLabel(TTraceLevel::THREAD, iThread));
+    }
+  }
+
+  // Add custom PROFET row
   for (NodeMemoryRecords &node : nodes) {
     string nodeLabel = node.name;
+    // Start at 2nd application
     outRowFile.pushBack(TTraceLevel::APPLICATION, nodeLabel);
     for (const auto &[socketID, memoryControllerIDs] : node.MCsPerSocket) {
       string socketLabel = nodeLabel + ".Skt" + to_string(socketID);
@@ -337,6 +393,7 @@ void writeRowFile(vector<NodeMemoryRecords> &nodes, string rowOutputFile, bool p
       }
     }
   }
+
   outRowFile.dumpToFile(rowOutputFile);
 }
 
@@ -376,6 +433,8 @@ int main(int argc, char *argv[]) {
   string rowInputFile = regex_replace(inFile, regex(".prv"), ".row");
   string pcfInputFile = regex_replace(inFile, regex(".prv"), ".pcf");
 
+  RowFileParser<> inRowFile(rowInputFile);
+
   // Map with event type as key and for each type the socket involved and if it is a read or not (thus a write)
   PCFMemoryParserFactory pcfMemParserFactory(pcfInputFile, pmuType, PROFET_BASE_EVENT_TYPE);
   PCFMemoryParser* pcfMemParser = pcfMemParserFactory.getPCFMemoryParser();
@@ -393,7 +452,6 @@ int main(int argc, char *argv[]) {
   std::string traceDate;
   TTimeUnit traceTimeUnit;
   std::vector< std::string > communicators;
-  std::vector< std::string > dummyCommunicators;
 
   // Trace header parsing. Initialize previous variables
   parseTraceHeader(traceFile, traceDate, traceTimeUnit, traceEndTime, resourceModel, processModel, communicators);
@@ -417,7 +475,6 @@ int main(int argc, char *argv[]) {
   TraceBodyIO_v1< fstream, MyRecordContainer, ProcessModel<>, ResourceModel<>, TState, TEventType, MyMetadataManager, TTime, MyRecord > outputTraceBody;
 
   ProcessModel<> outputProcessModel;
-  ResourceModel<> outputResourceModel;
 
   // Keep track of the sockets and their MCs in each node
   map<int, vector<int>> MCsPerSocket;
@@ -444,50 +501,75 @@ int main(int argc, char *argv[]) {
                                      pmuType, cpuMicroarch, cpuModel, cpuFreqGHz, cacheLineBytes, displayWarnings);
   }
 
-  addProcessModelHierarchy(MCsPerSocket, nNodes, outputProcessModel, perSocket);
+  addProcessModelHierarchy(MCsPerSocket, nNodes, processModel, outputProcessModel, perSocket);
 
-  dumpTraceHeader(outputTraceFile, traceDate, traceEndTime, traceTimeUnit, outputResourceModel, outputProcessModel, dummyCommunicators);
+  dumpTraceHeader(outputTraceFile, traceDate, traceEndTime, traceTimeUnit, resourceModel, outputProcessModel, communicators);
+
+  // Records to be written to the output trace sorted ascendingly by time
+  multimap<TRecordTime, MyRecord> outputRecords;
 
   // Loop that reads the trace file to the end
   while (!traceFile.eof()) {
     // Read one line and store records
+    long unsigned int oldMetadataSize = metadataManager.metadata.size();
     myTraceBody.read(traceFile, records, processModel, resourceModel, loadedStates, loadedEvents, metadataManager, traceEndTime);
-
-    // Loop over stored records
+    
+    bool isMetadata = oldMetadataSize < metadataManager.metadata.size();
+    if (isMetadata) {
+      // If the read line is a metadata, just write it to the output trace
+      outputTraceFile << metadataManager.metadata.back() << endl;
+      continue;
+    }
+    
     vector<MyRecord> &loadedRecords = records.getLoadedRecords();
+    // Loop over stored records
     for (auto record : loadedRecords) {
-      TEventType evtType = record.getEventType();
-      if (record.getType() == EVENT && isMemoryEvent(memEventTypes, evtType)) {
-        int iNode = processModel.getNode(record.getThread());
-        int socketID = memEventTypes[evtType].socket;
-        int mcID = memEventTypes[evtType].mc;
-        NodeMemoryRecords &node = nodes[iNode];
-
-        // Create new memory read record
-        MemoryRecord mcRecord;
-        if (memEventTypes[evtType].isRead) {
-          mcRecord.t0 = node.sockets[socketID].getLastReadTime(mcID);
-        } else {
-          mcRecord.t0 = node.sockets[socketID].getLastWriteTime(mcID);
-        }
-        mcRecord.t1 = record.getTime();
-        mcRecord.n = record.getEventValue();
-        // Add memory record to its corresponding socket and MC
-        memEventTypes[evtType].isRead ? node.addRead(socketID, mcID, mcRecord) : node.addWrite(socketID, mcID, mcRecord);
-
-        // string readOrWrite = memEventTypes[evtType].isRead ? "R" : "W";
-        // cout << readOrWrite << " " << iNode << " " << socketID << " " << mcID << " " << mcRecord.t0 << " " << mcRecord.t1 << " " << mcRecord.n << endl;
-        // node.printSocketsQueues();
-        // cout << endl;
-
-        // Process socket queues while it's processable
-        bool allowEmptyQueues = false;
-        bool processed;
-        do {
-          processed = processAndWriteMemoryMetricsIfPossible(nodes, profetPyAdapter, allowEmptyQueues,
-                                                             outputProcessModel, outputResourceModel, outputTraceBody, outputTraceFile);
-        } while (processed);
+      // TODO is this a global thread???
+      auto globalThread = record.getThread();
+      TApplOrder app;
+      TTaskOrder task;
+      TThreadOrder thread;
+      processModel.getThreadLocation(globalThread, app, task, thread);
+      // Ignore App 2 (zero-based) records (memory counters)
+      if (app != 1) {
+        outputRecords.insert(pair<TRecordTime, MyRecord>(record.getTime(), record));
       }
+
+      TEventType evtType = record.getEventType();
+      // Only consider memory events
+      if (record.getType() != EVENT || !isMemoryEvent(memEventTypes, evtType)) {
+        continue;
+      }
+
+      int iNode = processModel.getNode(record.getThread());
+      int socketID = memEventTypes[evtType].socket;
+      int mcID = memEventTypes[evtType].mc;
+      NodeMemoryRecords &node = nodes[iNode];
+
+      // Create new memory read record
+      MemoryRecord mcRecord;
+      if (memEventTypes[evtType].isRead) {
+        mcRecord.t0 = node.sockets[socketID].getLastReadTime(mcID);
+      } else {
+        mcRecord.t0 = node.sockets[socketID].getLastWriteTime(mcID);
+      }
+      mcRecord.t1 = record.getTime();
+      mcRecord.n = record.getEventValue();
+      // Add memory record to its corresponding socket and MC
+      memEventTypes[evtType].isRead ? node.addRead(socketID, mcID, mcRecord) : node.addWrite(socketID, mcID, mcRecord);
+
+      // string readOrWrite = memEventTypes[evtType].isRead ? "R" : "W";
+      // cout << readOrWrite << " " << iNode << " " << socketID << " " << mcID << " " << mcRecord.t0 << " " << mcRecord.t1 << " " << mcRecord.n << endl;
+      // node.printSocketsQueues();
+      // cout << endl;
+
+      // Process socket queues while it's processable
+      bool allowEmptyQueues = false;
+      bool processed;
+      do {
+        processed = processAndWriteMemoryMetricsIfPossible(nodes, profetPyAdapter, allowEmptyQueues, outputRecords,
+                                                            outputProcessModel, resourceModel, outputTraceBody, outputTraceFile);
+      } while (processed);
     }
 
     // Need to clear the currently stored records
@@ -498,15 +580,19 @@ int main(int argc, char *argv[]) {
   bool allowEmptyQueues = true;
   bool processed;
   do {
-    processed = processAndWriteMemoryMetricsIfPossible(nodes, profetPyAdapter, allowEmptyQueues,
-                                                       outputProcessModel, outputResourceModel, outputTraceBody, outputTraceFile);
+    processed = processAndWriteMemoryMetricsIfPossible(nodes, profetPyAdapter, allowEmptyQueues, outputRecords,
+                                                       outputProcessModel, resourceModel, outputTraceBody, outputTraceFile);
   } while (processed);
+
+  // Write remaining records (if any)
+  unsigned long long maxTime = numeric_limits<unsigned long long>::max();
+  writePreviousRecords(outputRecords, maxTime, outputProcessModel, resourceModel, outputTraceBody, outputTraceFile);
   
   // Final write if pending event records
   outputTraceBody.writePendingMultiEvent(outputProcessModel);
 
   // Write new .row file for memory metrics
-  writeRowFile(nodes, rowOutputFile, perSocket);
+  writeRowFile(processModel, inRowFile, rowOutputFile, nodes, perSocket);
 
   // Write new .pcf file for memory metrics. Metric labels are the same in each node
   pcfMemParser->writeOutput(pcfOutputFile, nodes[0].getMetricLabels(), PRECISION);
@@ -526,4 +612,3 @@ int main(int argc, char *argv[]) {
 
   return 0;
 }
-

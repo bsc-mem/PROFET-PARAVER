@@ -95,7 +95,8 @@ def get_trace_df(trace_file_path, row_file_path, precision):
             # process subsequent metric IDs and values after the timestamp
             for i in range(6, len(sp)-1, 2):
                 metric_id = int(sp[i])
-                metric_key = metric_keys[metric_id - 1]
+                last_metric_digit = int(metric_id % 10)
+                metric_key = metric_keys[last_metric_digit - 1]
                 val = float(sp[i+1].strip())
 
                 # negative values are set for identifying irregular data, include all of them for now and remove whole negative rows later (see next lines)
