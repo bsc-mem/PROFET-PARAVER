@@ -78,15 +78,21 @@ def get_trace_df(trace_file_path, row_file_path, precision):
     with open(trace_file_path) as f:
         first_line = True
         # all_lines = f.readlines()
-        # do not read all lines at once, read them line by line
+        # do not read all lines at once, read them line by line to save memory
         for i, line in enumerate(f):
-            if first_line:
+            if first_line or line.startswith('#') or line.startswith('c'):
+                # skip header, comments and communicator lines
                 first_line = False
                 continue
 
             sp = line.split(':')
             row = defaultdict()
             row['node'] = int(sp[2])
+            
+            if row['node'] == 1:
+                # skip first application (original trace values)
+                continue
+
             row['node_name'] = node_names[row['node'] - 1]
             row['socket'] = int(sp[3])
             row['mc'] = int(sp[4])
