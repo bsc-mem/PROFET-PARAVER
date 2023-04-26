@@ -78,15 +78,21 @@ def get_trace_df(trace_file_path, row_file_path, precision):
     with open(trace_file_path) as f:
         first_line = True
         # all_lines = f.readlines()
-        # do not read all lines at once, read them line by line
+        # do not read all lines at once, read them line by line to save memory
         for i, line in enumerate(f):
-            if first_line:
+            if first_line or line.startswith('#') or line.startswith('c'):
+                # skip header, comments and communicator lines
                 first_line = False
                 continue
 
             sp = line.split(':')
             row = defaultdict()
             row['node'] = int(sp[2])
+            
+            if row['node'] == 1:
+                # skip first application (original trace values)
+                continue
+
             row['node_name'] = node_names[row['node'] - 1]
             row['socket'] = int(sp[3])
             row['mc'] = int(sp[4])
@@ -95,7 +101,8 @@ def get_trace_df(trace_file_path, row_file_path, precision):
             # process subsequent metric IDs and values after the timestamp
             for i in range(6, len(sp)-1, 2):
                 metric_id = int(sp[i])
-                metric_key = metric_keys[metric_id - 1]
+                last_metric_digit = int(metric_id % 10)
+                metric_key = metric_keys[last_metric_digit - 1]
                 val = float(sp[i+1].strip())
 
                 # negative values are set for identifying irregular data, include all of them for now and remove whole negative rows later (see next lines)

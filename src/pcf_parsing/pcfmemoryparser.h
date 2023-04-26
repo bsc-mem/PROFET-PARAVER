@@ -24,9 +24,10 @@ using namespace std;
 class PCFMemoryParser {
   public:
     string inPCFFilePath;
+    int base_event_type;
 
     PCFMemoryParser();
-    PCFMemoryParser(string inPCFFilePath);
+    PCFMemoryParser(string inPCFFilePath, int base_event_type);
 
     // Returns a map with the event type as key and memoryEvent as value
     virtual map<int, MemoryEvent> getMemoryEventTypes() = 0;

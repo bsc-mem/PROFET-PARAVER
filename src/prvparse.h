@@ -34,6 +34,7 @@ class MyRecord
 {
   public:
     MyRecord() = default;
+    MyRecord( TThreadOrder whichThread ) : thread( whichThread ) {}
     ~MyRecord() = default;
 
     TRecordType    getType() const            { return type; }
@@ -102,6 +103,7 @@ class MyRecordContainer
     ~MyRecordContainer() = default;
 
     void newRecord()                              { loadedRecords.emplace_back( ); }
+    void newRecord( TThreadOrder whichThread )    { loadedRecords.emplace_back( whichThread ); }
     void setType( TRecordType whichType )         { loadedRecords.back().type = whichType; }
     void setTime( TRecordTime whichTime )         { loadedRecords.back().time = whichTime; }
     void setThread( TThreadOrder whichThread )    { loadedRecords.back().thread = whichThread; }
@@ -115,6 +117,11 @@ class MyRecordContainer
     void setStateEndTime( TRecordTime whichTime ) { loadedRecords.back().URecordInfo.stateRecord.endTime = whichTime; }
 
     void newComm( bool createRecords = true )          { newRecord(); loadedRecords.back().type = COMM + LOG + SEND; }
+    void newComm( TThreadOrder whichThread,  TThreadOrder whichRemoteThread ) {
+      newRecord( whichThread );
+      loadedRecords.back().type = COMM + LOG + SEND;
+      loadedRecords.back().URecordInfo.commRecord.receiverThread = whichRemoteThread;
+    }
     void setSenderThread( TThreadOrder whichThread )   { loadedRecords.back().thread = whichThread; }
     void setSenderThread( TApplOrder whichAppl,
                           TTaskOrder whichTask,
@@ -140,13 +147,17 @@ class MyRecordContainer
 };
 
 
-// Dummy class needed by parsing
 class MyMetadataManager
 {
   public:
     MyMetadataManager() = default;
     ~MyMetadataManager() = default;
 
-    bool NewMetadata( string MetadataStr ) { return true; }
+    vector<string> metadata;
+
+    bool NewMetadata( string MetadataStr ) {
+      metadata.push_back( MetadataStr );
+      return true;
+    }
 };
 

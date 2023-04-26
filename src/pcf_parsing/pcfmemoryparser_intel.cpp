@@ -9,8 +9,9 @@
 // pcfmemoryparser_intel.cpp
 #include "pcfmemoryparser_intel.h"
 
-PCFMemoryParserIntel::PCFMemoryParserIntel(string inPCFFilePath) {
+PCFMemoryParserIntel::PCFMemoryParserIntel(string inPCFFilePath, int base_event_type) {
     this->inPCFFilePath = inPCFFilePath;
+    this->base_event_type = base_event_type;
 }
 
 map<int, MemoryEvent> PCFMemoryParserIntel::getMemoryEventTypes() {
