@@ -8,7 +8,7 @@ The PROFiling-based EsTimation of performance and energy (PROFET) tool (https://
 Clone the repository and go into the directory. Use the `--recursive-submodules` flag for installing submodules.
 
 	git clone --recurse-submodules https://github.com/bsc-mem/PROFET-PARAVER.git
-	cd profet/
+	cd PROFET-PARAVER/
 
 In case you cloned the directory without using `--recursive-submodules`, you can still install them by running:
 
