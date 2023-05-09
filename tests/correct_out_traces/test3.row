@@ -11,15 +11,7 @@ testNode.Skt0.MC0
 testNode.Skt0.MC1
 testNode.Skt0.MC2
 
-LEVEL TASK SIZE 9
-
-
-
-
-
-
-
-
+LEVEL TASK SIZE 1
 testNode.Skt0
 
 LEVEL APPL SIZE 2

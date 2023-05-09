@@ -365,11 +365,10 @@ void writeRowFile(ProcessModel<> &originalProcessModel, RowFileParser<> inRowPar
   outRowFile.pushBack(TTraceLevel::APPLICATION, inRowParser.getRowLabel(TTraceLevel::APPLICATION, 0));
   int iTask = 0;
   for (auto taskIt = originalFirstApplIt->cbegin(); taskIt != originalFirstApplIt->cend(); taskIt++, iTask++) {
-    // Add task to application 0
-    outRowFile.pushBack(TTraceLevel::TASK, inRowParser.getRowLabel(TTraceLevel::TASK, iTask));
     for (long unsigned int iThread = 0; iThread < taskIt->size(); iThread++) {
-      // Add thread to application 0, task iTask
-      outRowFile.pushBack(TTraceLevel::THREAD, inRowParser.getRowLabel(TTraceLevel::THREAD, iThread));
+      // Add thread (identified with index iThread + iTask) to application 0
+      string threadLabel = inRowParser.getRowLabel(TTraceLevel::THREAD, iTask + iThread);
+      outRowFile.pushBack(TTraceLevel::THREAD, threadLabel);
     }
   }
 
