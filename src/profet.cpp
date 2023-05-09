@@ -530,8 +530,8 @@ int main(int argc, char *argv[]) {
       TTaskOrder task;
       TThreadOrder thread;
       processModel.getThreadLocation(globalThread, app, task, thread);
-      // Ignore App 2 (zero-based) records (memory counters)
-      if (app != 1) {
+      // Keep user-app records only (app == 0 for now, we will consider multiuser-app traces later)
+      if (app == 0) {
         outputRecords.insert(pair<TRecordTime, MyRecord>(record.getTime(), record));
       }
 
