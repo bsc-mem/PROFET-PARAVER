@@ -9,15 +9,7 @@ LEVEL THREAD SIZE 9
 
 testNode.Skt0
 
-LEVEL TASK SIZE 9
-
-
-
-
-
-
-
-
+LEVEL TASK SIZE 1
 testNode.Skt0
 
 LEVEL APPL SIZE 2
