@@ -5,53 +5,57 @@ The PROFiling-based EsTimation of performance and energy (PROFET) tool (https://
 
 # Installation
 
-Clone the repository and go into the directory. Use the `--recursive-submodules` flag for installing submodules.
+Follow the steps below to install PROFET-PARAVER:
 
+1. Clone the repository and enter the directory, ensuring you install submodules with the --recursive-submodules flag:
+
+	```
 	git clone --recurse-submodules https://github.com/bsc-mem/PROFET-PARAVER.git
 	cd PROFET-PARAVER/
+	```
 
-In case you cloned the directory without using `--recursive-submodules`, you can still install them by running:
+2. In case you've cloned the directory without the --recursive-submodules flag, you can still install the submodules by running:
 
-	git submodule update --init --recursive
+	```git submodule update --init --recursive```
 
-Install Python requirements according to the configuration file `requirements.txt`.
+3. Install the Python dependencies specified in the `requirements.txt` file:
 
-	pip install -r requirements.txt
+	```pip install -r requirements.txt```
 
-Compile, creating a binary `profet` file in the `bin` folder.
+Compile the source code to create a binary `profet` file in the `bin` folder:
 
 	make
 
-For being able to use this binary from Paraver (https://github.com/bsc-performance-tools/paraver-kernel), include the `bin` folder (where the `profet` binary was installed) to your PATH. See https://www.baeldung.com/linux/path-variable for more information on how to change the Linux PATH variable. In future versions we will improve the installation of PROFET so you do not need to modify your PATH.
+To use the `profet` binary with Paraver (https://github.com/bsc-performance-tools/paraver-kernel), add the `bin` folder (where the `profet` binary is located) to your PATH. Refer to https://www.baeldung.com/linux/path-variable for instructions on modifying the Linux PATH variable. Future versions of PROFET-PARAVER will streamline this step.
 
 
 # Usage
 
 	./bin/profet [OPTION] <input_trace_file.prv> <output_trace_file.prv> <configuration_file.json>
 
-Where:
+Parameters:
 
- - `input_trace_file.prv` is the `.prv` file containing read and write memory counters. It must contain `.pcf` and `.row` files in the same directory.
- - `output_trace_file.prv` is the path where the output `.prv` file will be written. If only the directory is specified without an explicit file name, the output will have the same name as the input file. `.pcf` and `.row` files are also created in the same output directory.
- - `configuration_file.json` is a configuration file mainly for indicating the type of memory and CPU of the system where the traces were computed. There are some examples in [`configs`](configs/) folder. You can check the supported configuration options with the `--supported_systems` flag.
+ - `input_trace_file.prv`: The input `.prv` file containing read and write memory counters. Ensure the corresponding `.pcf` and `.row` files are in the same directory.
+ - `output_trace_file.prv`: The output path for the generated `.prv` file. If only a directory is specified without an explicit file name, the output will have the same name as the input file. The `.pcf` and `.row` files will also be created in the specified output directory.
+ - `configuration_file.json`: A configuration file that primarily indicates the memory and CPU types of the system where the traces were computed. The [`configs`](configs/) folder contains examples. Use the `--supported_systems` flag to view supported configuration options.
 
 
 # Options
 
 	-s, --socket
-		Compute memory stress metrics per socket instead of per memory channel (by default).
+		Calculate memory stress metrics per socket, rather than per memory channel (default).
 		
 	-w, --no_warnings
-		Do not show warning messages.
+		Suppress warning messages.
 		
 	-t, --no_text
-		Do not show info text messages.
+		Suppress informational text messages.
 		
 	-d, --no_dash
 		Do not run dash (interactive plots).
 		
 	--supported_systems
-		Show currently supported memory systems.
+		Show supported memory systems.
 		
 	-h, --help, ?
 		Show help.
@@ -63,9 +67,9 @@ For running tests, execute the following command:
 
 	./tests/run_tests.py
 
-First it compiles the source code in order to make sure to test the last version of the code.
+This command first compiles the source code to ensure the latest version is being tested.
 
 
 # License
 
-The PROFET code is released under the BSD-3 [License](LICENSE.txt).
+The PROFET-PARAVER code is released under the BSD-3 [License](LICENSE.txt).
