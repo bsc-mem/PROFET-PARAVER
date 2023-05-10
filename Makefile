@@ -18,11 +18,12 @@ endif
 $(shell mkdir -p bin/)
 
 # get all cpp files in src/ folder and its subdirectories
-SRC_FILES := $(shell find src/ -name '*.cpp')
+SRC_CPP_FILES := $(shell find src/ -name '*.cpp')
+SRC_CC_FILES := $(shell find src/ -name '*.cc')
 
 all:
 	g++ -Wall -fPIE -std=c++17 \
       $(PY_CFLAGS) \
       -I libs/paraver-kernel/utils/traceparser \
       -I libs/boost_1_79_0 \
-      -o bin/profet $(SRC_FILES) $(PY_LDFLAGS)
+      -o bin/profet $(SRC_CPP_FILES) $(SRC_CC_FILES) $(PY_LDFLAGS)
