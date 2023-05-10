@@ -26,7 +26,7 @@ class OvershootError(Exception):
         self.requested_bw = requested_bw
 
     def __str__(self):
-        return f'Cannot estimate latency for bandwidth {self.requested_bw} using bandwidth-latency curve for a write ratio of {self.write_ratio}%. ' +\
+        return f'Cannot estimate latency for bandwidth {round(self.requested_bw, 2)} using bandwidth-latency curve for a write ratio of {self.write_ratio}%. ' +\
                 'Provided bandwidth larger than the largest recorded bandwidth for said curve.'
 
 class RatioRangesError(Exception):
