@@ -152,6 +152,27 @@ tuple<string, string, string, bool, int, int, int> processArgs(int argc, char** 
   return {inFile, outFile, configFile, perSocket, displayWarnings, displayText, runDash};
 }
 
+void checkInputOutputFiles(string inFile, string outFile) {
+  // Both strings include the whole path to the file
+  if (inFile == outFile) {
+    cerr << "Error: input and output files must be different." << endl;
+    exit(1);
+  }
+}
+
+void checkNodeNames(vector<string> nodeNames, string rowInputFile, int nNodes) {
+  if (nodeNames.empty()) {
+    cerr << "Error: no node names found in " << rowInputFile << endl;
+    exit(1);
+  }
+
+  if (int(nodeNames.size()) != nNodes) {
+    cerr << "Error: number of nodes specified in input file (" << nNodes << ") does not match "\
+            "with the number of nodes in the row file (" << nodeNames.size() << ")" << endl;
+    exit(1);
+  }
+}
+
 tuple<string, string, float, int> readConfigFile(string configFile) {
   pt::ptree root;
   pt::read_json(configFile, root);
@@ -164,31 +185,14 @@ tuple<string, string, float, int> readConfigFile(string configFile) {
   return {memorySystem, cpuModel, cpuFreqGHz, cacheLineBytes};
 }
 
-vector<string> getNodeNames(string rowInputFile, int nNodes) {
-  // TODO should use rowfileparser instead of custom read
-  // RowFileParser<> inRowFile;
-  ifstream input(rowInputFile);
-
-  if (!input.good()) {
-    cerr << "ERROR: row file not found: " << rowInputFile << endl;
-    exit(1);
-  }
-
-  bool readingNodes = false;
-  int readCount = 0;
-  vector<string> nodeNames(nNodes);
-  string line;
-  while (readCount < nNodes) {
-    getline(input, line);
-    if (readingNodes) {
-      nodeNames[readCount] = line;
-      readCount++;
-    }
-    else if (line.find("LEVEL NODE") != std::string::npos) {
-      readingNodes = true;
+vector<string> getNodeNames(RowFileParser<> inRowFile, int nNodes) {
+  vector<string> nodeNames;
+  for (int i = 0; i < nNodes; i++) {
+    string nodeLabel = inRowFile.getRowLabel(TTraceLevel::NODE, i);
+    if (nodeLabel != "") {
+      nodeNames.push_back(nodeLabel);
     }
   }
-
   return nodeNames;
 }
 
@@ -409,6 +413,8 @@ void printFinalMessage(vector<NodeMemoryRecords> nodes, string prvOutputFile) {
 int main(int argc, char *argv[]) {
   // Process arguments
   auto [inFile, outFile, configFile, perSocket, displayWarnings, displayText, runDash] = processArgs(argc, argv);
+  checkInputOutputFiles(inFile, outFile);
+  // Read config file
   auto [memorySystem, cpuModel, cpuFreqGHz, cacheLineBytes] = readConfigFile(configFile);
 
   cout << "Running PROFET..." << endl;
@@ -491,8 +497,11 @@ int main(int argc, char *argv[]) {
     MCsPerSocket[socketID] = sortedMCs;
   }
 
+  // Get node names from row file
   int nNodes = resourceModel.totalNodes();
-  vector<string> nodeNames = getNodeNames(rowInputFile, nNodes);
+  vector<string> nodeNames = getNodeNames(inRowFile, nNodes);
+  checkNodeNames(nodeNames, rowInputFile, nNodes);
+
   vector<NodeMemoryRecords> nodes(nNodes);
   for (int iNode = 0; iNode < nNodes; iNode++) {
     // string nodeID = ; // TODO get ID from row
