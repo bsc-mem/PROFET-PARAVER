@@ -54,10 +54,15 @@ class RatioRangesError(Exception):
         else:
             return f'Unknown error for the given write ratio of {self.write_ratio}%.'
 
-def overshoot_warning(read_ratio, requested_bw, bw_units):
+def bw_overshoot_warning(read_ratio, requested_bw, bw_units):
     write_ratio = 100 - read_ratio
     warn = f'''Cannot estimate latency for bandwidth {requested_bw} {bw_units} using bandwidth-latency curve for a write ratio of {write_ratio}%.
             Provided bandwidth larger than the largest recorded bandwidth for said curve.'''
+    warnings.warn(warn)
+
+def bw_low_warning(requested_bw, bw_units, lead_off_latency):
+    warn = f'''Provided bandwidth {requested_bw} {bw_units} smaller than the smallest recorded bandwidth for the curve.
+            Using latency of {lead_off_latency} cycles, corresponding to the lead-off-latency.'''
     warnings.warn(warn)
 
 def write_ratio_mismatch_warning(write_ratio: float, curve_write_ratio: float) -> None:
@@ -130,8 +135,8 @@ class Curve:
         # transform bandwidth to MB/s for the curves
         bw_mbps = self._bw_units_converter(bw, from_unit=bw_units, to_unit='MB/s')
         if bw_mbps < self.bws[0]:
-            # TODO this message should be logged as a warning
-            # print("Lower BW than recorded in curve")
+            if self.display_warnings:
+                bw_low_warning(bw_mbps, bw_units='MB/s', lead_off_latency=self.lats[0])
             return self.lats[0]
 
         # i = bisect.bisect_left(self.bws, bw)
@@ -139,7 +144,7 @@ class Curve:
         if i + 1 >= len(self.bws):
             # show warning and return -1 when bandwidth is off the curve
             if self.display_warnings:
-                overshoot_warning(self.closest_curve_read_ratio, bw_mbps, bw_units='MB/s')
+                bw_overshoot_warning(self.closest_curve_read_ratio, bw_mbps, bw_units='MB/s')
             return -1
             # raise OvershootError(self.closest_curve_read_ratio, bw)
 
@@ -210,6 +215,10 @@ class Curve:
     def _get_pre_and_post_bw_and_lat(self, idx):
         # get the bandwidth and latency of the point before and after the given index.
         # the returned values are in MB/s (like in the curves)
+        if idx == 0:
+            # if idx is 0, there is no point before it
+            return self.bws[0], self.bws[0], self.lats[0], self.lats[0]
+
         x1 = self.bws[idx]
         x2 = self.bws[idx - 1]
 
