@@ -25,6 +25,7 @@ namespace pt = boost::property_tree;
 namespace fs = std::filesystem;
 
 #include "prvparse.h"
+#include "progress.h"
 #include "pcf_parsing/pcfmemoryparser_factory.h"
 #include "memory_records/memoryevent.h"
 #include "memory_records/memoryrecord.h"
@@ -410,7 +411,7 @@ int main(int argc, char *argv[]) {
   auto [inFile, outFile, configFile, perSocket, displayWarnings, displayText, runDash] = processArgs(argc, argv);
   auto [memorySystem, cpuModel, cpuFreqGHz, cacheLineBytes] = readConfigFile(configFile);
 
-  cout << "Running PROFET..." << endl << endl;
+  cout << "Running PROFET..." << endl;
 
   // Open input trace file
   fstream traceFile(inFile);
@@ -523,7 +524,6 @@ int main(int argc, char *argv[]) {
     vector<MyRecord> &loadedRecords = records.getLoadedRecords();
     // Loop over stored records
     for (auto record : loadedRecords) {
-      // TODO is this a global thread???
       auto globalThread = record.getThread();
       TApplOrder app;
       TTaskOrder task;
@@ -569,6 +569,9 @@ int main(int argc, char *argv[]) {
         processed = processAndWriteMemoryMetricsIfPossible(nodes, profetPyAdapter, allowEmptyQueues, outputRecords,
                                                             outputProcessModel, resourceModel, outputTraceBody, outputTraceFile);
       } while (processed);
+
+      // Update progress bar
+      updateProgress(mcRecord.t1 / traceEndTime);
     }
 
     // Need to clear the currently stored records
@@ -595,6 +598,9 @@ int main(int argc, char *argv[]) {
 
   // Write new .pcf file for memory metrics. Metric labels are the same in each node
   pcfMemParser->writeOutput(pcfOutputFile, nodes[0].getMetricLabels(), PRECISION);
+
+  // Set progress bar as finished
+  updateProgress(1);
 
   if (displayText) {
     printFinalMessage(nodes, prvOutputFile);
