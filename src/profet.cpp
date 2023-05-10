@@ -152,6 +152,14 @@ tuple<string, string, string, bool, int, int, int> processArgs(int argc, char** 
   return {inFile, outFile, configFile, perSocket, displayWarnings, displayText, runDash};
 }
 
+void checkInputOutputFiles(string inFile, string outFile) {
+  // Both strings include the whole path to the file
+  if (inFile == outFile) {
+    cerr << "ERROR: input and output files must be different." << endl;
+    exit(1);
+  }
+}
+
 tuple<string, string, float, int> readConfigFile(string configFile) {
   pt::ptree root;
   pt::read_json(configFile, root);
@@ -409,6 +417,8 @@ void printFinalMessage(vector<NodeMemoryRecords> nodes, string prvOutputFile) {
 int main(int argc, char *argv[]) {
   // Process arguments
   auto [inFile, outFile, configFile, perSocket, displayWarnings, displayText, runDash] = processArgs(argc, argv);
+  checkInputOutputFiles(inFile, outFile);
+  // Read config file
   auto [memorySystem, cpuModel, cpuFreqGHz, cacheLineBytes] = readConfigFile(configFile);
 
   cout << "Running PROFET..." << endl;
