@@ -26,18 +26,8 @@ class OvershootError(Exception):
         self.requested_bw = requested_bw
 
     def __str__(self):
-        return f'''Cannot estimate latency for bandwidth {self.requested_bw} using bandwidth-latency curve for a write ratio of {self.write_ratio}%.
-                Provided bandwidth larger than the largest recorded bandwidth for said curve.'''
-
-class OvershootError(Exception):
-    def __init__(self, read_ratio, requested_bw):
-        self.read_ratio = read_ratio
-        self.write_ratio = 100 - read_ratio
-        self.requested_bw = requested_bw
-
-    def __str__(self):
-        return f'''Cannot estimate latency for bandwidth {self.requested_bw} using bandwidth-latency curve for write ratio of {self.write_ratio}%.
-                Provided bandwidth larger than the largest recorded bandwidth for said curve.'''
+        return f'Cannot estimate latency for bandwidth {round(self.requested_bw, 2)} using bandwidth-latency curve for a write ratio of {self.write_ratio}%. ' +\
+                'Provided bandwidth larger than the largest recorded bandwidth for said curve.'
 
 class RatioRangesError(Exception):
     def __init__(self, read_ratio):
@@ -56,13 +46,13 @@ class RatioRangesError(Exception):
 
 def bw_overshoot_warning(read_ratio, requested_bw, bw_units):
     write_ratio = 100 - read_ratio
-    warn = f'''Cannot estimate latency for bandwidth {requested_bw} {bw_units} using bandwidth-latency curve for a write ratio of {write_ratio}%.
-            Provided bandwidth larger than the largest recorded bandwidth for said curve.'''
+    warn = f'Cannot estimate latency for bandwidth {round(requested_bw, 2)} {bw_units} using bandwidth-latency curve for a write ratio of {write_ratio}%. ' +\
+           f'Provided bandwidth larger than the largest recorded bandwidth for said curve.'
     warnings.warn(warn)
 
 def bw_low_warning(requested_bw, bw_units, lead_off_latency):
-    warn = f'''Provided bandwidth {requested_bw} {bw_units} smaller than the smallest recorded bandwidth for the curve.
-            Using latency of {lead_off_latency} cycles, corresponding to the lead-off-latency.'''
+    warn = f'Provided bandwidth {round(requested_bw, 2)} {bw_units} smaller than the smallest recorded bandwidth for the curve. ' +\
+           f'Using latency of {round(lead_off_latency, 2)} cycles, corresponding to the lead-off-latency.'
     warnings.warn(warn)
 
 def write_ratio_mismatch_warning(write_ratio: float, curve_write_ratio: float) -> None:
