@@ -124,7 +124,9 @@ class Curve:
 
         # transform bandwidth to MB/s for the curves
         bw_mbps = self._bw_units_converter(bw, from_unit=bw_units, to_unit='MB/s')
+
         if bw_mbps < self.bws[0]:
+            # show warning and return lead-off latency when bandwidth is below-off the curve
             if self.display_warnings:
                 bw_low_warning(bw_mbps, bw_units='MB/s', lead_off_latency=self.lats[0])
             return self.lats[0]
@@ -132,7 +134,7 @@ class Curve:
         # i = bisect.bisect_left(self.bws, bw)
         i = self._get_bw_posterior_index(bw_mbps, bw_units='MB/s')
         if i + 1 >= len(self.bws):
-            # show warning and return -1 when bandwidth is off the curve
+            # show warning and return -1 when bandwidth is above-off the curve
             if self.display_warnings:
                 bw_overshoot_warning(self.closest_curve_read_ratio, bw_mbps, bw_units='MB/s')
             return -1
@@ -165,6 +167,9 @@ class Curve:
 
     def get_stress_score(self, bandwidth, bw_units):
         check_units(bw_units)
+
+        if bandwidth == 0:
+            return 0
 
         idx = self._get_bw_posterior_index(bandwidth, bw_units)
         if idx >= len(self.bws):
