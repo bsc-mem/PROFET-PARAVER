@@ -11,6 +11,14 @@ this file. If not, please visit: https://opensource.org/licenses/BSD-3-Clause
 
 import os
 import sys
+import argparse
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-nc', '--no-compile', dest='no_compile', action='store_true',
+                        help='Do not compile before running tests.')
+    return parser.parse_args()
 
 
 def test_with_parameters(raw_file: str, processed_file: str, config_file: str, precision: int, nnodes: int, nsockets: int, nmcs: int,
@@ -46,9 +54,12 @@ def test_with_parameters(raw_file: str, processed_file: str, config_file: str, p
 
 
 if __name__ == "__main__":
-    # compile the program in order to make sure we test with latest changes in the code
-    print('Compiling PROFET...')
-    os.system('make')
+    args = parse_args()
+
+    if not args.no_compile:
+        # compile the program in order to make sure we test with latest changes in the code
+        print('Compiling PROFET...')
+        os.system('make')
 
     in_traces = [
         'test1.prv',
