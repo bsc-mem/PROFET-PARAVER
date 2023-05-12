@@ -1,0 +1,505 @@
+DEFAULT_OPTIONS
+
+LEVEL               THREAD
+UNITS               NANOSEC
+LOOK_BACK           100
+SPEED               1
+FLAG_ICONS          ENABLED
+NUM_OF_STATE_COLORS 1000
+YMAX_SCALE          37
+
+
+DEFAULT_SEMANTIC
+
+THREAD_FUNC          State As Is
+
+
+STATES
+0    Idle
+1    Running
+2    Not created
+3    Waiting a message
+4    Blocking Send
+5    Synchronization
+6    Test/Probe
+7    Scheduling and Fork/Join
+8    Wait/WaitAll
+9    Blocked
+10    Immediate Send
+11    Immediate Receive
+12    I/O
+13    Group Communication
+14    Tracing Disabled
+15    Others
+16    Send Receive
+17    Memory transfer
+18    Profiling
+19    On-line analysis
+20    Remote memory access
+21    Atomic memory operation
+22    Memory ordering operation
+23    Distributed locking
+24    Overhead
+25    One-sided op
+26    Startup latency
+27    Waiting links
+28    Data copy
+29    RTT
+30    Allocating memory
+31    Freeing memory
+32    Configuring accelerator
+
+
+STATES_COLOR
+0    {117,195,255}
+1    {0,0,255}
+2    {255,255,255}
+3    {255,0,0}
+4    {255,0,174}
+5    {179,0,0}
+6    {0,255,0}
+7    {255,255,0}
+8    {235,0,0}
+9    {0,162,0}
+10    {255,0,255}
+11    {100,100,177}
+12    {172,174,41}
+13    {255,144,26}
+14    {2,255,177}
+15    {192,224,0}
+16    {66,66,66}
+17    {255,0,96}
+18    {169,169,169}
+19    {169,0,0}
+20    {0,109,255}
+21    {200,61,68}
+22    {200,66,0}
+23    {0,41,0}
+24    {139,121,177}
+25    {116,116,116}
+26    {200,50,89}
+27    {255,171,98}
+28    {0,68,189}
+29    {52,43,0}
+30    {255,46,0}
+31    {100,216,32}
+32    {118,185,0}
+
+
+EVENT_TYPE
+9   50000001    MPI Point-to-point
+VALUES
+4   MPI_Irecv
+3   MPI_Isend
+5   MPI_Wait
+6   MPI_Waitall
+0   Outside MPI
+
+
+EVENT_TYPE
+9   50000002    MPI Collective Comm
+VALUES
+10   MPI_Allreduce
+8   MPI_Barrier
+9   MPI_Reduce
+0   Outside MPI
+
+
+EVENT_TYPE
+9   50000003    MPI Other
+VALUES
+19   MPI_Comm_rank
+20   MPI_Comm_size
+32   MPI_Finalize
+31   MPI_Init
+0   Outside MPI
+
+
+EVENT_TYPE
+1    50100001    Send Size in MPI Global OP
+1    50100002    Recv Size in MPI Global OP
+1    50100003    Root in MPI Global OP
+1    50100004    Communicator in MPI Global OP
+
+
+EVENT_TYPE
+6    40000033    Executing CPU
+6    40000133    CPU-Event sampling interval
+
+
+EVENT_TYPE
+6    40000001    Application
+VALUES
+0      End
+1      Begin
+
+
+EVENT_TYPE
+6    40000050    RAW clock() value from system
+
+
+EVENT_TYPE
+6    40000003    Flushing Traces
+VALUES
+0      End
+1      Begin
+
+
+EVENT_TYPE
+6    40000002    Trace initialization
+VALUES
+0      End
+1      Begin
+
+
+EVENT_TYPE
+6    40000036    Process IDentifier
+6    40000037    Parent Process IDentifier
+6    40000038    fork() depth
+
+
+EVENT_TYPE
+7  42000050 PAPI_TOT_INS ([Instr completed])
+7  42000059 PAPI_TOT_CYC ([Total cycles])
+7  42000107 PAPI_REF_CYC ([Reference cycles])
+7  44226394 L3_LAT_CACHE:MISS ([Core-originated cacheable demand requests to L3, masks:Core-originated cacheable demand requests missed L3])
+7  46827881 snbep_unc_imc0::UNC_M_CAS_COUNT:RD:cpu=0 ([DRAM RD_CAS and WR_CAS Commands., masks:Counts all DRAM reads on this channel, incl. underfills:CPU to program])
+7  46766785 snbep_unc_imc0::UNC_M_CAS_COUNT:RD:cpu=8 ([DRAM RD_CAS and WR_CAS Commands., masks:Counts all DRAM reads on this channel, incl. underfills:CPU to program])
+7  46779560 snbep_unc_imc0::UNC_M_CAS_COUNT:WR:cpu=0 ([DRAM RD_CAS and WR_CAS Commands., masks:Counts number of DRAM write CAS commands on this channel:CPU to program])
+7  46450087 snbep_unc_imc0::UNC_M_CAS_COUNT:WR:cpu=8 ([DRAM RD_CAS and WR_CAS Commands., masks:Counts number of DRAM write CAS commands on this channel:CPU to program])
+7  46851620 snbep_unc_imc1::UNC_M_CAS_COUNT:RD:cpu=0 ([DRAM RD_CAS and WR_CAS Commands., masks:Counts all DRAM reads on this channel, incl. underfills:CPU to program])
+7  46431742 snbep_unc_imc1::UNC_M_CAS_COUNT:RD:cpu=8 ([DRAM RD_CAS and WR_CAS Commands., masks:Counts all DRAM reads on this channel, incl. underfills:CPU to program])
+7  46998255 snbep_unc_imc1::UNC_M_CAS_COUNT:WR:cpu=0 ([DRAM RD_CAS and WR_CAS Commands., masks:Counts number of DRAM write CAS commands on this channel:CPU to program])
+7  46868467 snbep_unc_imc1::UNC_M_CAS_COUNT:WR:cpu=8 ([DRAM RD_CAS and WR_CAS Commands., masks:Counts number of DRAM write CAS commands on this channel:CPU to program])
+7  46923928 snbep_unc_imc2::UNC_M_CAS_COUNT:RD:cpu=0 ([DRAM RD_CAS and WR_CAS Commands., masks:Counts all DRAM reads on this channel, incl. underfills:CPU to program])
+7  46285781 snbep_unc_imc2::UNC_M_CAS_COUNT:RD:cpu=8 ([DRAM RD_CAS and WR_CAS Commands., masks:Counts all DRAM reads on this channel, incl. underfills:CPU to program])
+7  46304356 snbep_unc_imc2::UNC_M_CAS_COUNT:WR:cpu=0 ([DRAM RD_CAS and WR_CAS Commands., masks:Counts number of DRAM write CAS commands on this channel:CPU to program])
+7  46313564 snbep_unc_imc2::UNC_M_CAS_COUNT:WR:cpu=8 ([DRAM RD_CAS and WR_CAS Commands., masks:Counts number of DRAM write CAS commands on this channel:CPU to program])
+7  46998355 snbep_unc_imc3::UNC_M_CAS_COUNT:RD:cpu=0 ([DRAM RD_CAS and WR_CAS Commands., masks:Counts all DRAM reads on this channel, incl. underfills:CPU to program])
+7  46802972 snbep_unc_imc3::UNC_M_CAS_COUNT:RD:cpu=8 ([DRAM RD_CAS and WR_CAS Commands., masks:Counts all DRAM reads on this channel, incl. underfills:CPU to program])
+7  46204141 snbep_unc_imc3::UNC_M_CAS_COUNT:WR:cpu=0 ([DRAM RD_CAS and WR_CAS Commands., masks:Counts number of DRAM write CAS commands on this channel:CPU to program])
+7  46096185 snbep_unc_imc3::UNC_M_CAS_COUNT:WR:cpu=8 ([DRAM RD_CAS and WR_CAS Commands., masks:Counts number of DRAM write CAS commands on this channel:CPU to program])
+7  41999999 Active hardware counter set
+
+
+GRADIENT_COLOR
+0    {0,255,2}
+1    {0,244,13}
+2    {0,232,25}
+3    {0,220,37}
+4    {0,209,48}
+5    {0,197,60}
+6    {0,185,72}
+7    {0,173,84}
+8    {0,162,95}
+9    {0,150,107}
+10    {0,138,119}
+11    {0,127,130}
+12    {0,115,142}
+13    {0,103,154}
+14    {0,91,166}
+
+
+GRADIENT_NAMES
+0    Gradient 0
+1    Grad. 1/MPI Events
+2    Grad. 2/OMP Events
+3    Grad. 3/OMP locks
+4    Grad. 4/User func
+5    Grad. 5/User Events
+6    Grad. 6/General Events
+7    Grad. 7/Hardware Counters
+8    Gradient 8
+9    Gradient 9
+10    Gradient 10
+11    Gradient 11
+12    Gradient 12
+13    Gradient 13
+14    Gradient 14
+
+
+EVENT_TYPE
+0    30000000    Sampled functions
+0    30000001    Sampled functions (depth 1)
+VALUES
+0   End
+1 Unresolved
+2 _NOT_Found
+3 __libc_read
+4 MPIDIU_c..internal [MPIDIU_create_buf_pool_internal]
+5 MPI_Star.._Wrapper [MPI_Start_C_Wrapper]
+6 I_MPI_me..on_setup [I_MPI_memcpy_function_setup]
+7 OPA_load_int
+8 impi_shm..eap_init [impi_shm_heap_init]
+9 rep_stosb
+10 MPIDI_PO..ger_init [MPIDI_POSIX_eager_init]
+11 impi_cma..vailable [impi_cma_is_available]
+12 volume_o..structor [volume_object_constructor]
+13 do_lookup_x
+14 MPIDI_OF..buffered [MPIDI_OFI_get_buffered]
+15 impi_shm..progress [impi_shm_heap_progress]
+16 MPIDI_Pr..ess_test [MPIDI_Progress_test]
+17 ofi_fast..ase_noop [ofi_fastlock_release_noop]
+18 inflate_fast
+19 MPIDI_PO..progress [MPIDI_POSIX_progress]
+20 MPIDI_SH..progress [MPIDI_SHMI_progress]
+21 impi_shm_progress
+22 MPIDI_CH..omm_init [MPIDI_CH4_OFI_coll_offload_comm_init]
+23 MPIDI_SH.._generic [MPIDI_SHMGR_release_generic]
+24 impi_rdtsc
+25 ofi_cq_read
+26 fi_cq_read
+27 mlx_ep_progress
+28 progress_rings
+29 is_avail..ard_cell [is_available_forward_cell]
+30 idle_progress
+31 get_shar..ransport [get_shared_memory_transport]
+32 MPIDI_OF..progress [MPIDI_OFI_progress]
+33 get_curr.._message [get_current_ingress_message]
+34 MPIDI_SH..progress [MPIDI_SHM_progress]
+35 MPIDI_NM_mpi_recv
+36 clear64
+37 MPID_Pro..ount_get [MPID_Progress_completion_count_get]
+38 MPL_wtime_acc
+39 get_fingerprint
+40 MPID_Pro..mer_tick [MPID_Progress_idle_timer_tick]
+41 MPID_Pro..ess_wait [MPID_Progress_wait]
+42 MPID_Pro..ss_yield [MPID_Progress_yield]
+43 MPL_wtime
+44 MPIR_Get..unt_impl [MPIR_Get_count_impl]
+
+
+EVENT_TYPE
+0    30000100    Sampled line functions (depth 0)
+0    30000101    Sampled lines functions (depth 1)
+VALUES
+0   End
+1 0 (Unresolved)
+2 0 (_NOT_Found)
+3 0 (., libpthread-2.28.so)
+4 52 (ch4_progress.c, libmpi.so.12.0.0)
+5 55 (ch4_progress.c, libmpi.so.12.0.0)
+6 65 (ch4_progress.c, libmpi.so.12.0.0)
+7 85 (ch4_progress.c, libmpi.so.12.0.0)
+8 87 (ch4_progress.c, libmpi.so.12.0.0)
+9 93 (ch4_progress.c, libmpi.so.12.0.0)
+10 104 (ch4_progress.c, libmpi.so.12.0.0)
+11 105 (ch4_progress.c, libmpi.so.12.0.0)
+12 109 (ch4_progress.c, libmpi.so.12.0.0)
+13 118 (ch4_progress.c, libmpi.so.12.0.0)
+14 144 (ch4_progress.c, libmpi.so.12.0.0)
+15 145 (ch4_progress.c, libmpi.so.12.0.0)
+16 146 (ch4_progress.c, libmpi.so.12.0.0)
+17 151 (ch4_progress.c, libmpi.so.12.0.0)
+18 153 (ch4_progress.c, libmpi.so.12.0.0)
+19 172 (ch4_progress.c, libmpi.so.12.0.0)
+20 175 (ch4_progress.c, libmpi.so.12.0.0)
+21 184 (ch4_progress.c, libmpi.so.12.0.0)
+22 199 (ch4_progress.c, libmpi.so.12.0.0)
+23 203 (ch4_progress.c, libmpi.so.12.0.0)
+24 280 (ch4_progress.c, libmpi.so.12.0.0)
+25 281 (ch4_progress.c, libmpi.so.12.0.0)
+26 284 (ch4_progress.c, libmpi.so.12.0.0)
+27 206 (ch4_shm_..plates.h) [206 (ch4_shm_coll_templates.h, libmpi.so.12.0.0)]
+28 58 (ch4r_buf.h, libmpi.so.12.0.0)
+29 0 (dl-lookup.c, ld-2.28.so)
+30 385 (fi_eq.h, libmpi.so.12.0.0)
+31 32 (get_count.c, libmpi.so.12.0.0)
+32 1793 (impi_malloc.c, libmpi.so.12.0.0)
+33 421 (impi_mal.._types.h) [421 (impi_malloc_types.h, libmpi.so.12.0.0)]
+34 891 (impi_shm_heap.c, libmpi.so.12.0.0)
+35 892 (impi_shm_heap.c, libmpi.so.12.0.0)
+36 896 (impi_shm_heap.c, libmpi.so.12.0.0)
+37 919 (impi_shm_heap.c, libmpi.so.12.0.0)
+38 1012 (impi_shm_heap.c, libmpi.so.12.0.0)
+39 106 (inffast.c, libmpi.so.12.0.0)
+40 122 (inffast.c, libmpi.so.12.0.0)
+41 146 (inffast.c, libmpi.so.12.0.0)
+42 249 (inffast.c, libmpi.so.12.0.0)
+43 1017 (intel_transport.c, libmpi.so.12.0.0)
+44 66 (intel_tr..common.h) [66 (intel_transport_common.h, libmpi.so.12.0.0)]
+45 234 (intel_tr..common.h) [234 (intel_transport_common.h, libmpi.so.12.0.0)]
+46 1448 (intel_tr..t_init.h) [1448 (intel_transport_init.h, libmpi.so.12.0.0)]
+47 2835 (intel_tr..t_init.h) [2835 (intel_transport_init.h, libmpi.so.12.0.0)]
+48 2997 (intel_tr..t_init.h) [2997 (intel_transport_init.h, libmpi.so.12.0.0)]
+49 16 (intel_tr..ofiler.h) [16 (intel_transport_profiler.h, libmpi.so.12.0.0)]
+50 27 (intel_tr..ogress.h) [27 (intel_transport_progress.h, libmpi.so.12.0.0)]
+51 34 (intel_tr..ogress.h) [34 (intel_transport_progress.h, libmpi.so.12.0.0)]
+52 143 (intel_tr..ogress.h) [143 (intel_transport_progress.h, libmpi.so.12.0.0)]
+53 167 (intel_tr..ogress.h) [167 (intel_transport_progress.h, libmpi.so.12.0.0)]
+54 171 (intel_tr..ogress.h) [171 (intel_transport_progress.h, libmpi.so.12.0.0)]
+55 175 (intel_tr..ogress.h) [175 (intel_transport_progress.h, libmpi.so.12.0.0)]
+56 180 (intel_tr..ogress.h) [180 (intel_transport_progress.h, libmpi.so.12.0.0)]
+57 183 (intel_tr..ogress.h) [183 (intel_transport_progress.h, libmpi.so.12.0.0)]
+58 211 (intel_tr..ogress.h) [211 (intel_transport_progress.h, libmpi.so.12.0.0)]
+59 216 (intel_tr..ogress.h) [216 (intel_transport_progress.h, libmpi.so.12.0.0)]
+60 218 (intel_tr..ogress.h) [218 (intel_transport_progress.h, libmpi.so.12.0.0)]
+61 219 (intel_tr..ogress.h) [219 (intel_transport_progress.h, libmpi.so.12.0.0)]
+62 225 (intel_tr..ogress.h) [225 (intel_transport_progress.h, libmpi.so.12.0.0)]
+63 226 (intel_tr..ogress.h) [226 (intel_transport_progress.h, libmpi.so.12.0.0)]
+64 278 (intel_tr..t_recv.h) [278 (intel_transport_recv.h, libmpi.so.12.0.0)]
+65 279 (intel_tr..t_recv.h) [279 (intel_transport_recv.h, libmpi.so.12.0.0)]
+66 289 (intel_tr..t_recv.h) [289 (intel_transport_recv.h, libmpi.so.12.0.0)]
+67 290 (intel_tr..t_recv.h) [290 (intel_transport_recv.h, libmpi.so.12.0.0)]
+68 2274 (intel_tr.._types.h) [2274 (intel_transport_types.h, libmpi.so.12.0.0)]
+69 2367 (intel_tr.._types.h) [2367 (intel_transport_types.h, libmpi.so.12.0.0)]
+70 0 (mlx_ep.c, libmlx-fi.so)
+71 2683 (mpi_wrapper.c, libmpitrace-4.0.0.so)
+72 196 (mpl_time.._cycle.c) [196 (mpl_timer_linux86_cycle.c, libmpi.so.12.0.0)]
+73 21 (mpl_time.._cycle.h) [21 (mpl_timer_linux86_cycle.h, libmpi.so.12.0.0)]
+74 84 (ofi_comm.c, libmpi.so.12.0.0)
+75 911 (ofi_events.c, libmpi.so.12.0.0)
+76 912 (ofi_events.c, libmpi.so.12.0.0)
+77 914 (ofi_events.c, libmpi.so.12.0.0)
+78 915 (ofi_events.c, libmpi.so.12.0.0)
+79 936 (ofi_events.c, libmpi.so.12.0.0)
+80 17 (ofi_progress.c, libmpi.so.12.0.0)
+81 28 (ofi_progress.c, libmpi.so.12.0.0)
+82 33 (ofi_progress.c, libmpi.so.12.0.0)
+83 39 (ofi_progress.c, libmpi.so.12.0.0)
+84 41 (ofi_progress.c, libmpi.so.12.0.0)
+85 42 (ofi_progress.c, libmpi.so.12.0.0)
+86 243 (ofi_recv.h, libmpi.so.12.0.0)
+87 244 (ofi_recv.h, libmpi.so.12.0.0)
+88 247 (ofi_recv.h, libmpi.so.12.0.0)
+89 250 (ofi_recv.h, libmpi.so.12.0.0)
+90 252 (ofi_recv.h, libmpi.so.12.0.0)
+91 256 (ofi_recv.h, libmpi.so.12.0.0)
+92 257 (ofi_recv.h, libmpi.so.12.0.0)
+93 259 (ofi_recv.h, libmpi.so.12.0.0)
+94 38 (opa_gcc_..64_ops.h) [38 (opa_gcc_intel_32_64_ops.h, libmpi.so.12.0.0)]
+95 0 (osd.c, libmlx-fi.so)
+96 12 (posix_progress.h, libmpi.so.12.0.0)
+97 13 (posix_progress.h, libmpi.so.12.0.0)
+98 14 (posix_progress.h, libmpi.so.12.0.0)
+99 89 (shm_init.c, libmpi.so.12.0.0)
+100 106 (shm_noinline.h, libmpi.so.12.0.0)
+101 0 (util_cq.c, libmlx-fi.so)
+
+
+EVENT_TYPE
+0 41000000 Object addresses for task 1.1
+VALUES
+1 completed.7294 [0x00642248-0x00642248]
+2 main$$LSDA [0x0043dff8-0x0043e01a]
+3 _ZN17_INTERNAL562b0b57St8__ioinitE [0x0064224c-0x0064224c]
+4 _ZN6DomainC1Eiiiiiiiii$$LSDA [0x0043e01c-0x0043e034]
+5 _ZNSt6vectorIdSaIdEED1Ev$$LSDA [0x0043e038-0x0043e049]
+6 _ZNSt12_Vector_baseIdSaIdEED1Ev$$LSDA [0x0043e04c-0x0043e05d]
+7 _ZNSt6vectorIiSaIiEED1Ev$$LSDA [0x0043e060-0x0043e071]
+8 _ZNSt12_Vector_baseIiSaIiEED1Ev$$LSDA [0x0043e074-0x0043e085]
+9 EXP_MSK3 [0x004314f0-0x004314f7]
+10 EXP_MSK2 [0x004314f8-0x004314ff]
+11 EXP_MASK [0x00431500-0x00431507]
+12 SIG_MASK [0x00431508-0x0043150f]
+13 rcp_table [0x00431510-0x0043160f]
+14 coeff_table [0x004314b0-0x004314ef]
+15 cbrt_table [0x00431610-0x0043190f]
+16 D_table [0x00431910-0x00431c0f]
+17 SCALE63 [0x00431c10-0x00431c17]
+18 ZERON [0x00431c18-0x00431c1f]
+19 INF [0x00431c20-0x00431c27]
+20 NEG_INF [0x00431c28-0x00431c2f]
+21 EXP_MSK3 [0x00431c70-0x00431c77]
+22 EXP_MSK2 [0x00431c78-0x00431c7f]
+23 EXP_MASK [0x00431c80-0x00431c87]
+24 SIG_MASK [0x00431c88-0x00431c8f]
+25 rcp_table [0x00431c90-0x00431d8f]
+26 coeff_table [0x00431c30-0x00431c6f]
+27 cbrt_table [0x00431d90-0x0043208f]
+28 D_table [0x00432090-0x0043238f]
+29 SCALE63 [0x00432390-0x00432397]
+30 ZERON [0x00432398-0x0043239f]
+31 INF [0x004323a0-0x004323a7]
+32 NEG_INF [0x004323a8-0x004323af]
+33 SIGMASK [0x004323b0-0x004323bf]
+34 ONEMASK [0x004323c0-0x004323cf]
+35 rcp_t1 [0x00434e50-0x0043525f]
+36 log2_t1 [0x004323d0-0x00432bdf]
+37 HALFSIG [0x00435260-0x00435267]
+38 rcp_t2 [0x00435268-0x00435677]
+39 log2_t2 [0x00432be0-0x004333ef]
+40 LHN [0x00435678-0x0043567f]
+41 rcp_t3 [0x00435680-0x00435e8f]
+42 log2_t3 [0x004333f0-0x004343ff]
+43 clv [0x004345f0-0x0043460f]
+44 Shifter [0x00435e90-0x00435e9f]
+45 exp2_tbl [0x00434610-0x00434e0f]
+46 cev [0x00434e10-0x00434e37]
+47 ABSVALMASK [0x00434e40-0x00434e4f]
+48 NEG_ZERO [0x00435ea0-0x00435ea7]
+49 NEG_INF [0x00435ea8-0x00435eaf]
+50 sNaN [0x00435eb0-0x00435eb7]
+51 INF [0x00435eb8-0x00435ebf]
+52 EMIN [0x00435ec0-0x00435ec7]
+53 HIGHSIGMASK [0x00435ed0-0x00435edf]
+54 LOG2_E [0x00435ee0-0x00435eef]
+55 coeff [0x00435ef0-0x00435f4f]
+56 L_tbl [0x00435f50-0x00437f5f]
+57 HIGHMASK_Y [0x00438150-0x0043815f]
+58 T_exp [0x00438160-0x0043915f]
+59 e_coeff [0x00439360-0x0043938f]
+60 HALFMASK [0x004393b0-0x004393bf]
+61 log2 [0x004393c0-0x004393cf]
+62 coeff_h [0x00439390-0x0043939f]
+63 HIGHMASK_LOG_X [0x004393a0-0x004393af]
+64 message_catalog [0x006422c0-0x006422c7]
+65 __libm_err_code_mapping_table [0x00439930-0x00439f7f]
+66 __libm_err_data_table [0x00439f80-0x0043a027]
+67 __libm_err_response_table [0x0043a028-0x0043a0c3]
+68 __libm_action_list [0x00439898-0x0043992f]
+69 __libm_key_value [0x0043a0c4-0x0043a1f3]
+70 __libm_errno_table.377.0.11 [0x00439878-0x0043987f]
+71 __libirc_isa_info_initialized [0x006429a8-0x006429ab]
+72 proc_info_features [0x006422e0-0x00642987]
+73 _real_memset_impl [0x006429c0-0x006429c7]
+74 message_catalog [0x00642de0-0x00642de7]
+75 get_msg_buf [0x006429e0-0x00642bdf]
+76 print_buf [0x00642be0-0x00642ddf]
+77 __libirc_cache_tbl [0x00642e00-0x00642e3f]
+78 __libirc_tmp [0x00642e48-0x00642e4b]
+79 __FRAME_END__ [0x0043dff4-0x0043dff3]
+80 __GNU_EH_FRAME_HDR [0x0043bb78-0x0043bb77]
+81 _IO_stdin_used [0x004306c0-0x004306c3]
+82 __dso_handle [0x004306c8-0x004306c7]
+83 __intel_cpu_feature_indicator_x [0x00642998-0x006429a7]
+84 __libirc_mem_ops_method [0x00642e4c-0x00642e4f]
+85 __intel_cpu_feature_indicator [0x00642988-0x00642997]
+86 stderr@@GLIBC_2.2.5 [0x00642240-0x00642247]
+87 _end [0x00642e60-0x00642e5f]
+88 __bss_start [0x00642240-0x0064223f]
+89 __libirc_largest_cachelinesize [0x00642e40-0x00642e47]
+90 __libm_feature_flag [0x00642280-0x00642283]
+
+EVENT_TYPE
+9    40000018    Tracing mode:
+VALUES
+1      Detailed
+2      CPU Bursts
+
+
+EVENT_TYPE
+0    69000000    GASPI call
+VALUES
+0 Outside GASPI
+
+
+EVENT_TYPE
+0    69000001    GASPI size
+
+
+EVENT_TYPE
+0    69000002    GASPI rank
+VALUES
+
+
+EVENT_TYPE
+0    69000004    GASPI notification_id
+VALUES
+
+
+EVENT_TYPE
+0    69000003    GASPI queue
+VALUES
+
+

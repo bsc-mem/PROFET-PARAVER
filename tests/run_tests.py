@@ -11,6 +11,15 @@ this file. If not, please visit: https://opensource.org/licenses/BSD-3-Clause
 
 import os
 import sys
+import argparse
+import json
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-nc', '--no-compile', dest='no_compile', action='store_true',
+                        help='Do not compile before running tests.')
+    return parser.parse_args()
 
 
 def test_with_parameters(raw_file: str, processed_file: str, config_file: str, precision: int, nnodes: int, nsockets: int, nmcs: int,
@@ -46,47 +55,36 @@ def test_with_parameters(raw_file: str, processed_file: str, config_file: str, p
 
 
 if __name__ == "__main__":
-    # compile the program in order to make sure we test with latest changes in the code
-    print('Compiling PROFET...')
-    os.system('make')
+    args = parse_args()
 
-    in_traces = [
-        'test1.prv',
-        'test2.prv',
-        'test3.prv',
-        'lulesh_4+4_with_uncores_sockets1+2.chop_5it.prv',
-        'lulesh_7+1_with_uncores_sockets1+2.chop8.prv',
-    ]
-    configs = [
-        'epeec.json',
-        'epeec.json',
-        'epeec.json',
-        'epeec.json',
-        'epeec.json',
-    ]
+    if not args.no_compile:
+        # compile the program in order to make sure we test with latest changes in the code
+        print('Compiling PROFET...')
+        os.system('make')
 
-    nnodes = [1, 1, 1, 1, 1]
-    nsockets = [1, 1, 1, 2, 2]
-    nmcs = [3, 3, 3, 6, 6]
-    # decimal precision
-    precision = 2
+    with open('tests/test_traces.json') as json_file:
+        test_traces = json.load(json_file)
 
     # process traces per MC
     print('\n=====================================================')
     print('                   Memory Channel')
     print('=====================================================\n')
-    for i in range(len(in_traces)):
-        print(f'{in_traces[i]}')
-        test_with_parameters(f'tests/traces/{in_traces[i]}', f'tests/out_traces/{in_traces[i]}', f'configs/{configs[i]}',
-                             precision, nnodes[i], nsockets[i], nmcs[i], per_socket=False)
+    for trace_config in test_traces:
+        print(f'{trace_config["trace_file"]}')
+        test_with_parameters(f'tests/traces/{trace_config["trace_file"]}', f'tests/out_traces/{trace_config["trace_file"]}',
+                             f'configs/{trace_config["config"]}', trace_config["precision"], trace_config["nnodes"],
+                             trace_config["nsockets"], trace_config["nmcs"], per_socket=False)
         print('\n')
             
     # process traces per socket
     print('=====================================================')
     print('                      SOCKET')
     print('=====================================================\n')
-    for i in range(len(in_traces)):
-        print(f'{in_traces[i]}')
-        test_with_parameters(f'tests/traces/{in_traces[i]}', f'tests/out_traces_per_socket/{in_traces[i]}', f'configs/{configs[i]}',
-                             precision, nnodes[i], nsockets[i], -1, per_socket=True)
+    for trace_config in test_traces:
+        print(f'{trace_config["trace_file"]}')
+        test_with_parameters(f'tests/traces/{trace_config["trace_file"]}', f'tests/out_traces_per_socket/{trace_config["trace_file"]}',
+                             f'configs/{trace_config["config"]}', trace_config["precision"], trace_config["nnodes"],
+                             trace_config["nsockets"], -1, per_socket=True)
+        # test_with_parameters(f'tests/traces/{in_traces[i]}', f'tests/out_traces_per_socket/{in_traces[i]}', f'configs/{configs[i]}',
+        #                      precision, nnodes[i], nsockets[i], -1, per_socket=True)
         print('\n')

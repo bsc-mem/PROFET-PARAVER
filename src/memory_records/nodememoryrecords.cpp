@@ -120,11 +120,11 @@ vector<float> NodeMemoryRecords::processMemoryMetrics(ProfetPyAdapter &profetPyA
   auto [readBW, writeBW] = sockets[socketID].processBandwidths(mcID, cacheLineBytes, allowEmptyQueues);
 
   if (readBW == -1 || writeBW == -1) {
-    return { -1, -1, -1, -1, -1, -1 };
+    return { -1, -1, -1, -1, -1, -1, -1 };
   }
 
   if (readBW + writeBW == 0) {
-    return { -1, 0, -1, -1, -1, -1 };
+    return { -1, 0, -1, -1, -1, -1, -1 };
   }
 
   float writeRatio = writeBW / (readBW + writeBW);

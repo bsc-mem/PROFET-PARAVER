@@ -109,11 +109,10 @@ class TestOutput(unittest.TestCase):
 
     def test_consecutive_timestamps(self):
         # assert that timestamps are ascendingly sorted
-        l1, sl = list(self.out_df['time']), list(self.out_df['time'].sort_values())
-        all_diffs = np.array(l1) == np.array(sl)
+        all_diffs = self.out_df['time'].diff().dropna() < 0
         if any(all_diffs):
             first_diff_idx = np.where(all_diffs)[0][0]
-            print(l1[first_diff_idx], sl[first_diff_idx])
+            print(f'First unsorted timestamp: {self.out_df["time"].iloc[first_diff_idx]}, out of {sum(all_diffs)} unsorted elements.')
         self.assertEqual(list(self.out_df['time']), list(self.out_df['time'].sort_values()))
 
     def test_contained_timestamps(self):

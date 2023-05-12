@@ -338,12 +338,12 @@ bool processAndWriteMemoryMetricsIfPossible(vector<NodeMemoryRecords> &nodes,
     // Convert metrics to int because prv files do not accept decimals. The number of decimal places is specified in the pcf file
     // and it is stored in the PRECISION variable
     vector<int> metrics_int(metrics.size());
+    float pow_10 = pow(10.0f, (float)PRECISION);
     for (long unsigned int i = 0; i < metrics.size(); i++) {
-      // Do not allow negative metric values, they mean the calculated bandwidth is not theoretically possible.
+      // Do not allow negative metric values, they mean the calculated metric is not (theoretically) possible.
       // Warnings are already printed in these cases
       if (metrics[i] >= 0) {
         // Round metric value to the closest int times 10^precision, paraver will then put the decimals properly
-        float pow_10 = pow(10.0f, (float)PRECISION);
         metrics_int[i] = round(metrics[i] * pow_10);
       }
     }
