@@ -38,5 +38,13 @@
         "nsockets": 2,
         "nmcs": 6,
         "precision": 2
+    },
+    {
+        "trace_file": "lulesh2.0_64p_8N_2unc.chop3.prv",
+        "config": "nord3.json",
+        "nnodes": 8,
+        "nsockets": 2,
+        "nmcs": 4,
+        "precision": 2
     }
 ]
