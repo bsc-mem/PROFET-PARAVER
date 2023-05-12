@@ -419,6 +419,9 @@ int main(int argc, char *argv[]) {
 
   cout << "Running PROFET..." << endl;
 
+  // Init progress bar
+  updateProgress(0.01);
+
   // Open input trace file
   fstream traceFile(inFile);
   if (!traceFile.good()) {
