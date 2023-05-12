@@ -134,6 +134,8 @@ def get_memory_properties_from_bw(curves_path: str, cpu_freq: float, write_ratio
     # lead-off latency
     lead_off_lat = curve_obj.get_lead_off_lat()
     stress_score = curve_obj.get_stress_score(bandwidth, bw_units='GB/s')
+    if stress_score is None:
+        stress_score = -1
     # print(bandwidth, stress_score)
 
     # print(f'Lat: {pred_lat}; Max. Lat: {max_lat}; Max. BW: {max_bw}; Lead-off Lat: {lead_off_lat}')
