@@ -417,7 +417,9 @@ int main(int argc, char *argv[]) {
   // Read config file
   auto [memorySystem, cpuModel, cpuFreqGHz, cacheLineBytes] = readConfigFile(configFile);
 
-  cout << "Running PROFET..." << endl;
+  if (displayText){
+    cout << "Running PROFET..." << endl;
+  }
 
   // Init progress bar
   updateProgress(0.01);
