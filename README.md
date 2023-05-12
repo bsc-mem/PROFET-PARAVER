@@ -14,13 +14,17 @@ Follow the steps below to install PROFET-PARAVER:
 	cd PROFET-PARAVER/
 	```
 
-2. In case you've cloned the directory without the --recursive-submodules flag, you can still install the submodules by running:
+2. In case you've cloned the directory without the `--recursive-submodules` flag, you can still install the submodules by running:
 
-	```git submodule update --init --recursive```
+	```
+	git submodule update --init --recursive
+	```
 
 3. Install the Python dependencies specified in the `requirements.txt` file:
 
-	```pip install -r requirements.txt```
+	```
+	pip install -r requirements.txt
+	```
 
 Compile the source code to create a binary `profet` file in the `bin` folder:
 
