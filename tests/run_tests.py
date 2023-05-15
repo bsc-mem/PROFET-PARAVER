@@ -71,11 +71,16 @@ if __name__ == "__main__":
     print('=====================================================\n')
     for trace_config in test_traces:
         print(f'{trace_config["trace_file"]}')
-        test_with_parameters(f'tests/traces/{trace_config["trace_file"]}', f'tests/out_traces/{trace_config["trace_file"]}',
-                             f'configs/{trace_config["config"]}', trace_config["precision"], trace_config["nnodes"],
-                             trace_config["nsockets"], trace_config["nmcs"], per_socket=True)
+        if 'test1' in trace_config['trace_file']:
+            test_with_parameters(f'tests/traces/{trace_config["trace_file"]}', f'tests/out_traces/{trace_config["trace_file"]}',
+                                f'configs/{trace_config["config"]}', trace_config["precision"], trace_config["nnodes"],
+                                trace_config["nsockets"], trace_config["nmcs"], per_socket=True)
+        else:
+            test_with_parameters(f'tests/traces/{trace_config["trace_file"]}', f'tests/out_traces/{trace_config["trace_file"]}',
+                                f'configs/{trace_config["config"]}', trace_config["precision"], trace_config["nnodes"],
+                                trace_config["nsockets"], trace_config["nmcs"], per_socket=False)
         print('\n')
-
+            
     # process traces per socket
     print('=====================================================')
     print('                      SOCKET')
