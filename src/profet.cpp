@@ -65,12 +65,12 @@ void printHelp() {
   //         "\t\tOutput prv file\n"
   //         "-c, --config=FILE\n"
   //         "\t\tConfiguration file\n"
-  cout << "-s, --socket\n"
-          "\t\tCompute memory stress metrics per socket instead of per memory [DIMM/channel/controller]\n"
+  cout << "-m, --memory_channel\n"
+          "\t\tCalculate memory stress metrics per memory channel, rather than per socket (default)\n"
           "-w, --no_warnings\n"
-          "\t\tDo not show warning messages\n"
+          "\t\tSuppress warning messages\n"
           "-t, --no_text\n"
-          "\t\tDo not show info text messages\n"
+          "\t\tSuppress informational text messages\n"
           "-d, --no_dash\n"
           "\t\tDo not run dash (interactive plots)\n"
           "-p, --print_supported_systems\n"
@@ -82,12 +82,12 @@ void printHelp() {
 
 tuple<string, string, string, bool, int, int, int> processArgs(int argc, char** argv) {
   // const char* const short_opts = "i:o:c:w";
-  const char* const short_opts = "swtdph";
+  const char* const short_opts = "mwtdph";
   const option long_opts[] = {
           // {"input", required_argument, nullptr, 'i'},
           // {"output", required_argument, nullptr, 'o'},
           // {"config", required_argument, nullptr, 'c'},
-          {"socket", no_argument, nullptr, 's'},
+          {"memory_channel", no_argument, nullptr, 'm'},
           {"no_warnings", no_argument, nullptr, 'w'},
           {"no_text", no_argument, nullptr, 't'},
           {"no_dash", no_argument, nullptr, 'd'},
@@ -99,15 +99,15 @@ tuple<string, string, string, bool, int, int, int> processArgs(int argc, char** 
   int displayText = 1; // whether to display info text or not (it need to be an integer for sending it to python (booleans don't work))
   int displayWarnings = 1; // whether to display warnings or not (it need to be an integer for sending it to python (booleans don't work))
   int runDash = 1; // whether to run dash or not (it need to be an integer for sending it to python (booleans don't work))
-  bool perSocket = false;
+  bool perSocket = true;
   bool showSupportedSystems = false;
   bool showHelp = false;
   int opt;
 
   while ((opt = getopt_long(argc, argv, short_opts, long_opts, nullptr)) != -1) {
     switch (opt) {
-      case 's':
-          perSocket = true;
+      case 'm':
+          perSocket = false;
           break;
 
       case 'w':
