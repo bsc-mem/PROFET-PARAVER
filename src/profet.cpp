@@ -32,7 +32,7 @@ namespace fs = std::filesystem;
 #include "memory_records/socketmemoryrecords.h"
 #include "memory_records/nodememoryrecords.h"
 #include "cpp_py_adaptation/profetpyadapter.h"
-#include "rowfileparser.h" 
+#include "rowfileparser.h"
 
 
 
