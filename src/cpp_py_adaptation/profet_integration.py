@@ -62,9 +62,24 @@ def check_curves_exist(df: pd.DataFrame, cpu_model: str, memory_system: str):
 #         raise Exception(err_msg)
 
 
+def read_db(py_profet_path: str) -> pd.DataFrame:
+    # read DB
+    df = pd.read_csv(os.path.join(py_profet_path, 'cpu_memory_db.csv'))
+    return df
+
+
+def print_supported_systems(py_profet_path: str) -> None:
+    # print supported systems from DB
+    df = read_db(py_profet_path)
+    print('CPU - DRAM')
+    print('-----------------')
+    for _, row in df.iterrows():
+        print(f"{row['pmu_type']} {row['cpu_microarchitecture']} {row['cpu_model']} - {row['memory_system']}")
+
+
 def get_row_from_db(py_profet_path: str, cpu_model: str, memory_system: str) -> dict:
     # get PMU type and microarchitecture from DB
-    df = pd.read_csv(os.path.join(py_profet_path, 'cpu_memory_db.csv'))
+    df = read_db(py_profet_path)
     check_curves_exist(df, cpu_model, memory_system)
 
     filt_df = df[(df['cpu_model'] == cpu_model) & (df['memory_system'] == memory_system)]

@@ -58,8 +58,8 @@ Parameters:
 	-d, --no_dash
 		Do not run dash (interactive plots).
 		
-	--supported_systems
-		Show supported memory systems.
+	-p, --print_supported_systems
+		Show supported systems.
 		
 	-h, --help, ?
 		Show help.
