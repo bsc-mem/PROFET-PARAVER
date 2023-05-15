@@ -14,20 +14,17 @@ using namespace std;
 
 ProfetPyAdapter::ProfetPyAdapter() {}
 
+
+ProfetPyAdapter::ProfetPyAdapter(string projectPath) {
+    Py_Initialize();  // initialize Python
+    setPathVariables(projectPath);
+    loadProfetIntegrationModule();
+}
+
 ProfetPyAdapter::ProfetPyAdapter(string projectPath, string cpuModel, string memorySystem) {
     Py_Initialize();  // initialize Python
-
-    this->projectPath = projectPath;
-    projectSrcPath = projectPath + "src/";
-    profetIntegrationPath = projectSrcPath + "cpp_py_adaptation/";
-    pyProfetPath = projectSrcPath + "py_profet/";
-    // Set relative path (current directory) for importing modules
-    sysPath = PySys_GetObject((char*)"path");
-    PyList_Append(sysPath, PyUnicode_FromString(profetIntegrationPath.c_str()));
-
-    // Load PROFET integration module
-    profetIntegrationModule = PyImport_ImportModule("profet_integration");
-    raisePyErrorIfNull(profetIntegrationModule, "ERROR when importing \"profet_integration\" module.");
+    setPathVariables(projectPath);
+    loadProfetIntegrationModule();
 
     this->cpuModel = cpuModel;
     this->memorySystem = memorySystem;
@@ -41,6 +38,25 @@ ProfetPyAdapter::ProfetPyAdapter(string projectPath, string cpuModel, string mem
 ProfetPyAdapter::~ProfetPyAdapter() {
     // Stop python interpreter
     Py_Finalize();
+}
+
+void ProfetPyAdapter::setPathVariables(string projectPath) {
+    this->projectPath = projectPath;
+    projectSrcPath = projectPath + "src/";
+    profetIntegrationPath = projectSrcPath + "cpp_py_adaptation/";
+    pyProfetPath = projectSrcPath + "py_profet/";
+}
+
+void ProfetPyAdapter::loadProfetIntegrationModule() {
+    // profetIntegrationPath must be initialized
+
+    // Set relative path (current directory) for importing modules
+    sysPath = PySys_GetObject((char*)"path");
+    PyList_Append(sysPath, PyUnicode_FromString(profetIntegrationPath.c_str()));
+
+    // Load PROFET integration module
+    profetIntegrationModule = PyImport_ImportModule("profet_integration");
+    raisePyErrorIfNull(profetIntegrationModule, "ERROR when importing \"profet_integration\" module.");
 }
 
 int ProfetPyAdapter::getPyDictInt(PyObject* pyDict, string attribute) {
@@ -87,6 +103,12 @@ void ProfetPyAdapter::checkSystemSupported() {
     PyObject* pArgs = Py_BuildValue("(sss)", pyProfetPath.c_str(), cpuModel.c_str(), memorySystem.c_str());
     PyObject_CallObject(checkSystemSupportedFn, pArgs);
     // raisePyErrorIfNull(curvesPath, "ERROR checking  values.");
+}
+
+void ProfetPyAdapter::printSupportedSystems() {
+    PyObject* printSupportedSystemsFn = getFunctionFromProfetIntegration("print_supported_systems");
+    PyObject* pArgs = Py_BuildValue("(s)", pyProfetPath.c_str());
+    PyObject_CallObject(printSupportedSystemsFn, pArgs);
 }
 
 tuple<float, float, float, float, float> ProfetPyAdapter::computeMemoryMetrics(float cpuFreqGHz, float writeRatio, float bandwidth, bool displayWarnings) {

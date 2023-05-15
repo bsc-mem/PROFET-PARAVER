@@ -73,18 +73,16 @@ void printHelp() {
           "\t\tDo not show info text messages\n"
           "-d, --no_dash\n"
           "\t\tDo not run dash (interactive plots)\n"
+          "-p, --print_supported_systems\n"
+          "\t\tShow supported systems\n"
           "-h, --help, ?\n"
           "\t\tShow help\n";
   exit(1);
 }
 
 tuple<string, string, string, bool, int, int, int> processArgs(int argc, char** argv) {
-  if (argc < 3) {
-    printHelp();
-  }
-
   // const char* const short_opts = "i:o:c:w";
-  const char* const short_opts = "swtdh";
+  const char* const short_opts = "swtdph";
   const option long_opts[] = {
           // {"input", required_argument, nullptr, 'i'},
           // {"output", required_argument, nullptr, 'o'},
@@ -93,6 +91,7 @@ tuple<string, string, string, bool, int, int, int> processArgs(int argc, char** 
           {"no_warnings", no_argument, nullptr, 'w'},
           {"no_text", no_argument, nullptr, 't'},
           {"no_dash", no_argument, nullptr, 'd'},
+          {"print_supported_systems", no_argument, nullptr, 'p'},
           {"help", no_argument, nullptr, 'h'},
           {nullptr, no_argument, nullptr, 0}
   };
@@ -101,6 +100,8 @@ tuple<string, string, string, bool, int, int, int> processArgs(int argc, char** 
   int displayWarnings = 1; // whether to display warnings or not (it need to be an integer for sending it to python (booleans don't work))
   int runDash = 1; // whether to run dash or not (it need to be an integer for sending it to python (booleans don't work))
   bool perSocket = false;
+  bool showSupportedSystems = false;
+  bool showHelp = false;
   int opt;
 
   while ((opt = getopt_long(argc, argv, short_opts, long_opts, nullptr)) != -1) {
@@ -121,12 +122,27 @@ tuple<string, string, string, bool, int, int, int> processArgs(int argc, char** 
           runDash = 0;
           break;
 
+      case 'p':
+          showSupportedSystems = true;
+          break;
+
       case 'h': // -h or --help
       case '?': // Unrecognized option
       default:
-          printHelp();
+          showHelp = true;
           break;
     }
+  }
+
+  if (showSupportedSystems) {
+    // ProfetPyAdapter::printSupportedSystems();
+    ProfetPyAdapter adapter(PROJECT_PATH);
+    adapter.printSupportedSystems();
+    exit(1);
+  }
+
+  if (argc < 3 or showHelp) {
+    printHelp();
   }
 
   if (optind != argc - 3) {

@@ -37,8 +37,12 @@ class ProfetPyAdapter {
     PyObject* profetIntegrationModule;
 
     ProfetPyAdapter();
+    ProfetPyAdapter(string projectPath);
     ProfetPyAdapter(string projectPath, string cpuModel, string memorySystem);
     ~ProfetPyAdapter();
+
+    void setPathVariables(string projectPath);
+    void loadProfetIntegrationModule();
 
     int getPyDictInt(PyObject* pyDict, string attribute);
     float getPyDictFloat(PyObject* pyDict, string attribute);
@@ -47,6 +51,8 @@ class ProfetPyAdapter {
     PyObject* getRowFromDB();
     string getCurvesPath();
     void checkSystemSupported();
+
+    void printSupportedSystems();
 
     tuple<float, float, float, float, float> computeMemoryMetrics(float cpuFreqGHz, float writeRatio, float bandwidth, bool displayWarnings);
 
