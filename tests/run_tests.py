@@ -19,11 +19,13 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-nc', '--no-compile', dest='no_compile', action='store_true',
                         help='Do not compile before running tests.')
+    parser.add_argument('-ff', '--fail-fast', dest='fail_fast', action='store_true',
+                        help='Make tests fail fast with an exception.')
     return parser.parse_args()
 
 
 def test_with_parameters(raw_file: str, processed_file: str, config_file: str, precision: int, nnodes: int, nsockets: int, nmcs: int,
-                         no_warnings: bool = True, no_text: bool = True, per_socket: bool = False):
+                         no_warnings: bool = True, no_text: bool = True, per_socket: bool = False, fail_fast: bool = True):
     # perform functional test with the given parameters
     # raw_file: raw trace file path (file with memory read and write counters, the one we use for processing in PROFET)
     # processed_file: processed file path after running PROFET
@@ -52,6 +54,8 @@ def test_with_parameters(raw_file: str, processed_file: str, config_file: str, p
 
     # run with command instead of importing the module. It is much better like this because of the way unittests work.
     tests_exit_code = os.system(f'python3 tests/functional_test.py {raw_file} {processed_file} {precision} {nnodes} {nsockets} {nmcs}')
+    if fail_fast and tests_exit_code != 0:
+        raise Exception('Functional tests failed.')
 
 
 if __name__ == "__main__":
@@ -73,7 +77,7 @@ if __name__ == "__main__":
         print(f'{trace_config["trace_file"]}')
         test_with_parameters(f'tests/traces/{trace_config["trace_file"]}', f'tests/out_traces/{trace_config["trace_file"]}',
                              f'configs/{trace_config["config"]}', trace_config["precision"], trace_config["nnodes"],
-                             trace_config["nsockets"], trace_config["nmcs"], per_socket=False)
+                             trace_config["nsockets"], trace_config["nmcs"], per_socket=False, fail_fast=args.fail_fast)
         print('\n')
             
     # process traces per socket
@@ -84,7 +88,7 @@ if __name__ == "__main__":
         print(f'{trace_config["trace_file"]}')
         test_with_parameters(f'tests/traces/{trace_config["trace_file"]}', f'tests/out_traces_per_socket/{trace_config["trace_file"]}',
                              f'configs/{trace_config["config"]}', trace_config["precision"], trace_config["nnodes"],
-                             trace_config["nsockets"], -1, per_socket=True)
+                             trace_config["nsockets"], -1, per_socket=True, fail_fast=args.fail_fast)
         # test_with_parameters(f'tests/traces/{in_traces[i]}', f'tests/out_traces_per_socket/{in_traces[i]}', f'configs/{configs[i]}',
         #                      precision, nnodes[i], nsockets[i], -1, per_socket=True)
         print('\n')
