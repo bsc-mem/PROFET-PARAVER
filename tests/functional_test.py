@@ -154,4 +154,6 @@ if __name__ == '__main__':
     TestOutput.PRECISION = int(sys.argv.pop())
     TestOutput.PROCESSED_FILE = sys.argv.pop()
     TestOutput.RAW_FILE = sys.argv.pop()
-    unittest.main()
+
+    runner = unittest.TextTestRunner(failfast=True)
+    unittest.main(testRunner=runner)

@@ -20,4 +20,4 @@ jobs:
     - name: make
       run: make
     - name: run-tests
-      run: python3 tests/run_tests.py -nc
+      run: python3 tests/run_tests.py --no-compile --fail-fast
