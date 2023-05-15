@@ -13,6 +13,7 @@ import os
 import sys
 import argparse
 import json
+import subprocess
 
 
 def parse_args():
@@ -52,6 +53,8 @@ def test_with_parameters(raw_file: str, processed_file: str, config_file: str, p
 
     # run with command instead of importing the module. It is much better like this because of the way unittests work.
     tests_exit_code = os.system(f'python3 tests/functional_test.py {raw_file} {processed_file} {precision} {nnodes} {nsockets} {nmcs}')
+    if tests_exit_code != 0:
+        raise Exception('Functional tests failed.')
 
 
 if __name__ == "__main__":
