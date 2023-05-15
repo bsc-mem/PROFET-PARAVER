@@ -23,7 +23,7 @@ def parse_args():
 
 
 def test_with_parameters(raw_file: str, processed_file: str, config_file: str, precision: int, nnodes: int, nsockets: int, nmcs: int,
-                         no_warnings: bool = True, no_text: bool = True, per_socket: bool = False):
+                         no_warnings: bool = True, no_text: bool = True, per_socket: bool = True):
     # perform functional test with the given parameters
     # raw_file: raw trace file path (file with memory read and write counters, the one we use for processing in PROFET)
     # processed_file: processed file path after running PROFET
@@ -37,8 +37,8 @@ def test_with_parameters(raw_file: str, processed_file: str, config_file: str, p
         flags += '--no_warnings '
     if no_text:
         flags += '--no_text '
-    if per_socket:
-        flags += '--socket '
+    if not per_socket:
+        flags += '--memory_channel '
         # correct_out_traces_dir = 'correct_out_traces_per_socket'
 
     profet_command = f'./bin/profet {raw_file} {processed_file} {config_file} {flags}'
