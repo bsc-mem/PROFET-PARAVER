@@ -46,8 +46,8 @@ Parameters:
 
 # Options
 
-	-s, --socket
-		Calculate memory stress metrics per socket, rather than per memory channel (default).
+	-m, --memory_channel
+		Calculate memory stress metrics per memory channel, rather than per socket (default).
 		
 	-w, --no_warnings
 		Suppress warning messages.

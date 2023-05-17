@@ -25,7 +25,7 @@ def parse_args():
 
 
 def test_with_parameters(raw_file: str, processed_file: str, config_file: str, precision: int, nnodes: int, nsockets: int, nmcs: int,
-                         no_warnings: bool = True, no_text: bool = True, per_socket: bool = False, fail_fast: bool = True):
+                         no_warnings: bool = True, no_text: bool = True, per_socket: bool = True, fail_fast: bool = True):
     # perform functional test with the given parameters
     # raw_file: raw trace file path (file with memory read and write counters, the one we use for processing in PROFET)
     # processed_file: processed file path after running PROFET
@@ -39,8 +39,8 @@ def test_with_parameters(raw_file: str, processed_file: str, config_file: str, p
         flags += '--no_warnings '
     if no_text:
         flags += '--no_text '
-    if per_socket:
-        flags += '--socket '
+    if not per_socket:
+        flags += '--memory_channel '
         # correct_out_traces_dir = 'correct_out_traces_per_socket'
 
     profet_command = f'./bin/profet {raw_file} {processed_file} {config_file} {flags}'
@@ -75,7 +75,7 @@ if __name__ == "__main__":
     print('=====================================================\n')
     for trace_config in test_traces:
         print(f'{trace_config["trace_file"]}')
-        test_with_parameters(f'tests/traces/{trace_config["trace_file"]}', f'tests/out_traces/{trace_config["trace_file"]}',
+        test_with_parameters(f'tests/traces/{trace_config["trace_file"]}', f'tests/out_traces_per_mc/{trace_config["trace_file"]}',
                              f'configs/{trace_config["config"]}', trace_config["precision"], trace_config["nnodes"],
                              trace_config["nsockets"], trace_config["nmcs"], per_socket=False, fail_fast=args.fail_fast)
         print('\n')
