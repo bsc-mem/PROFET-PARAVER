@@ -202,7 +202,8 @@ class Curve:
         angle = math.degrees(math.atan2((lat_post - lat_prev), (bw_post - bw_prev)))
         score_angle = angle / 90
         score_latency = (latency - lead_off_latency) / (max_latency - lead_off_latency)
-        score = (score_angle + score_latency) / 2
+        latency_factor = 0.8
+        score = latency_factor * score_latency + (1 - latency_factor) * score_angle
         # score 1 is the worst and 0 is the best
         return score
 
