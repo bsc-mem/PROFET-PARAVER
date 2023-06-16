@@ -73,8 +73,8 @@ void printHelp() {
           "\t\tSuppress warning messages\n"
           "-t, --no-text\n"
           "\t\tSuppress informational text messages\n"
-          "-d, --no-dash\n"
-          "\t\tDo not run dash (interactive plots)\n"
+          "-I, --plot-interactive\n"
+          "\t\tRun interactive plots\n"
           "-p, --print-supported-systems\n"
           "\t\tShow supported systems\n"
           "-h, --help, ?\n"
@@ -84,7 +84,7 @@ void printHelp() {
 
 tuple<string, string, string, bool, bool, int, int, int> processArgs(int argc, char** argv) {
   // const char* const short_opts = "i:o:c:w";
-  const char* const short_opts = "mewtdph";
+  const char* const short_opts = "mewtIph";
   const option long_opts[] = {
           // {"input", required_argument, nullptr, 'i'},
           // {"output", required_argument, nullptr, 'o'},
@@ -93,7 +93,7 @@ tuple<string, string, string, bool, bool, int, int, int> processArgs(int argc, c
           {"exclude-original", no_argument, nullptr, 'e'},
           {"no-warnings", no_argument, nullptr, 'w'},
           {"no-text", no_argument, nullptr, 't'},
-          {"no-dash", no_argument, nullptr, 'd'},
+          {"plot-interactive", no_argument, nullptr, 'I'},
           {"print-supported-systems", no_argument, nullptr, 'p'},
           {"help", no_argument, nullptr, 'h'},
           {nullptr, no_argument, nullptr, 0}
@@ -101,7 +101,7 @@ tuple<string, string, string, bool, bool, int, int, int> processArgs(int argc, c
   
   int displayText = 1; // whether to display info text or not (it need to be an integer for sending it to python (booleans don't work))
   int displayWarnings = 1; // whether to display warnings or not (it need to be an integer for sending it to python (booleans don't work))
-  int runDash = 1; // whether to run dash or not (it need to be an integer for sending it to python (booleans don't work))
+  int runDash = 0; // whether to run dash or not (it need to be an integer for sending it to python (booleans don't work))
   bool perSocket = true;
   bool keepOriginal = true;
   bool showSupportedSystems = false;
@@ -126,8 +126,8 @@ tuple<string, string, string, bool, bool, int, int, int> processArgs(int argc, c
           displayText = 0;
           break;
 
-      case 'd':
-          runDash = 0;
+      case 'I':
+          runDash = 1;
           break;
 
       case 'p':
@@ -565,8 +565,8 @@ int main(int argc, char *argv[]) {
     myTraceBody.read(traceFile, records, processModel, resourceModel, loadedStates, loadedEvents, metadataManager, traceEndTime);
     
     bool isMetadata = oldMetadataSize < metadataManager.metadata.size();
-    if (isMetadata) {
-      // If the read line is a metadata, just write it to the output trace
+    if (keepOriginal && isMetadata) {
+      // If the read line is metadata, just write it to the output trace
       outputTraceFile << metadataManager.metadata.back() << endl;
       continue;
     }
@@ -579,8 +579,8 @@ int main(int argc, char *argv[]) {
       TTaskOrder task;
       TThreadOrder thread;
       processModel.getThreadLocation(globalThread, app, task, thread);
-      // Keep user-app records only (app == 0 for now, we will consider multiuser-app traces in the future)
-      if (app == 0) {
+      // TODO Keep user-app records only (app == 0 for now, we will consider multiuser-app traces in the future)
+      if (keepOriginal && app == 0) {
         outputRecords.insert(pair<TRecordTime, MyRecord>(record.getTime(), record));
       }
 
@@ -659,7 +659,7 @@ int main(int argc, char *argv[]) {
   // Initialize dash app
   if (runDash) {
     cout << "\nLoading interactive plot..." << endl;
-    profetPyAdapter.runDashApp(outFile, PRECISION, cpuFreqGHz);
+    profetPyAdapter.runDashApp(outFile, PRECISION, cpuFreqGHz, keepOriginal);
   }
 
   traceFile.close();

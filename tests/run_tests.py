@@ -36,7 +36,7 @@ def test_with_parameters(raw_file: str, processed_file: str, config_file: str, p
     # processed_file_name = os.path.basename(processed_file)
     # correct_out_traces_dir = 'correct_out_traces'
     
-    flags = '--no-dash '
+    flags = ''
     if no_warnings:
         flags += '--no-warnings '
     if no_text:
