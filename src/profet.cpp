@@ -67,6 +67,8 @@ void printHelp() {
   //         "\t\tConfiguration file\n"
   cout << "-m, --memory_channel\n"
           "\t\tCalculate memory stress metrics per memory channel, rather than per socket (default)\n"
+          "-k, --keep-original\n"
+          "\t\tKeep the first application of the original trace in the output trace file\n"
           "-w, --no_warnings\n"
           "\t\tSuppress warning messages\n"
           "-t, --no_text\n"
@@ -80,14 +82,15 @@ void printHelp() {
   exit(1);
 }
 
-tuple<string, string, string, bool, int, int, int> processArgs(int argc, char** argv) {
+tuple<string, string, string, bool, bool, int, int, int> processArgs(int argc, char** argv) {
   // const char* const short_opts = "i:o:c:w";
-  const char* const short_opts = "mwtdph";
+  const char* const short_opts = "mkwtdph";
   const option long_opts[] = {
           // {"input", required_argument, nullptr, 'i'},
           // {"output", required_argument, nullptr, 'o'},
           // {"config", required_argument, nullptr, 'c'},
           {"memory_channel", no_argument, nullptr, 'm'},
+          {"keep-original", no_argument, nullptr, 'k'},
           {"no_warnings", no_argument, nullptr, 'w'},
           {"no_text", no_argument, nullptr, 't'},
           {"no_dash", no_argument, nullptr, 'd'},
@@ -100,6 +103,7 @@ tuple<string, string, string, bool, int, int, int> processArgs(int argc, char** 
   int displayWarnings = 1; // whether to display warnings or not (it need to be an integer for sending it to python (booleans don't work))
   int runDash = 1; // whether to run dash or not (it need to be an integer for sending it to python (booleans don't work))
   bool perSocket = true;
+  bool keepOriginal = false;
   bool showSupportedSystems = false;
   bool showHelp = false;
   int opt;
@@ -108,6 +112,10 @@ tuple<string, string, string, bool, int, int, int> processArgs(int argc, char** 
     switch (opt) {
       case 'm':
           perSocket = false;
+          break;
+
+      case 'k':
+          keepOriginal = true;
           break;
 
       case 'w':
@@ -165,7 +173,7 @@ tuple<string, string, string, bool, int, int, int> processArgs(int argc, char** 
   optind++;
   string configFile = argv[optind];
 
-  return {inFile, outFile, configFile, perSocket, displayWarnings, displayText, runDash};
+  return {inFile, outFile, configFile, perSocket, keepOriginal, displayWarnings, displayText, runDash};
 }
 
 void checkInputOutputFiles(string inFile, string outFile) {
@@ -221,27 +229,34 @@ bool isMemoryEvent(map<int, MemoryEvent> memEventTypes, TEventValue evtValue) {
 }
 
 void addProcessModelHierarchy(map<int, vector<int>> MCsPerSocket, int nNodes, ProcessModel <> &originalProcessModel,
-                              ProcessModel<> &outputProcessModel, bool perSocket) {
-  // Keep hierarchy of the original process model (only the 1st app, we  can ignore the second (memory counters))
-  // We can assume we always have 2 apps.
-  auto originalFirstApplIt = originalProcessModel.cbegin();
-  outputProcessModel.addApplication();
-  // auto taskIt = originalFirstApplIt.cbegin();
-  int iTask = 0;
-  for (auto taskIt = originalFirstApplIt->cbegin(); taskIt != originalFirstApplIt->cend(); taskIt++, iTask++) {
-    // Add task to application 0
-    outputProcessModel.addTask(0);
-    TNodeOrder execNode = taskIt->getNodeExecution();
-    for (long unsigned int iThread = 0; iThread < taskIt->size(); iThread++) {
-      // Add thread to application 0, task iTask
-      outputProcessModel.addThread(0, iTask, execNode);
+                              ProcessModel<> &outputProcessModel, bool perSocket, bool keepOriginal) {
+  if (keepOriginal) {
+    // Keep hierarchy of the original process model (only the 1st app, we  can ignore the second (memory counters))
+    // We can assume we always have 2 apps.
+    auto originalFirstApplIt = originalProcessModel.cbegin();
+    outputProcessModel.addApplication();
+    // auto taskIt = originalFirstApplIt.cbegin();
+    int iTask = 0;
+    for (auto taskIt = originalFirstApplIt->cbegin(); taskIt != originalFirstApplIt->cend(); taskIt++, iTask++) {
+      // Add task to application 0
+      outputProcessModel.addTask(0);
+      TNodeOrder execNode = taskIt->getNodeExecution();
+      for (long unsigned int iThread = 0; iThread < taskIt->size(); iThread++) {
+        // Add thread to application 0, task iTask
+        outputProcessModel.addThread(0, iTask, execNode);
+      }
     }
   }
 
   // Add application, task, thread hierarchy to output process model
   for (int iNode = 0; iNode < nNodes; iNode++) {
+    // Add application for each node
     outputProcessModel.addApplication();
-    int appID = iNode + 1;
+    int appID = iNode;
+    if (keepOriginal) {
+      // Increment 1 because app 0 is preserved for the original process model
+      appID++;
+    }
     if (perSocket) {
       // app=node, task=, thread=
       for (const auto &[socketID, memoryControllerIDs] : MCsPerSocket) {
@@ -278,6 +293,7 @@ void writePreviousRecords(multimap<TRecordTime, MyRecord> &outputRecords,
 void writeMemoryMetricsRecord(vector<int> metrics,
                               int nodeID,
                               int socketID,
+                              bool keepOriginal,
                               int mcIDcorrespondence,
                               unsigned long long lastPoppedTime,
                               vector<float> lastWrittenMetrics,
@@ -287,9 +303,12 @@ void writeMemoryMetricsRecord(vector<int> metrics,
                               fstream &outputTraceFile) {
   // Write metrics record to the prv
   int thread;
-  // appID is nodeID + 1, because app 0 is preserved for the original process model
-  // The rest of apps are added for PROFET based on the number of nodes
-  int appID = nodeID + 1;
+  int appID = nodeID;
+  if (keepOriginal) {
+    // appID is nodeID + 1, because app 0 is preserved for the original process model
+    // The rest of apps are added for PROFET based on the number of nodes
+    appID++;
+  }
   if (mcIDcorrespondence == -1) {
     thread = outputProcessModel.getGlobalThread(appID, socketID, 0);
   } else {
@@ -319,6 +338,7 @@ void writeMemoryMetricsRecord(vector<int> metrics,
 bool processAndWriteMemoryMetricsIfPossible(vector<NodeMemoryRecords> &nodes,
                                             ProfetPyAdapter &profetPyAdapter,
                                             bool allowEmptyQueues,
+                                            bool keepOriginal,
                                             multimap<TRecordTime, MyRecord> &outputRecords,
                                             ProcessModel<> outputProcessModel,
                                             ResourceModel<> outputResourceModel,
@@ -368,7 +388,7 @@ bool processAndWriteMemoryMetricsIfPossible(vector<NodeMemoryRecords> &nodes,
     writePreviousRecords(outputRecords, smallestMCTime, outputProcessModel, outputResourceModel, outputTraceBody, outputTraceFile);
 
     SocketMemoryRecords &socket = node.sockets[smallestTimeSocketID];
-    writeMemoryMetricsRecord(metrics_int, smallestTimeINode, smallestTimeSocketID, socket.memoryControllerIDsCorrespondence[smallestTimeMCID],
+    writeMemoryMetricsRecord(metrics_int, smallestTimeINode, smallestTimeSocketID, keepOriginal, socket.memoryControllerIDsCorrespondence[smallestTimeMCID],
                              socket.getLastPoppedTime(), lastWrittenMetrics, outputProcessModel, outputResourceModel, outputTraceBody, outputTraceFile);
     node.setLastWrittenMetrics(smallestTimeSocketID, smallestTimeMCID, metrics);
     return true;
@@ -428,7 +448,7 @@ void printFinalMessage(vector<NodeMemoryRecords> nodes, string prvOutputFile) {
 
 int main(int argc, char *argv[]) {
   // Process arguments
-  auto [inFile, outFile, configFile, perSocket, displayWarnings, displayText, runDash] = processArgs(argc, argv);
+  auto [inFile, outFile, configFile, perSocket, keepOriginal, displayWarnings, displayText, runDash] = processArgs(argc, argv);
   checkInputOutputFiles(inFile, outFile);
   // Read config file
   auto [memorySystem, cpuModel, cpuFreqGHz, cacheLineBytes] = readConfigFile(configFile);
@@ -531,7 +551,7 @@ int main(int argc, char *argv[]) {
                                      pmuType, cpuMicroarch, cpuModel, cpuFreqGHz, cacheLineBytes, displayWarnings);
   }
 
-  addProcessModelHierarchy(MCsPerSocket, nNodes, processModel, outputProcessModel, perSocket);
+  addProcessModelHierarchy(MCsPerSocket, nNodes, processModel, outputProcessModel, perSocket, keepOriginal);
 
   dumpTraceHeader(outputTraceFile, traceDate, traceEndTime, traceTimeUnit, resourceModel, outputProcessModel, communicators);
 
@@ -596,8 +616,8 @@ int main(int argc, char *argv[]) {
       bool allowEmptyQueues = false;
       bool processed;
       do {
-        processed = processAndWriteMemoryMetricsIfPossible(nodes, profetPyAdapter, allowEmptyQueues, outputRecords,
-                                                            outputProcessModel, resourceModel, outputTraceBody, outputTraceFile);
+        processed = processAndWriteMemoryMetricsIfPossible(nodes, profetPyAdapter, allowEmptyQueues, keepOriginal, outputRecords,
+                                                           outputProcessModel, resourceModel, outputTraceBody, outputTraceFile);
       } while (processed);
 
       // Update progress bar
@@ -612,7 +632,7 @@ int main(int argc, char *argv[]) {
   bool allowEmptyQueues = true;
   bool processed;
   do {
-    processed = processAndWriteMemoryMetricsIfPossible(nodes, profetPyAdapter, allowEmptyQueues, outputRecords,
+    processed = processAndWriteMemoryMetricsIfPossible(nodes, profetPyAdapter, allowEmptyQueues, keepOriginal, outputRecords,
                                                        outputProcessModel, resourceModel, outputTraceBody, outputTraceFile);
   } while (processed);
 
