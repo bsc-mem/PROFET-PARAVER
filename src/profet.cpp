@@ -65,17 +65,17 @@ void printHelp() {
   //         "\t\tOutput prv file\n"
   //         "-c, --config=FILE\n"
   //         "\t\tConfiguration file\n"
-  cout << "-m, --memory_channel\n"
+  cout << "-m, --memory-channel\n"
           "\t\tCalculate memory stress metrics per memory channel, rather than per socket (default)\n"
           "-k, --keep-original\n"
           "\t\tKeep the first application of the original trace in the output trace file\n"
-          "-w, --no_warnings\n"
+          "-w, --no-warnings\n"
           "\t\tSuppress warning messages\n"
-          "-t, --no_text\n"
+          "-t, --no-text\n"
           "\t\tSuppress informational text messages\n"
-          "-d, --no_dash\n"
+          "-d, --no-dash\n"
           "\t\tDo not run dash (interactive plots)\n"
-          "-p, --print_supported_systems\n"
+          "-p, --print-supported-systems\n"
           "\t\tShow supported systems\n"
           "-h, --help, ?\n"
           "\t\tShow help\n";
@@ -89,12 +89,12 @@ tuple<string, string, string, bool, bool, int, int, int> processArgs(int argc, c
           // {"input", required_argument, nullptr, 'i'},
           // {"output", required_argument, nullptr, 'o'},
           // {"config", required_argument, nullptr, 'c'},
-          {"memory_channel", no_argument, nullptr, 'm'},
+          {"memory-channel", no_argument, nullptr, 'm'},
           {"keep-original", no_argument, nullptr, 'k'},
-          {"no_warnings", no_argument, nullptr, 'w'},
-          {"no_text", no_argument, nullptr, 't'},
-          {"no_dash", no_argument, nullptr, 'd'},
-          {"print_supported_systems", no_argument, nullptr, 'p'},
+          {"no-warnings", no_argument, nullptr, 'w'},
+          {"no-text", no_argument, nullptr, 't'},
+          {"no-dash", no_argument, nullptr, 'd'},
+          {"print-supported-systems", no_argument, nullptr, 'p'},
           {"help", no_argument, nullptr, 'h'},
           {nullptr, no_argument, nullptr, 0}
   };
