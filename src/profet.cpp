@@ -67,8 +67,8 @@ void printHelp() {
   //         "\t\tConfiguration file\n"
   cout << "-m, --memory-channel\n"
           "\t\tCalculate memory stress metrics per memory channel, rather than per socket (default)\n"
-          "-k, --keep-original\n"
-          "\t\tKeep the first application of the original trace in the output trace file\n"
+          "-k, --exclude-original\n"
+          "\t\tExclude the first application of the original trace in the output trace file\n"
           "-w, --no-warnings\n"
           "\t\tSuppress warning messages\n"
           "-t, --no-text\n"
@@ -84,13 +84,13 @@ void printHelp() {
 
 tuple<string, string, string, bool, bool, int, int, int> processArgs(int argc, char** argv) {
   // const char* const short_opts = "i:o:c:w";
-  const char* const short_opts = "mkwtdph";
+  const char* const short_opts = "mewtdph";
   const option long_opts[] = {
           // {"input", required_argument, nullptr, 'i'},
           // {"output", required_argument, nullptr, 'o'},
           // {"config", required_argument, nullptr, 'c'},
           {"memory-channel", no_argument, nullptr, 'm'},
-          {"keep-original", no_argument, nullptr, 'k'},
+          {"exclude-original", no_argument, nullptr, 'e'},
           {"no-warnings", no_argument, nullptr, 'w'},
           {"no-text", no_argument, nullptr, 't'},
           {"no-dash", no_argument, nullptr, 'd'},
@@ -103,7 +103,7 @@ tuple<string, string, string, bool, bool, int, int, int> processArgs(int argc, c
   int displayWarnings = 1; // whether to display warnings or not (it need to be an integer for sending it to python (booleans don't work))
   int runDash = 1; // whether to run dash or not (it need to be an integer for sending it to python (booleans don't work))
   bool perSocket = true;
-  bool keepOriginal = false;
+  bool keepOriginal = true;
   bool showSupportedSystems = false;
   bool showHelp = false;
   int opt;
@@ -114,8 +114,8 @@ tuple<string, string, string, bool, bool, int, int, int> processArgs(int argc, c
           perSocket = false;
           break;
 
-      case 'k':
-          keepOriginal = true;
+      case 'e':
+          keepOriginal = false;
           break;
 
       case 'w':
