@@ -467,7 +467,7 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
-  ProfetPyAdapter profetPyAdapter(PROJECT_PATH, cpuModel, memorySystem);
+  ProfetPyAdapter profetPyAdapter(PROJECT_PATH, cpuModel, memorySystem, displayWarnings);
 
   // Check if given memory system and cpu are supported (i.e. we have the curves). It raises an error if it is not the case.
   profetPyAdapter.checkSystemSupported();
@@ -502,7 +502,7 @@ int main(int argc, char *argv[]) {
 
   // Trace header parsing. Initialize previous variables
   parseTraceHeader(traceFile, traceDate, traceTimeUnit, traceEndTime, resourceModel, processModel, communicators);
-                    
+  
   // Open output file to write trace
   string prvOutputFile(outFile);
   fstream outputTraceFile(prvOutputFile, ios_base::out);

@@ -7,7 +7,6 @@
  */
 
 // profetpyadapter.cpp
-#include <iostream>
 #include "profetpyadapter.h"
 using namespace std;
 
@@ -21,7 +20,7 @@ ProfetPyAdapter::ProfetPyAdapter(string projectPath) {
     loadProfetIntegrationModule();
 }
 
-ProfetPyAdapter::ProfetPyAdapter(string projectPath, string cpuModel, string memorySystem) {
+ProfetPyAdapter::ProfetPyAdapter(string projectPath, string cpuModel, string memorySystem, bool displayWarnings = true) {
     Py_Initialize();  // initialize Python
     setPathVariables(projectPath);
     loadProfetIntegrationModule();
@@ -33,6 +32,8 @@ ProfetPyAdapter::ProfetPyAdapter(string projectPath, string cpuModel, string mem
     cpuMicroarch = getPyDictString(row, "cpu_microarchitecture");
 
     curvesPath = getCurvesPath();
+    // curves = Curves(curvesPath, displayWarnings);
+    setCurvesBwsLats(curvesPath, curves, pyCurves);
 }
 
 ProfetPyAdapter::~ProfetPyAdapter() {
@@ -59,21 +60,6 @@ void ProfetPyAdapter::loadProfetIntegrationModule() {
     raisePyErrorIfNull(profetIntegrationModule, "ERROR when importing \"profet_integration\" module.");
 }
 
-int ProfetPyAdapter::getPyDictInt(PyObject* pyDict, string attribute) {
-    PyObject* itemValue = PyDict_GetItemString(pyDict, attribute.c_str());
-    return (int)PyLong_AsLong(itemValue);
-}
-
-float ProfetPyAdapter::getPyDictFloat(PyObject* pyDict, string attribute) {
-    PyObject* itemValue = PyDict_GetItemString(pyDict, attribute.c_str());
-    return PyFloat_AsDouble(itemValue);
-}
-
-string ProfetPyAdapter::getPyDictString(PyObject* pyDict, string attribute) {
-    PyObject* itemValue = PyDict_GetItemString(pyDict, attribute.c_str());
-    return _PyUnicode_AsString(itemValue);
-}
-
 PyObject* ProfetPyAdapter::getRowFromDB() {
     PyObject* rowDbFn = getFunctionFromProfetIntegration("get_row_from_db");
     // Get curves path
@@ -97,6 +83,66 @@ string ProfetPyAdapter::getCurvesPath() {
     return _PyUnicode_AsString(curvesPath);
 }
 
+ void ProfetPyAdapter::setCurvesBwsLats(string curvesPath, map<int, pair<vector<float>, vector<float>>> &curves, map<int, pair<PyObject*, PyObject*>> &pyCurves) {
+    // Get available read ratios for the given curves
+    PyObject* readRatiosFn = getFunctionFromProfetIntegration("get_curves_available_read_ratios");
+    // Make sure string arguments are built with .c_str()
+    PyObject* pArgs = Py_BuildValue("(s)", curvesPath.c_str());
+    PyObject* readRatios = PyObject_CallObject(readRatiosFn, pArgs);
+    raisePyErrorIfNull(readRatios, "ERROR getting available read ratios.");
+
+    // Get bandwidths and latencies for each read ratio
+    Py_ssize_t size = PyList_Size(readRatios);
+    for (Py_ssize_t i = 0; i < size; ++i) {
+        // Get read ratio
+        PyObject* pItem = PyList_GetItem(readRatios, i);
+        float readRatio = PyFloat_AsDouble(pItem);
+        availableReadRatios.push_back(readRatio);
+
+        PyObject* curveFn = getFunctionFromProfetIntegration("get_curve");
+        // Make sure string arguments are built with .c_str()
+        PyObject* pArgs = Py_BuildValue("(sf)", curvesPath.c_str(), readRatio);
+        PyObject* curve = PyObject_CallObject(curveFn, pArgs);
+        raisePyErrorIfNull(curve, "ERROR getting curve.");
+
+        // Get bandwidths and latencies
+        PyObject* bws = PyObject_GetAttrString(curve, "bws");
+        PyObject* lats = PyObject_GetAttrString(curve, "lats");
+
+        // Convert the Python lists to C++ vectors
+        Py_ssize_t bwSize = PyList_Size(bws);
+        Py_ssize_t latSize = PyList_Size(lats);
+        if (bwSize != latSize) {
+            cerr << "ERROR: bandwidths and latencies lists have different sizes." << endl;
+            exit(1);
+        }
+        vector<float> bwsVector(bwSize);
+        vector<float> latsVector(latSize);
+        PyObject* pyBws = PyList_New(bwSize);
+        PyObject* pyLats = PyList_New(latSize);
+
+        for (Py_ssize_t i = 0; i < bwSize; ++i) {
+            PyObject* bwItem = PyList_GetItem(bws, i);
+            PyObject* latItem = PyList_GetItem(lats, i);
+
+            PyList_SetItem(pyBws, i, bwItem);
+            if (PyFloat_Check(bwItem)) {
+                float bw = PyFloat_AsDouble(bwItem);
+                bwsVector[i] = bw;
+            }
+
+            PyList_SetItem(pyLats, i, latItem);
+            if (PyFloat_Check(latItem)) {
+                float lat = PyFloat_AsDouble(latItem);
+                latsVector[i] = lat;
+            }
+        }
+
+        curves.insert({readRatio, {bwsVector, latsVector}});
+        pyCurves.insert({readRatio, {pyBws, pyLats}});
+    }
+}
+
 void ProfetPyAdapter::checkSystemSupported() {
     PyObject* checkSystemSupportedFn = getFunctionFromProfetIntegration("check_curves_exist");
     // Make sure string arguments are built with .c_str()
@@ -113,10 +159,14 @@ void ProfetPyAdapter::printSupportedSystems() {
 
 tuple<float, float, float, float, float> ProfetPyAdapter::computeMemoryMetrics(float cpuFreqGHz, float writeRatio, float bandwidth, bool displayWarnings) {
     // Get dictionary with computed memory values
-
     PyObject* memoryMetricsFn = getFunctionFromProfetIntegration("get_memory_properties_from_bw");
     // Make sure string arguments are built with .c_str()
-    PyObject* pArgs = Py_BuildValue("(sfffi)", curvesPath.c_str(), cpuFreqGHz, writeRatio, bandwidth, displayWarnings);
+    float readRatio = 100 - writeRatio * 100;
+    float closestReadRatio = getClosestValue(availableReadRatios, readRatio);
+    PyObject* bws = pyCurves[closestReadRatio].first;
+    PyObject* lats = pyCurves[closestReadRatio].second;
+    PyObject* pArgs = PyTuple_Pack(6, bws, lats, PyFloat_FromDouble(cpuFreqGHz), PyFloat_FromDouble(writeRatio),
+                                   PyFloat_FromDouble(bandwidth), PyBool_FromLong(displayWarnings ? 1 : 0));
     PyObject* memDict = PyObject_CallObject(memoryMetricsFn, pArgs);
     raisePyErrorIfNull(memDict, "ERROR getting Python dictionary with memory values.");
 
@@ -142,18 +192,6 @@ void ProfetPyAdapter::runDashApp(string traceFilePath, float precision, float cp
         pythonCall += " --excluded-original";
     }
     system(pythonCall.c_str());
-}
-
-void ProfetPyAdapter::raisePyErrorIfNull(PyObject* obj, string errText) {
-    if (obj == NULL) {
-        if (!errText.empty()) {
-            // Append endline to non-empty error text
-            errText.append("\n");
-        }
-        cerr << errText;
-        PyErr_Print();
-        exit(1);
-    }
 }
 
 PyObject* ProfetPyAdapter::getFunctionFromProfetIntegration(string fnName) {
