@@ -67,7 +67,7 @@ void printHelp() {
   //         "\t\tConfiguration file\n"
   cout << "-m, --memory-channel\n"
           "\t\tCalculate memory stress metrics per memory channel, rather than per socket (default)\n"
-          "-k, --exclude-original\n"
+          "-e, --exclude-original\n"
           "\t\tExclude the first application of the original trace in the output trace file\n"
           "-w, --no-warnings\n"
           "\t\tSuppress warning messages\n"
