@@ -41,7 +41,7 @@ def test_with_parameters(raw_file: str, processed_file: str, config_file: str, p
     if no_warnings:
         flags += '--no-warnings '
     if no_text:
-        flags += '--no-text '
+        flags += '--quiet '
     if not per_socket:
         flags += '--memory-channel '
     if exclude_original_trace:

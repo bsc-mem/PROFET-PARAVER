@@ -71,7 +71,7 @@ void printHelp() {
           "\t\tExclude the first application of the original trace in the output trace file\n"
           "-w, --no-warnings\n"
           "\t\tSuppress warning messages\n"
-          "-t, --no-text\n"
+          "-q, --quiet\n"
           "\t\tSuppress informational text messages\n"
           "-I, --plot-interactive\n"
           "\t\tRun interactive plots\n"
@@ -84,7 +84,7 @@ void printHelp() {
 
 tuple<string, string, string, bool, bool, int, int, int> processArgs(int argc, char** argv) {
   // const char* const short_opts = "i:o:c:w";
-  const char* const short_opts = "mewtIph";
+  const char* const short_opts = "mewqIph";
   const option long_opts[] = {
           // {"input", required_argument, nullptr, 'i'},
           // {"output", required_argument, nullptr, 'o'},
@@ -92,7 +92,7 @@ tuple<string, string, string, bool, bool, int, int, int> processArgs(int argc, c
           {"memory-channel", no_argument, nullptr, 'm'},
           {"exclude-original", no_argument, nullptr, 'e'},
           {"no-warnings", no_argument, nullptr, 'w'},
-          {"no-text", no_argument, nullptr, 't'},
+          {"quiet", no_argument, nullptr, 'q'},
           {"plot-interactive", no_argument, nullptr, 'I'},
           {"print-supported-systems", no_argument, nullptr, 'p'},
           {"help", no_argument, nullptr, 'h'},
@@ -122,7 +122,7 @@ tuple<string, string, string, bool, bool, int, int, int> processArgs(int argc, c
           displayWarnings = 0;
           break;
 
-      case 't':
+      case 'q':
           displayText = 0;
           break;
 
