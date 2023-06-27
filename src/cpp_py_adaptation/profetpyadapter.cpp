@@ -196,9 +196,14 @@ void ProfetPyAdapter::runDashApp(string traceFilePath, float precision, float cp
     string dashScriptFile = regex_replace(traceFilePath, regex(".prv"), ".dashboard.sh");
     // Create and open a file
     ofstream scriptContent(dashScriptFile);
+    string featherTraceFileFlag = " --trace-file " + regex_replace(traceFilePath, regex(".prv"), ".feather");
+    string scriptPyCall = "python3 " + dashPlotsPath + featherTraceFileFlag + curvesDirFlag + precisionFlag + cpuFreqFlag;
+    if (!keepOriginalTraceFile) {
+        scriptPyCall += " --excluded-original";
+    }
     // Write to the file
     scriptContent << "#!/bin/bash\n\n";
-    scriptContent << pythonCall;
+    scriptContent << scriptPyCall;
     // Close the file
     scriptContent.close();
     // Set file permissions
@@ -208,8 +213,8 @@ void ProfetPyAdapter::runDashApp(string traceFilePath, float precision, float cp
         cerr << "Failed to set file permissions." << endl;
     }
 
-    // Generate PDF image by default when running dash from here
-    string pythonCallPDF = pythonCall + " --pdf";
+    // Generate PDF image and save feather DF by default when running dash from here
+    string pythonCallPDF = pythonCall + " --pdf --save-feather";
     // Run dash
     system(pythonCallPDF.c_str());
 }
