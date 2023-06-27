@@ -40,8 +40,10 @@ def parse_args():
                         action='store_true', help='If original trace data is excluded from the given trace file.')
     parser.add_argument('-p', '--precision', dest='precision',
                         default=None, type=int, help='Decimal precision of the .prv file.')
-    parser.add_argument('-cpufreq', '--cpu-frequency', dest='cpu_freq',
+    parser.add_argument('--cpufreq', dest='cpu_freq',
                         default=None, type=float, help='CPU frequency in GHz.')
+    parser.add_argument('--pdf', dest='plot_pdf',
+                        action='store_true', help='If plot (store) pdf with curves and memory stress.')
     
     return parser.parse_args()
 
@@ -125,7 +127,7 @@ def get_trace_df(trace_file_path, row_file_path, precision, excluded_original):
         # calculate read ratio
         df['rr'] = 100 - df['wr']
 
-        # trace_feather_path = os.path.join('../notebooks/', trace_file_path.split('/')[-1].replace('.prv', '.feather'))
+        # trace_feather_path = trace_file_path.replace('.prv', '.feather')
         # df.to_feather(trace_feather_path)
 
         return df
@@ -295,21 +297,22 @@ if __name__ == '__main__':
     curves = get_curves(args.curves_path, args.cpu_freq)
 
     # save a pdf file with a default chart
-    store_pdf_path = os.path.dirname(os.path.abspath(args.trace_file))
-    pdf_filename = os.path.basename(os.path.abspath(args.trace_file)).replace('.prv', '.pdf')
-    store_pdf_file_path = os.path.join(store_pdf_path, pdf_filename)
-    default_fig = make_subplots(rows=1, cols=1)
-    default_fig = get_curves_fig(curves, default_fig)
-    # get application plot memory dots with default options
-    dots_fig = get_application_memory_dots_fig(df)
-    default_fig.add_trace(dots_fig.data[0])
-    default_fig.update_xaxes(title=labels['bw'])
-    default_fig.update_yaxes(title=labels['lat'])
-    color_bar_update = get_color_bar_update(toggled_time=False, labels=labels)
-    default_fig.update_coloraxes(**color_bar_update)
-    default_fig.write_image(store_pdf_file_path)
-    print('PDF chart file:', store_pdf_file_path)
-    print()
+    if args.plot_pdf:
+        store_pdf_path = os.path.dirname(os.path.abspath(args.trace_file))
+        pdf_filename = os.path.basename(os.path.abspath(args.trace_file)).replace('.prv', '.pdf')
+        store_pdf_file_path = os.path.join(store_pdf_path, pdf_filename)
+        default_fig = make_subplots(rows=1, cols=1)
+        default_fig = get_curves_fig(curves, default_fig)
+        # get application plot memory dots with default options
+        dots_fig = get_application_memory_dots_fig(df)
+        default_fig.add_trace(dots_fig.data[0])
+        default_fig.update_xaxes(title=labels['bw'])
+        default_fig.update_yaxes(title=labels['lat'])
+        color_bar_update = get_color_bar_update(toggled_time=False, labels=labels)
+        default_fig.update_coloraxes(**color_bar_update)
+        default_fig.write_image(store_pdf_file_path)
+        print('PDF chart file:', store_pdf_file_path)
+        print()
 
     app = get_dash_app(df)
 

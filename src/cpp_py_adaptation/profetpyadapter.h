@@ -18,6 +18,9 @@
 #include <cmath>
 #include <queue>
 #include <limits>
+#include <regex>
+#include <fstream>
+#include <sys/stat.h>
 #include <Python.h>
 // #include "curves.h"
 #include "utils.h"
