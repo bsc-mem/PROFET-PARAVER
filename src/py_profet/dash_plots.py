@@ -13,6 +13,7 @@ from plotly.subplots import make_subplots
 import numpy as np
 import pandas as pd
 import os
+import logging
 import argparse
 from collections import defaultdict
 from dash import Dash, dcc, html, Input, Output
@@ -349,5 +350,10 @@ if __name__ == '__main__':
         fig.update_coloraxes(**color_bar_update)
 
         return fig
+    
+    # set this to avoid displaying Flask "production warning"
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.ERROR)
 
-    app.run_server(debug=True)
+    # run server
+    app.run_server(debug=False, host='127.0.0.1', port=8050)
