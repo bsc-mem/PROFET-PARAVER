@@ -38,10 +38,16 @@ def parse_args():
                         default='', help='Trace file path.')
     parser.add_argument('--bw-lat-curves-dir', dest='curves_path',
                         default='', help='Directory of the bandwidth-latency curves.')
-    parser.add_argument('-precision', '--precision', dest='precision',
+    parser.add_argument('-e', '--excluded-original', dest='excluded_original',
+                        action='store_true', help='If original trace data is excluded from the given trace file.')
+    parser.add_argument('-p', '--precision', dest='precision',
                         default=None, type=int, help='Decimal precision of the .prv file.')
-    parser.add_argument('-cpufreq', '--cpu-frequency', dest='cpu_freq',
+    parser.add_argument('--cpufreq', dest='cpu_freq',
                         default=None, type=float, help='CPU frequency in GHz.')
+    parser.add_argument('--pdf', dest='plot_pdf',
+                        action='store_true', help='If plot (store) pdf with curves and memory stress.')
+    parser.add_argument('--save-feather', dest='save_feather',
+                        action='store_true', help='Save processed .prv data to a .feather file.')
     
     return parser.parse_args()
 
@@ -66,13 +72,7 @@ def get_node_names(row_file_path):
     return node_names
 
 
-def get_trace_df(trace_file_path, row_file_path, precision):
-    # trace_feather_path = os.path.join(store_df_path, trace_file_path.split('/')[-1].replace('.prv', '.feather'))
-    # if os.path.exists(trace_feather_path):
-    #     return pd.read_feather(trace_feather_path)
-        
-    # df = pd.DataFrame(columns=['timestamp', 'wr', 'rr', 'bw', 'max_bw', 'lat', 'min_lat', 'max_lat'])
-
+def prv_to_df(trace_file_path, row_file_path, precision, excluded_original, save_feather=False):
     node_names = get_node_names(row_file_path)
 
     df = []
@@ -91,8 +91,8 @@ def get_trace_df(trace_file_path, row_file_path, precision):
             row = defaultdict()
             row['node'] = int(sp[2])
             
-            if row['node'] == 1:
-                # skip first application (original trace values)
+            if not excluded_original and row['node'] == 1:
+                # skip first application (original trace values) when it is excluded
                 continue
 
             row['node_name'] = node_names[row['node'] - 1]
@@ -125,8 +125,9 @@ def get_trace_df(trace_file_path, row_file_path, precision):
         # calculate read ratio
         df['rr'] = 100 - df['wr']
 
-        # trace_feather_path = os.path.join('../notebooks/', trace_file_path.split('/')[-1].replace('.prv', '.feather'))
-        # df.to_feather(trace_feather_path)
+        if save_feather:
+            trace_feather_path = trace_file_path.replace('.prv', '.feather')
+            df.to_feather(trace_feather_path)
 
         return df
 
@@ -234,7 +235,12 @@ if __name__ == '__main__':
     # TODO replace only the extension! .prv could be included in the middle of the file as a name
     # do it for all other cases (e.g. .pdf below)
     row_file_path = args.trace_file.replace('.prv', '.row')
-    df = get_trace_df(args.trace_file, row_file_path, args.precision)
+    if args.trace_file.endswith('.prv'):
+        df = prv_to_df(args.trace_file, row_file_path, args.precision, args.excluded_original, args.save_feather)
+    elif args.trace_file.endswith('.feather'):
+        df = pd.read_feather(args.trace_file)
+    else:
+        raise Exception(f'Unkown trace file extension ({args.trace_file.split(".")[-1]}) from {args.trace_file}.')
 
     # load and process curves
     curves = get_curves(args.curves_path, args.cpu_freq)
