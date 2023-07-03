@@ -10,6 +10,7 @@ this file. If not, please visit: https://opensource.org/licenses/BSD-3-Clause
 import os
 import sys
 import inspect
+import json
 import pandas as pd
 
 # Need to add parent folder to path for relative import 
@@ -106,9 +107,27 @@ def get_curves_path(py_profet_path: str, cpu_model: str, memory_system: str, pmu
     curves_folder = f'{memory_system}__{pmu_type}__{cpu_microarch}__{cpu_model}'
     return os.path.join(py_profet_path, bw_lats_folder, curves_folder)
 
+
+def get_curves_available_read_ratios(curves_path: str) -> list:
+    if curves_path.endswith('.json'):
+        with open(curves_path, 'r') as f:
+            curves_json = json.load(f)
+            return list(curves_json.keys())
+    else:
+        if not os.path.isdir(curves_path):
+            raise Exception(f'Path {curves_path} should be a directory or a json file.')
+        read_ratios = [float(f.split('_')[1].replace('.txt', '')) for f in os.listdir(curves_path) if 'bwlat_' in f and f.endswith('.txt')]
+        return read_ratios
     
-def get_memory_properties_from_bw(curves_path: str, cpu_freq: float, write_ratio: float,
+
+def get_curve(curves_path: str, read_ratio: float):
+    return Curve(read_ratio, curves_path)
+
+
+def get_memory_properties_from_bw(bws: list, lats: list, cpu_freq: float, write_ratio: float,
                                   bandwidth: float, display_warnings: int) -> dict:
+    # bws: list of bandwidths in MB/s
+    # lats: list of latencies in CPU cycles
     # write_ratio:
     # bandwidth: bandwidth in GB/s
 
@@ -138,8 +157,8 @@ def get_memory_properties_from_bw(curves_path: str, cpu_freq: float, write_ratio
     # full_curves_path = os.path.join(project_path, 'py_profet', 'bw_lat_curves', specific_curves_path)
     # set read ratio as float between 0 and 100
     read_ratio = 100 - write_ratio * 100
-    # get latencies and bandwidths
-    curve_obj = Curve(curves_path, read_ratio, display_warnings)
+    # get latencies and bandwidths from curve (in CPU cycles and GB/s, respectively)
+    curve_obj = Curve(read_ratio, bws=bws, lats=lats, display_warnings=display_warnings)
 
     # predicted latency in curve
     pred_lat = curve_obj.get_lat(bandwidth, bw_units='GB/s')
@@ -148,12 +167,15 @@ def get_memory_properties_from_bw(curves_path: str, cpu_freq: float, write_ratio
     max_lat = curve_obj.get_max_lat()
     # lead-off latency
     lead_off_lat = curve_obj.get_lead_off_lat()
-    stress_score = curve_obj.get_stress_score(bandwidth, bw_units='GB/s')
+    stress_score = curve_obj.get_stress_score(bandwidth, bw_units='GB/s', lat=pred_lat,
+                                              lead_off_lat=lead_off_lat, max_lat=max_lat)
     if stress_score is None:
         stress_score = -1
-    # print(bandwidth, stress_score)
 
-    # print(f'Lat: {pred_lat}; Max. Lat: {max_lat}; Max. BW: {max_bw}; Lead-off Lat: {lead_off_lat}')
+    # print(f'Write ratio: {write_ratio}; Bw: {round(bandwidth, 2)} GB/s; Max. BW: {max_bw}')
+    # print(f'Lat: {pred_lat}; Max. Lat: {max_lat}; Lead-off Lat: {lead_off_lat}')
+    # print(f'Stress score: {stress_score}')
+    # print()
 
     return {
         'write_ratio': write_ratio,
