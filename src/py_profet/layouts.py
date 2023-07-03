@@ -88,8 +88,8 @@ def get_main_content():
     ])
 
     tabs = dbc.Tabs([
-        dbc.Tab(system_info_tab, label="System Info", id="system-tab"),
-        dbc.Tab(charts_tab, label="Charts", id="charts-tab"),
+        dbc.Tab(system_info_tab, label="System Info", tab_id="system-tab"),
+        dbc.Tab(charts_tab, label="Charts", tab_id="charts-tab"),
     ], id="tabs", active_tab="system-tab")
 
     return html.Div([
