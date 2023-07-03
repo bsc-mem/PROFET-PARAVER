@@ -56,7 +56,7 @@ class ProfetPyAdapter {
 
     tuple<float, float, float, float, float> computeMemoryMetrics(float cpuFreqGHz, float writeRatio, float bandwidth, bool displayWarnings);
 
-    void runDashApp(string traceFilePath, float precision, float cpuFreq);
+    void runDashApp(string traceFilePath, float precision, float cpuFreq, bool keepOriginalTraceFile);
 
   private:
     void raisePyErrorIfNull(PyObject* obj, string errText = "");

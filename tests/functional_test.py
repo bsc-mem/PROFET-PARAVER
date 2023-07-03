@@ -122,8 +122,10 @@ class TestOutput(unittest.TestCase):
 
     def test_same_n_nodes(self):
         # assert that the generated file has the correct number of nodes
-        ignore_app0_df = self.out_df[self.out_df['node'] > 1]
-        self.assertEqual(self.N_NODES, ignore_app0_df['node'].nunique())
+        test_df = self.out_df
+        if 'exclude_original' not in self.PROCESSED_FILE:
+            test_df = self.out_df[self.out_df['node'] > 1]
+        self.assertEqual(self.N_NODES, test_df['node'].nunique())
 
     def test_same_n_sockets(self):
         # assert that the generated file has the correct number of socket per node

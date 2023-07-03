@@ -46,5 +46,14 @@
         "nsockets": 2,
         "nmcs": 4,
         "precision": 2
+    },
+    {
+        "trace_file": "lulesh_4+4_with_uncores_sockets1+2.chop_5it.prv",
+        "config": "epeec.json",
+        "nnodes": 1,
+        "nsockets": 2,
+        "nmcs": 6,
+        "precision": 2,
+        "exclude_original": true
     }
 ]

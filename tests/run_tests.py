@@ -27,7 +27,8 @@ def parse_args():
 
 
 def test_with_parameters(raw_file: str, processed_file: str, config_file: str, precision: int, nnodes: int, nsockets: int, nmcs: int,
-                         no_warnings: bool = True, no_text: bool = True, per_socket: bool = True, fail_fast: bool = True, no_tests: bool = False):
+                         no_warnings: bool = True, no_text: bool = True, per_socket: bool = True, fail_fast: bool = True, no_tests: bool = False,
+                         exclude_original_trace: bool = False):
     # perform functional test with the given parameters
     # raw_file: raw trace file path (file with memory read and write counters, the one we use for processing in PROFET)
     # processed_file: processed file path after running PROFET
@@ -36,14 +37,15 @@ def test_with_parameters(raw_file: str, processed_file: str, config_file: str, p
     # processed_file_name = os.path.basename(processed_file)
     # correct_out_traces_dir = 'correct_out_traces'
     
-    flags = '--no_dash '
+    flags = ''
     if no_warnings:
-        flags += '--no_warnings '
+        flags += '--no-warnings '
     if no_text:
-        flags += '--no_text '
+        flags += '--no-text '
     if not per_socket:
-        flags += '--memory_channel '
-        # correct_out_traces_dir = 'correct_out_traces_per_socket'
+        flags += '--memory-channel '
+    if exclude_original_trace:
+        flags += '--exclude-original '
 
     profet_command = f'./bin/profet {raw_file} {processed_file} {config_file} {flags}'
     print(profet_command)
@@ -77,10 +79,17 @@ if __name__ == "__main__":
     print('                   Memory Channel')
     print('=====================================================\n')
     for trace_config in test_traces:
-        print(f'{trace_config["trace_file"]}')
-        test_with_parameters(f'tests/traces/{trace_config["trace_file"]}', f'tests/out_traces_per_mc/{trace_config["trace_file"]}',
+        out_trace_file = trace_config["trace_file"]
+        exclude_original = False
+        if 'exclude_original' in trace_config and trace_config['exclude_original']:
+            exclude_original = True
+            out_trace_file = trace_config["trace_file"].replace('.prv', '.exclude_original.prv')
+
+        print(trace_config["trace_file"])
+        test_with_parameters(f'tests/traces/{trace_config["trace_file"]}', f'tests/out_traces_per_mc/{out_trace_file}',
                              f'configs/{trace_config["config"]}', trace_config["precision"], trace_config["nnodes"],
-                             trace_config["nsockets"], trace_config["nmcs"], per_socket=False, fail_fast=args.fail_fast, no_tests=args.no_tests)
+                             trace_config["nsockets"], trace_config["nmcs"], per_socket=False, fail_fast=args.fail_fast,
+                             no_tests=args.no_tests, exclude_original_trace=exclude_original)
         print('\n')
             
     # process traces per socket
@@ -88,10 +97,15 @@ if __name__ == "__main__":
     print('                      SOCKET')
     print('=====================================================\n')
     for trace_config in test_traces:
-        print(f'{trace_config["trace_file"]}')
-        test_with_parameters(f'tests/traces/{trace_config["trace_file"]}', f'tests/out_traces_per_socket/{trace_config["trace_file"]}',
+        out_trace_file = trace_config["trace_file"]
+        exclude_original = False
+        if 'exclude_original' in trace_config and trace_config['exclude_original']:
+            exclude_original = True
+            out_trace_file = trace_config["trace_file"].replace('.prv', '.exclude_original.prv')
+
+        print(trace_config["trace_file"])
+        test_with_parameters(f'tests/traces/{trace_config["trace_file"]}', f'tests/out_traces_per_socket/{out_trace_file}',
                              f'configs/{trace_config["config"]}', trace_config["precision"], trace_config["nnodes"],
-                             trace_config["nsockets"], -1, per_socket=True, fail_fast=args.fail_fast, no_tests=args.no_tests)
-        # test_with_parameters(f'tests/traces/{in_traces[i]}', f'tests/out_traces_per_socket/{in_traces[i]}', f'configs/{configs[i]}',
-        #                      precision, nnodes[i], nsockets[i], -1, per_socket=True)
+                             trace_config["nsockets"], -1, per_socket=True, fail_fast=args.fail_fast,
+                             no_tests=args.no_tests, exclude_original_trace=exclude_original)
         print('\n')

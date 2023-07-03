@@ -131,13 +131,16 @@ tuple<float, float, float, float, float> ProfetPyAdapter::computeMemoryMetrics(f
     return {maxBandwidth, latency, leadOffLatency, maxLatency, stressScore};
 }
 
-void ProfetPyAdapter::runDashApp(string traceFilePath, float precision, float cpuFreq) {
+void ProfetPyAdapter::runDashApp(string traceFilePath, float precision, float cpuFreq, bool keepOriginalTraceFile) {
     string dashPlotsPath = pyProfetPath + "dash_plots.py";
-    string tradeFileFlag = " --trace-file " + traceFilePath;
+    string traceFileFlag = " --trace-file " + traceFilePath;
     string curvesDirFlag = " --bw-lat-curves-dir " + curvesPath;
-    string precisionFlag = " -precision " + to_string(int(precision));
+    string precisionFlag = " --precision " + to_string(int(precision));
     string cpuFreqFlag = " -cpufreq " + to_string(cpuFreq);
-    string pythonCall = "python3 " + dashPlotsPath + tradeFileFlag + curvesDirFlag + precisionFlag + cpuFreqFlag;
+    string pythonCall = "python3 " + dashPlotsPath + traceFileFlag + curvesDirFlag + precisionFlag + cpuFreqFlag;
+    if (!keepOriginalTraceFile) {
+        pythonCall += " --excluded-original";
+    }
     system(pythonCall.c_str());
 }
 
