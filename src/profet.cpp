@@ -65,41 +65,45 @@ void printHelp() {
   //         "\t\tOutput prv file\n"
   //         "-c, --config=FILE\n"
   //         "\t\tConfiguration file\n"
-  cout << "-m, --memory_channel\n"
+  cout << "-m, --memory-channel\n"
           "\t\tCalculate memory stress metrics per memory channel, rather than per socket (default)\n"
-          "-w, --no_warnings\n"
+          "-e, --exclude-original\n"
+          "\t\tExclude the first application of the original trace in the output trace file\n"
+          "-w, --no-warnings\n"
           "\t\tSuppress warning messages\n"
-          "-t, --no_text\n"
+          "-q, --quiet\n"
           "\t\tSuppress informational text messages\n"
-          "-d, --no_dash\n"
-          "\t\tDo not run dash (interactive plots)\n"
-          "-p, --print_supported_systems\n"
+          "-I, --plot-interactive\n"
+          "\t\tRun interactive plots\n"
+          "-p, --print-supported-systems\n"
           "\t\tShow supported systems\n"
           "-h, --help, ?\n"
           "\t\tShow help\n";
   exit(1);
 }
 
-tuple<string, string, string, bool, int, int, int> processArgs(int argc, char** argv) {
+tuple<string, string, string, bool, bool, int, int, int> processArgs(int argc, char** argv) {
   // const char* const short_opts = "i:o:c:w";
-  const char* const short_opts = "mwtdph";
+  const char* const short_opts = "mewqIph";
   const option long_opts[] = {
           // {"input", required_argument, nullptr, 'i'},
           // {"output", required_argument, nullptr, 'o'},
           // {"config", required_argument, nullptr, 'c'},
-          {"memory_channel", no_argument, nullptr, 'm'},
-          {"no_warnings", no_argument, nullptr, 'w'},
-          {"no_text", no_argument, nullptr, 't'},
-          {"no_dash", no_argument, nullptr, 'd'},
-          {"print_supported_systems", no_argument, nullptr, 'p'},
+          {"memory-channel", no_argument, nullptr, 'm'},
+          {"exclude-original", no_argument, nullptr, 'e'},
+          {"no-warnings", no_argument, nullptr, 'w'},
+          {"quiet", no_argument, nullptr, 'q'},
+          {"plot-interactive", no_argument, nullptr, 'I'},
+          {"print-supported-systems", no_argument, nullptr, 'p'},
           {"help", no_argument, nullptr, 'h'},
           {nullptr, no_argument, nullptr, 0}
   };
   
   int displayText = 1; // whether to display info text or not (it need to be an integer for sending it to python (booleans don't work))
   int displayWarnings = 1; // whether to display warnings or not (it need to be an integer for sending it to python (booleans don't work))
-  int runDash = 1; // whether to run dash or not (it need to be an integer for sending it to python (booleans don't work))
+  int runDash = 0; // whether to run dash or not (it need to be an integer for sending it to python (booleans don't work))
   bool perSocket = true;
+  bool keepOriginalTrace = true;
   bool showSupportedSystems = false;
   bool showHelp = false;
   int opt;
@@ -110,16 +114,20 @@ tuple<string, string, string, bool, int, int, int> processArgs(int argc, char** 
           perSocket = false;
           break;
 
+      case 'e':
+          keepOriginalTrace = false;
+          break;
+
       case 'w':
           displayWarnings = 0;
           break;
 
-      case 't':
+      case 'q':
           displayText = 0;
           break;
 
-      case 'd':
-          runDash = 0;
+      case 'I':
+          runDash = 1;
           break;
 
       case 'p':
@@ -165,7 +173,7 @@ tuple<string, string, string, bool, int, int, int> processArgs(int argc, char** 
   optind++;
   string configFile = argv[optind];
 
-  return {inFile, outFile, configFile, perSocket, displayWarnings, displayText, runDash};
+  return {inFile, outFile, configFile, perSocket, keepOriginalTrace, displayWarnings, displayText, runDash};
 }
 
 void checkInputOutputFiles(string inFile, string outFile) {
@@ -221,27 +229,34 @@ bool isMemoryEvent(map<int, MemoryEvent> memEventTypes, TEventValue evtValue) {
 }
 
 void addProcessModelHierarchy(map<int, vector<int>> MCsPerSocket, int nNodes, ProcessModel <> &originalProcessModel,
-                              ProcessModel<> &outputProcessModel, bool perSocket) {
-  // Keep hierarchy of the original process model (only the 1st app, we  can ignore the second (memory counters))
-  // We can assume we always have 2 apps.
-  auto originalFirstApplIt = originalProcessModel.cbegin();
-  outputProcessModel.addApplication();
-  // auto taskIt = originalFirstApplIt.cbegin();
-  int iTask = 0;
-  for (auto taskIt = originalFirstApplIt->cbegin(); taskIt != originalFirstApplIt->cend(); taskIt++, iTask++) {
-    // Add task to application 0
-    outputProcessModel.addTask(0);
-    TNodeOrder execNode = taskIt->getNodeExecution();
-    for (long unsigned int iThread = 0; iThread < taskIt->size(); iThread++) {
-      // Add thread to application 0, task iTask
-      outputProcessModel.addThread(0, iTask, execNode);
+                              ProcessModel<> &outputProcessModel, bool perSocket, bool keepOriginalTrace) {
+  if (keepOriginalTrace) {
+    // Keep hierarchy of the original process model (only the 1st app, we  can ignore the second (memory counters))
+    // We can assume we always have 2 apps.
+    auto originalFirstApplIt = originalProcessModel.cbegin();
+    outputProcessModel.addApplication();
+    // auto taskIt = originalFirstApplIt.cbegin();
+    int iTask = 0;
+    for (auto taskIt = originalFirstApplIt->cbegin(); taskIt != originalFirstApplIt->cend(); taskIt++, iTask++) {
+      // Add task to application 0
+      outputProcessModel.addTask(0);
+      TNodeOrder execNode = taskIt->getNodeExecution();
+      for (long unsigned int iThread = 0; iThread < taskIt->size(); iThread++) {
+        // Add thread to application 0, task iTask
+        outputProcessModel.addThread(0, iTask, execNode);
+      }
     }
   }
 
   // Add application, task, thread hierarchy to output process model
   for (int iNode = 0; iNode < nNodes; iNode++) {
+    // Add application for each node
     outputProcessModel.addApplication();
-    int appID = iNode + 1;
+    int appID = iNode;
+    if (keepOriginalTrace) {
+      // Increment 1 because app 0 is preserved for the original process model
+      appID++;
+    }
     if (perSocket) {
       // app=node, task=, thread=
       for (const auto &[socketID, memoryControllerIDs] : MCsPerSocket) {
@@ -278,6 +293,7 @@ void writePreviousRecords(multimap<TRecordTime, MyRecord> &outputRecords,
 void writeMemoryMetricsRecord(vector<int> metrics,
                               int nodeID,
                               int socketID,
+                              bool keepOriginalTrace,
                               int mcIDcorrespondence,
                               unsigned long long lastPoppedTime,
                               vector<float> lastWrittenMetrics,
@@ -287,9 +303,12 @@ void writeMemoryMetricsRecord(vector<int> metrics,
                               fstream &outputTraceFile) {
   // Write metrics record to the prv
   int thread;
-  // appID is nodeID + 1, because app 0 is preserved for the original process model
-  // The rest of apps are added for PROFET based on the number of nodes
-  int appID = nodeID + 1;
+  int appID = nodeID;
+  if (keepOriginalTrace) {
+    // appID is nodeID + 1, because app 0 is preserved for the original process model
+    // The rest of apps are added for PROFET based on the number of nodes
+    appID++;
+  }
   if (mcIDcorrespondence == -1) {
     thread = outputProcessModel.getGlobalThread(appID, socketID, 0);
   } else {
@@ -319,6 +338,7 @@ void writeMemoryMetricsRecord(vector<int> metrics,
 bool processAndWriteMemoryMetricsIfPossible(vector<NodeMemoryRecords> &nodes,
                                             ProfetPyAdapter &profetPyAdapter,
                                             bool allowEmptyQueues,
+                                            bool keepOriginalTrace,
                                             multimap<TRecordTime, MyRecord> &outputRecords,
                                             ProcessModel<> outputProcessModel,
                                             ResourceModel<> outputResourceModel,
@@ -368,7 +388,7 @@ bool processAndWriteMemoryMetricsIfPossible(vector<NodeMemoryRecords> &nodes,
     writePreviousRecords(outputRecords, smallestMCTime, outputProcessModel, outputResourceModel, outputTraceBody, outputTraceFile);
 
     SocketMemoryRecords &socket = node.sockets[smallestTimeSocketID];
-    writeMemoryMetricsRecord(metrics_int, smallestTimeINode, smallestTimeSocketID, socket.memoryControllerIDsCorrespondence[smallestTimeMCID],
+    writeMemoryMetricsRecord(metrics_int, smallestTimeINode, smallestTimeSocketID, keepOriginalTrace, socket.memoryControllerIDsCorrespondence[smallestTimeMCID],
                              socket.getLastPoppedTime(), lastWrittenMetrics, outputProcessModel, outputResourceModel, outputTraceBody, outputTraceFile);
     node.setLastWrittenMetrics(smallestTimeSocketID, smallestTimeMCID, metrics);
     return true;
@@ -428,7 +448,7 @@ void printFinalMessage(vector<NodeMemoryRecords> nodes, string prvOutputFile) {
 
 int main(int argc, char *argv[]) {
   // Process arguments
-  auto [inFile, outFile, configFile, perSocket, displayWarnings, displayText, runDash] = processArgs(argc, argv);
+  auto [inFile, outFile, configFile, perSocket, keepOriginalTrace, displayWarnings, displayText, runDash] = processArgs(argc, argv);
   checkInputOutputFiles(inFile, outFile);
   // Read config file
   auto [memorySystem, cpuModel, cpuFreqGHz, cacheLineBytes] = readConfigFile(configFile);
@@ -447,7 +467,7 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
-  ProfetPyAdapter profetPyAdapter(PROJECT_PATH, cpuModel, memorySystem);
+  ProfetPyAdapter profetPyAdapter(PROJECT_PATH, cpuModel, memorySystem, displayWarnings);
 
   // Check if given memory system and cpu are supported (i.e. we have the curves). It raises an error if it is not the case.
   profetPyAdapter.checkSystemSupported();
@@ -482,7 +502,7 @@ int main(int argc, char *argv[]) {
 
   // Trace header parsing. Initialize previous variables
   parseTraceHeader(traceFile, traceDate, traceTimeUnit, traceEndTime, resourceModel, processModel, communicators);
-                    
+  
   // Open output file to write trace
   string prvOutputFile(outFile);
   fstream outputTraceFile(prvOutputFile, ios_base::out);
@@ -531,9 +551,14 @@ int main(int argc, char *argv[]) {
                                      pmuType, cpuMicroarch, cpuModel, cpuFreqGHz, cacheLineBytes, displayWarnings);
   }
 
-  addProcessModelHierarchy(MCsPerSocket, nNodes, processModel, outputProcessModel, perSocket);
+  addProcessModelHierarchy(MCsPerSocket, nNodes, processModel, outputProcessModel, perSocket, keepOriginalTrace);
 
-  dumpTraceHeader(outputTraceFile, traceDate, traceEndTime, traceTimeUnit, resourceModel, outputProcessModel, communicators);
+  // Communicators to be dumped to the output trace
+  std::vector< std::string > outCommunicators;
+  if (keepOriginalTrace) {
+    outCommunicators = communicators;
+  }
+  dumpTraceHeader(outputTraceFile, traceDate, traceEndTime, traceTimeUnit, resourceModel, outputProcessModel, outCommunicators);
 
   // Records to be written to the output trace sorted ascendingly by time
   multimap<TRecordTime, MyRecord> outputRecords;
@@ -545,8 +570,8 @@ int main(int argc, char *argv[]) {
     myTraceBody.read(traceFile, records, processModel, resourceModel, loadedStates, loadedEvents, metadataManager, traceEndTime);
     
     bool isMetadata = oldMetadataSize < metadataManager.metadata.size();
-    if (isMetadata) {
-      // If the read line is a metadata, just write it to the output trace
+    if (keepOriginalTrace && isMetadata) {
+      // If the read line is metadata, just write it to the output trace
       outputTraceFile << metadataManager.metadata.back() << endl;
       continue;
     }
@@ -559,8 +584,8 @@ int main(int argc, char *argv[]) {
       TTaskOrder task;
       TThreadOrder thread;
       processModel.getThreadLocation(globalThread, app, task, thread);
-      // Keep user-app records only (app == 0 for now, we will consider multiuser-app traces in the future)
-      if (app == 0) {
+      // TODO Keep user-app records only (app == 0 for now, we will consider multiuser-app traces in the future)
+      if (keepOriginalTrace && app == 0) {
         outputRecords.insert(pair<TRecordTime, MyRecord>(record.getTime(), record));
       }
 
@@ -596,8 +621,8 @@ int main(int argc, char *argv[]) {
       bool allowEmptyQueues = false;
       bool processed;
       do {
-        processed = processAndWriteMemoryMetricsIfPossible(nodes, profetPyAdapter, allowEmptyQueues, outputRecords,
-                                                            outputProcessModel, resourceModel, outputTraceBody, outputTraceFile);
+        processed = processAndWriteMemoryMetricsIfPossible(nodes, profetPyAdapter, allowEmptyQueues, keepOriginalTrace, outputRecords,
+                                                           outputProcessModel, resourceModel, outputTraceBody, outputTraceFile);
       } while (processed);
 
       // Update progress bar
@@ -612,7 +637,7 @@ int main(int argc, char *argv[]) {
   bool allowEmptyQueues = true;
   bool processed;
   do {
-    processed = processAndWriteMemoryMetricsIfPossible(nodes, profetPyAdapter, allowEmptyQueues, outputRecords,
+    processed = processAndWriteMemoryMetricsIfPossible(nodes, profetPyAdapter, allowEmptyQueues, keepOriginalTrace, outputRecords,
                                                        outputProcessModel, resourceModel, outputTraceBody, outputTraceFile);
   } while (processed);
 
@@ -639,7 +664,7 @@ int main(int argc, char *argv[]) {
   // Initialize dash app
   if (runDash) {
     cout << "\nLoading interactive plot..." << endl;
-    profetPyAdapter.runDashApp(outFile, PRECISION, cpuFreqGHz);
+    profetPyAdapter.runDashApp(outFile, PRECISION, cpuFreqGHz, keepOriginalTrace);
   }
 
   traceFile.close();
