@@ -664,8 +664,7 @@ int main(int argc, char *argv[]) {
   // Initialize dash app
   if (runDash) {
     cout << "\nLoading interactive plot..." << endl;
-    string outFileFullPath = PROJECT_PATH + outFile;
-    profetPyAdapter.runDashApp(outFileFullPath, PRECISION, cpuFreqGHz, keepOriginalTrace);
+    profetPyAdapter.runDashApp(outFile, PRECISION, cpuFreqGHz, keepOriginalTrace);
   }
 
   traceFile.close();
