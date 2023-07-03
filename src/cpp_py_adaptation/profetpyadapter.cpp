@@ -186,12 +186,37 @@ void ProfetPyAdapter::runDashApp(string traceFilePath, float precision, float cp
     string traceFileFlag = " --trace-file " + traceFilePath;
     string curvesDirFlag = " --bw-lat-curves-dir " + curvesPath;
     string precisionFlag = " --precision " + to_string(int(precision));
-    string cpuFreqFlag = " -cpufreq " + to_string(cpuFreq);
+    string cpuFreqFlag = " --cpufreq " + to_string(cpuFreq);
     string pythonCall = "python3 " + dashPlotsPath + traceFileFlag + curvesDirFlag + precisionFlag + cpuFreqFlag;
     if (!keepOriginalTraceFile) {
         pythonCall += " --excluded-original";
     }
-    system(pythonCall.c_str());
+
+    // Create dashboard execution script for running it later
+    string dashScriptFile = regex_replace(traceFilePath, regex(".prv"), ".dashboard.sh");
+    // Create and open a file
+    ofstream scriptContent(dashScriptFile);
+    string featherTraceFileFlag = " --trace-file " + regex_replace(traceFilePath, regex(".prv"), ".feather");
+    string scriptPyCall = "python3 " + dashPlotsPath + featherTraceFileFlag + curvesDirFlag + precisionFlag + cpuFreqFlag;
+    if (!keepOriginalTraceFile) {
+        scriptPyCall += " --excluded-original";
+    }
+    // Write to the file
+    scriptContent << "#!/bin/bash\n\n";
+    scriptContent << scriptPyCall;
+    // Close the file
+    scriptContent.close();
+    // Set file permissions
+    int permissions = S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IROTH;
+    int result = chmod(dashScriptFile.c_str(), permissions);
+    if (result != 0) {
+        cerr << "Failed to set file permissions." << endl;
+    }
+
+    // Generate PDF image and save feather DF by default when running dash from here
+    string pythonCallPDF = pythonCall + " --pdf --save-feather";
+    // Run dash
+    system(pythonCallPDF.c_str());
 }
 
 PyObject* ProfetPyAdapter::getFunctionFromProfetIntegration(string fnName) {
