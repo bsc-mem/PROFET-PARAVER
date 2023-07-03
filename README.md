@@ -46,19 +46,22 @@ Parameters:
 
 # Options
 
-	-m, --memory_channel
+	-m, --memory-channel
 		Calculate memory stress metrics per memory channel, rather than per socket (default).
+	
+	-e, --exclude-original
+		Exclude the first application of the original trace in the output trace file.
 		
-	-w, --no_warnings
+	-w, --no-warnings
 		Suppress warning messages.
 		
-	-t, --no_text
+	-q, --quiet
 		Suppress informational text messages.
 		
-	-d, --no_dash
-		Do not run dash (interactive plots).
+	-I, --plot-interactive
+		Run interactive plots.
 		
-	-p, --print_supported_systems
+	-p, --print-supported-systems
 		Show supported systems.
 		
 	-h, --help, ?
