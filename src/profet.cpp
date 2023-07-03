@@ -103,7 +103,7 @@ tuple<string, string, string, bool, bool, int, int, int> processArgs(int argc, c
   int displayWarnings = 1; // whether to display warnings or not (it need to be an integer for sending it to python (booleans don't work))
   int runDash = 0; // whether to run dash or not (it need to be an integer for sending it to python (booleans don't work))
   bool perSocket = true;
-  bool keepOriginal = true;
+  bool keepOriginalTrace = true;
   bool showSupportedSystems = false;
   bool showHelp = false;
   int opt;
@@ -115,7 +115,7 @@ tuple<string, string, string, bool, bool, int, int, int> processArgs(int argc, c
           break;
 
       case 'e':
-          keepOriginal = false;
+          keepOriginalTrace = false;
           break;
 
       case 'w':
@@ -173,7 +173,7 @@ tuple<string, string, string, bool, bool, int, int, int> processArgs(int argc, c
   optind++;
   string configFile = argv[optind];
 
-  return {inFile, outFile, configFile, perSocket, keepOriginal, displayWarnings, displayText, runDash};
+  return {inFile, outFile, configFile, perSocket, keepOriginalTrace, displayWarnings, displayText, runDash};
 }
 
 void checkInputOutputFiles(string inFile, string outFile) {
@@ -229,8 +229,8 @@ bool isMemoryEvent(map<int, MemoryEvent> memEventTypes, TEventValue evtValue) {
 }
 
 void addProcessModelHierarchy(map<int, vector<int>> MCsPerSocket, int nNodes, ProcessModel <> &originalProcessModel,
-                              ProcessModel<> &outputProcessModel, bool perSocket, bool keepOriginal) {
-  if (keepOriginal) {
+                              ProcessModel<> &outputProcessModel, bool perSocket, bool keepOriginalTrace) {
+  if (keepOriginalTrace) {
     // Keep hierarchy of the original process model (only the 1st app, we  can ignore the second (memory counters))
     // We can assume we always have 2 apps.
     auto originalFirstApplIt = originalProcessModel.cbegin();
@@ -253,7 +253,7 @@ void addProcessModelHierarchy(map<int, vector<int>> MCsPerSocket, int nNodes, Pr
     // Add application for each node
     outputProcessModel.addApplication();
     int appID = iNode;
-    if (keepOriginal) {
+    if (keepOriginalTrace) {
       // Increment 1 because app 0 is preserved for the original process model
       appID++;
     }
@@ -293,7 +293,7 @@ void writePreviousRecords(multimap<TRecordTime, MyRecord> &outputRecords,
 void writeMemoryMetricsRecord(vector<int> metrics,
                               int nodeID,
                               int socketID,
-                              bool keepOriginal,
+                              bool keepOriginalTrace,
                               int mcIDcorrespondence,
                               unsigned long long lastPoppedTime,
                               vector<float> lastWrittenMetrics,
@@ -304,7 +304,7 @@ void writeMemoryMetricsRecord(vector<int> metrics,
   // Write metrics record to the prv
   int thread;
   int appID = nodeID;
-  if (keepOriginal) {
+  if (keepOriginalTrace) {
     // appID is nodeID + 1, because app 0 is preserved for the original process model
     // The rest of apps are added for PROFET based on the number of nodes
     appID++;
@@ -338,7 +338,7 @@ void writeMemoryMetricsRecord(vector<int> metrics,
 bool processAndWriteMemoryMetricsIfPossible(vector<NodeMemoryRecords> &nodes,
                                             ProfetPyAdapter &profetPyAdapter,
                                             bool allowEmptyQueues,
-                                            bool keepOriginal,
+                                            bool keepOriginalTrace,
                                             multimap<TRecordTime, MyRecord> &outputRecords,
                                             ProcessModel<> outputProcessModel,
                                             ResourceModel<> outputResourceModel,
@@ -388,7 +388,7 @@ bool processAndWriteMemoryMetricsIfPossible(vector<NodeMemoryRecords> &nodes,
     writePreviousRecords(outputRecords, smallestMCTime, outputProcessModel, outputResourceModel, outputTraceBody, outputTraceFile);
 
     SocketMemoryRecords &socket = node.sockets[smallestTimeSocketID];
-    writeMemoryMetricsRecord(metrics_int, smallestTimeINode, smallestTimeSocketID, keepOriginal, socket.memoryControllerIDsCorrespondence[smallestTimeMCID],
+    writeMemoryMetricsRecord(metrics_int, smallestTimeINode, smallestTimeSocketID, keepOriginalTrace, socket.memoryControllerIDsCorrespondence[smallestTimeMCID],
                              socket.getLastPoppedTime(), lastWrittenMetrics, outputProcessModel, outputResourceModel, outputTraceBody, outputTraceFile);
     node.setLastWrittenMetrics(smallestTimeSocketID, smallestTimeMCID, metrics);
     return true;
@@ -448,7 +448,7 @@ void printFinalMessage(vector<NodeMemoryRecords> nodes, string prvOutputFile) {
 
 int main(int argc, char *argv[]) {
   // Process arguments
-  auto [inFile, outFile, configFile, perSocket, keepOriginal, displayWarnings, displayText, runDash] = processArgs(argc, argv);
+  auto [inFile, outFile, configFile, perSocket, keepOriginalTrace, displayWarnings, displayText, runDash] = processArgs(argc, argv);
   checkInputOutputFiles(inFile, outFile);
   // Read config file
   auto [memorySystem, cpuModel, cpuFreqGHz, cacheLineBytes] = readConfigFile(configFile);
@@ -551,9 +551,14 @@ int main(int argc, char *argv[]) {
                                      pmuType, cpuMicroarch, cpuModel, cpuFreqGHz, cacheLineBytes, displayWarnings);
   }
 
-  addProcessModelHierarchy(MCsPerSocket, nNodes, processModel, outputProcessModel, perSocket, keepOriginal);
+  addProcessModelHierarchy(MCsPerSocket, nNodes, processModel, outputProcessModel, perSocket, keepOriginalTrace);
 
-  dumpTraceHeader(outputTraceFile, traceDate, traceEndTime, traceTimeUnit, resourceModel, outputProcessModel, communicators);
+  // Communicators to be dumped to the output trace
+  std::vector< std::string > outCommunicators;
+  if (keepOriginalTrace) {
+    outCommunicators = communicators;
+  }
+  dumpTraceHeader(outputTraceFile, traceDate, traceEndTime, traceTimeUnit, resourceModel, outputProcessModel, outCommunicators);
 
   // Records to be written to the output trace sorted ascendingly by time
   multimap<TRecordTime, MyRecord> outputRecords;
@@ -565,7 +570,7 @@ int main(int argc, char *argv[]) {
     myTraceBody.read(traceFile, records, processModel, resourceModel, loadedStates, loadedEvents, metadataManager, traceEndTime);
     
     bool isMetadata = oldMetadataSize < metadataManager.metadata.size();
-    if (keepOriginal && isMetadata) {
+    if (keepOriginalTrace && isMetadata) {
       // If the read line is metadata, just write it to the output trace
       outputTraceFile << metadataManager.metadata.back() << endl;
       continue;
@@ -580,7 +585,7 @@ int main(int argc, char *argv[]) {
       TThreadOrder thread;
       processModel.getThreadLocation(globalThread, app, task, thread);
       // TODO Keep user-app records only (app == 0 for now, we will consider multiuser-app traces in the future)
-      if (keepOriginal && app == 0) {
+      if (keepOriginalTrace && app == 0) {
         outputRecords.insert(pair<TRecordTime, MyRecord>(record.getTime(), record));
       }
 
@@ -616,7 +621,7 @@ int main(int argc, char *argv[]) {
       bool allowEmptyQueues = false;
       bool processed;
       do {
-        processed = processAndWriteMemoryMetricsIfPossible(nodes, profetPyAdapter, allowEmptyQueues, keepOriginal, outputRecords,
+        processed = processAndWriteMemoryMetricsIfPossible(nodes, profetPyAdapter, allowEmptyQueues, keepOriginalTrace, outputRecords,
                                                            outputProcessModel, resourceModel, outputTraceBody, outputTraceFile);
       } while (processed);
 
@@ -632,7 +637,7 @@ int main(int argc, char *argv[]) {
   bool allowEmptyQueues = true;
   bool processed;
   do {
-    processed = processAndWriteMemoryMetricsIfPossible(nodes, profetPyAdapter, allowEmptyQueues, keepOriginal, outputRecords,
+    processed = processAndWriteMemoryMetricsIfPossible(nodes, profetPyAdapter, allowEmptyQueues, keepOriginalTrace, outputRecords,
                                                        outputProcessModel, resourceModel, outputTraceBody, outputTraceFile);
   } while (processed);
 
@@ -659,7 +664,7 @@ int main(int argc, char *argv[]) {
   // Initialize dash app
   if (runDash) {
     cout << "\nLoading interactive plot..." << endl;
-    profetPyAdapter.runDashApp(outFile, PRECISION, cpuFreqGHz, keepOriginal);
+    profetPyAdapter.runDashApp(outFile, PRECISION, cpuFreqGHz, keepOriginalTrace);
   }
 
   traceFile.close();
