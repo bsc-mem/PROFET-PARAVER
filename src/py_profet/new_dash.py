@@ -125,6 +125,9 @@ def prv_to_df(trace_file_path, row_file_path, precision, excluded_original, save
         # calculate read ratio
         df['rr'] = 100 - df['wr']
 
+        # TODO hard-coded drop 0s. Decide what to do with them in the output trace
+        df = df[~((df['bw'] == 0) & (df['lat'] == 0))].reset_index(drop=True)
+
         if save_feather:
             trace_feather_path = trace_file_path.replace('.prv', '.feather')
             df.to_feather(trace_feather_path)
