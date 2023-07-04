@@ -24,26 +24,26 @@ def get_sidebar(df: pd.DataFrame):
             value=True
         ),
         html.Div(id='toggle-curves-output'),
-        html.P("Color time dimension:"),
-        daq.ToggleSwitch(
-            id='toggle-time',
-            value=False
-        ),
-        html.Div(id='dropdown-toggle-node'),
-        html.P("Node:"),
-        dcc.Dropdown(['All'] + sorted(list(df['node_name'].unique())),
-                    'All',
-                    id='dropdown-node'),
-        html.Div(id='dropdown-toggle-socket'),
-        html.P("Socket:"),
-        dcc.Dropdown(['All'] + sorted(list(df['socket'].unique())),
-                    'All',
-                    id='dropdown-socket'),
-        html.Div(id='dropdown-toggle-mc'),
-        html.P("Memory controller:"),
-        dcc.Dropdown(['All'] + sorted(list(df['mc'].unique())) if df['mc'].nunique() > 1 else ['-'],
-                    'All' if df['mc'].nunique() > 1 else '-',
-                    id='dropdown-mc'),
+        # html.P("Color time dimension:"),
+        # daq.ToggleSwitch(
+        #     id='toggle-time',
+        #     value=False
+        # ),
+        # html.Div(id='dropdown-toggle-node'),
+        # html.P("Node:"),
+        # dcc.Dropdown(['All'] + sorted(list(df['node_name'].unique())),
+        #             'All',
+        #             id='dropdown-node'),
+        # html.Div(id='dropdown-toggle-socket'),
+        # html.P("Socket:"),
+        # dcc.Dropdown(['All'] + sorted(list(df['socket'].unique())),
+        #             'All',
+        #             id='dropdown-socket'),
+        # html.Div(id='dropdown-toggle-mc'),
+        # html.P("Memory controller:"),
+        # dcc.Dropdown(['All'] + sorted(list(df['mc'].unique())) if df['mc'].nunique() > 1 else ['-'],
+        #             'All' if df['mc'].nunique() > 1 else '-',
+        #             id='dropdown-mc'),
         html.Div(id='toggle-time-output'),
         html.P("Filter by timestamp:"),
         dcc.RangeSlider(
@@ -71,7 +71,7 @@ def get_sidebar(df: pd.DataFrame):
     ], style=style)
 
 
-def get_main_content():
+def get_main_content(node_names: list, num_sockets_per_node: int, num_mc_per_socket: int = None):
     content_style = {
         "margin-left": "1rem",
         "margin-right": "2rem",
@@ -82,29 +82,49 @@ def get_main_content():
         html.H4('System Info'),
     ])
 
-    charts_tab = html.Div([
-        html.H4('App\'s Bandwidth-Latency'),
-        dcc.Graph(id="scatter-plot", style={'width': '80%', 'height': '700px'}),
-    ])
+    chart_rows = []
+    for node_name in node_names:
+        chart_cols = []
+        for i_socket in range(num_sockets_per_node):
+            if num_mc_per_socket is None:
+                chart_cols.append(dbc.Col([
+                    html.H4(f'Node {node_name} - Socket {i_socket}'),
+                    dcc.Graph(id=f"node-{node_name}-socket-{i_socket}"),
+                ]))
+        chart_rows.append(dbc.Row(chart_cols))
+
+
+    charts_tab = dbc.Container(chart_rows, id='graph-container', fluid=True)
+    #     dbc.Row([
+    #         dbc.Col([
+    #             # html.H4('App\'s Bandwidth-Latency'),
+    #             dcc.Graph(id="scatter-plot"),
+    #             # dcc.Graph(id="scatter-plot", style={'width': '80%', 'height': '700px'}),
+    #         ]),
+    #         dbc.Col([
+    #             dcc.Graph(id="scatter-plot2"),
+    #         ]),
+    #     ])
+    # ])
 
     tabs = dbc.Tabs([
         dbc.Tab(system_info_tab, label="System Info", tab_id="system-tab"),
         dbc.Tab(charts_tab, label="Charts", tab_id="charts-tab"),
-    ], id="tabs", active_tab="system-tab")
+    ], id="tabs", active_tab="charts-tab")
 
     return html.Div([
         tabs,
     ], style=content_style)
 
 
-def get_layout(df: pd.DataFrame):
+def get_layout(df: pd.DataFrame, num_nodes: int, num_sockets_per_node: int, num_mc_per_socket: int = None):
     return dbc.Container([
         dbc.Row([
             dbc.Col([
                 get_sidebar(df),
             ], width=2),
             dbc.Col([
-                get_main_content(),
+                get_main_content(num_nodes, num_sockets_per_node, num_mc_per_socket),
             ], width=10),
         ]),
     ], fluid=True)

@@ -176,9 +176,9 @@ def get_color_bar_update(toggled_time, labels):
     }
 
 
-def get_dash_app(df):
+def get_dash_app(df, node_names: list, num_sockets_per_node: int, num_mc_per_socket: int = None):
     app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-    app.layout = layouts.get_layout(df)
+    app.layout = layouts.get_layout(df, node_names, num_sockets_per_node, num_mc_per_socket)
     return app
 
 
@@ -193,22 +193,22 @@ def get_curves_fig(curves, fig):
     return fig
 
 
-def get_application_memory_dots_fig(df, node_name='All', socket='All', mc='All', time_range=(), bw_range=(), lat_range=(), show_time=False, opacity=0.01):
+def get_application_memory_dots_fig(df, node_name=None, i_socket=None, time_range=(), bw_range=(), lat_range=(), opacity=0.01):
     mask = [True] * len(df)
-    if node_name != 'All':
+    if node_name is not None:
         mask &= df['node_name'] == node_name
-    if socket != 'All':
-        mask &= df['socket'] == int(socket)
-    if mc != '-' and mc != 'All':
-        mask &= df['mc'] == int(mc)
-    # if len(time_range):
-    #     mask &= (df['timestamp'] > time_range[0]) & (df['timestamp'] < time_range[1])
-    # if len(bw_range):
-    #     mask &= (df['bw'] > bw_range[0]) & (df['bw'] < bw_range[1])
-    # if len(lat_range):
-    #     mask &= (df['lat'] > lat_range[0]) & (df['lat'] < lat_range[1])
+    if i_socket is not None:
+        mask &= df['socket'] == int(i_socket)
+    # if mc != '-' and mc != 'All':
+    #     mask &= df['mc'] == int(mc)
+    if len(time_range):
+        mask &= (df['timestamp'] >= time_range[0]) & (df['timestamp'] < time_range[1])
+    if len(bw_range):
+        mask &= (df['bw'] >= bw_range[0]) & (df['bw'] < bw_range[1])
+    if len(lat_range):
+        mask &= (df['lat'] >= lat_range[0]) & (df['lat'] < lat_range[1])
 
-    if show_time:
+    # if show_time:
         # use rainbow color map
         # import matplotlib as mpl
         # import matplotlib.colors as mcolors
@@ -216,9 +216,9 @@ def get_application_memory_dots_fig(df, node_name='All', socket='All', mc='All',
         # color_list = [mcolors.rgb2hex(cmap(i)) for i in range(cmap.N)]
         # print(color_list)
         # dots_fig = px.scatter(df[mask], x='bw', y='lat', color='timestamp', color_discrete_map=color_list)
-        dots_fig = px.scatter(df[mask], x='bw', y='lat', color='timestamp')
-    else:
-        dots_fig = px.scatter(df[mask], x='bw', y='lat', color='stress_score', color_continuous_scale=stress_score_scale)
+        # dots_fig = px.scatter(df[mask], x='bw', y='lat', color='timestamp')
+    # else:
+    dots_fig = px.scatter(df[mask], x='bw', y='lat', color='stress_score', color_continuous_scale=stress_score_scale)
 
     marker_opts = dict(size=10, opacity=opacity)
     dots_fig.update_traces(marker=marker_opts)
@@ -247,6 +247,10 @@ if __name__ == '__main__':
 
     # load and process curves
     curves = get_curves(args.curves_path, args.cpu_freq)
+    
+    node_names = sorted(df['node_name'].unique())
+    num_nodes =  len(node_names)
+    num_sockets_per_node = df.groupby(['node_name', 'socket']).ngroups // num_nodes
 
     # save a pdf file with a default chart
     store_pdf_path = os.path.dirname(os.path.abspath(args.trace_file))
@@ -265,38 +269,53 @@ if __name__ == '__main__':
     print('PDF chart file:', store_pdf_file_path)
     print()
 
-    app = get_dash_app(df)
+    app = get_dash_app(df, node_names, num_sockets_per_node, None)
 
     @app.callback(
-        Output("scatter-plot", "figure"),
+        Output('graph-container', 'children'),
+        # Output("scatter-plot", "figure"),
+        # Input('graph-container', 'id'),
         Input('toggle-curves', 'value'),
-        Input('toggle-time', 'value'),
-        Input('dropdown-node', 'value'),
-        Input('dropdown-socket', 'value'),
-        Input('dropdown-mc', 'value'),
+        # Input('toggle-time', 'value'),
+        # Input('dropdown-node', 'value'),
+        # Input('dropdown-socket', 'value'),
+        # Input('dropdown-mc', 'value'),
         Input("range-slider-time", "value"),
         Input("range-slider-bw", "value"),
         Input("range-slider-lat", "value"),
         Input("slider-opacity", "value"))
-    def update_chart(toggled_curves, toggled_time, dropdown_node, dropdown_socket, dropdown_mc,
-                     slider_range_time, slider_range_bw, slider_range_lat, slider_opacity):
-        fig = make_subplots(rows=1, cols=1)
+    def update_chart(toggled_curves, slider_range_time, slider_range_bw, slider_range_lat, slider_opacity):
+        # Warning: this function must exactly match the layout defined for the graph-container,
+        # including text, the order of the inputs, etc.
+        updated_graph_rows = []
+        for node_name in node_names:
+            updated_graph_cols = []
+            for i_socket in range(1, num_sockets_per_node + 1):
+                fig = make_subplots(rows=1, cols=1)
 
-        if toggled_curves:
-            # plot curves
-            fig = get_curves_fig(curves, fig)
+                if toggled_curves:
+                    # plot curves
+                    fig = get_curves_fig(curves, fig)
 
-        # plot application bw-lat dots
-        dots_fig = get_application_memory_dots_fig(df, dropdown_node, dropdown_socket, dropdown_mc, slider_range_time,
-                                                   slider_range_bw, slider_range_lat, toggled_time, slider_opacity)
-        fig.add_trace(dots_fig.data[0])
+                # plot application bw-lat dots
+                dots_fig = get_application_memory_dots_fig(df, node_name, i_socket, slider_range_time, 
+                                                           slider_range_bw, slider_range_lat, slider_opacity)
+                fig.add_trace(dots_fig.data[0])
 
-        # labels = {'bw': 'Bandwidth (GB/s)', 'lat': 'Latency (ns)', 'timestamp': 'Timestamp (ns)'}
-        fig.update_xaxes(title=labels['bw'])
-        fig.update_yaxes(title=labels['lat'])
-        color_bar_update = get_color_bar_update(toggled_time, labels)
-        fig.update_coloraxes(**color_bar_update)
+                # labels = {'bw': 'Bandwidth (GB/s)', 'lat': 'Latency (ns)', 'timestamp': 'Timestamp (ns)'}
+                fig.update_xaxes(title=labels['bw'])
+                fig.update_yaxes(title=labels['lat'])
+                # color_bar_update = get_color_bar_update(toggled_time, labels)
+                fig.update_coloraxes(**color_bar_update)
 
-        return fig
+                # update graph
+                graph_id = f"node-{node_name}-socket-{i_socket}"
+                col = dbc.Col([
+                    html.H4(f'Node {node_name} - Socket {i_socket}'),
+                    dcc.Graph(id=graph_id, figure=fig)
+                ])
+                updated_graph_cols.append(col)
+            updated_graph_rows.append(dbc.Row(updated_graph_cols))
+        return updated_graph_rows
 
     app.run_server(debug=True)
