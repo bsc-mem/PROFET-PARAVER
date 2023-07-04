@@ -4,7 +4,6 @@ import dash_daq as daq
 import dash_bootstrap_components as dbc
 
 
-
 def get_sidebar(df: pd.DataFrame):
     # styling the sidebar
     style = {
@@ -71,11 +70,16 @@ def get_sidebar(df: pd.DataFrame):
     ], style=style)
 
 
-def get_main_content(node_names: list, num_sockets_per_node: int, num_mc_per_socket: int = None):
+def get_main_content(node_names: list, num_sockets_per_node: int,
+                     num_mc_per_socket: int = None, is_undersampled: bool = False):
     content_style = {
         "margin-left": "1rem",
         "margin-right": "2rem",
         "padding": "2rem 1rem",
+    }
+
+    tab_style = {
+        "margin-top": "2rem",
     }
 
     system_info_tab = html.Div([
@@ -83,6 +87,15 @@ def get_main_content(node_names: list, num_sockets_per_node: int, num_mc_per_soc
     ])
 
     chart_rows = []
+    if is_undersampled:
+        # add warning text
+        chart_rows.append(dbc.Row([
+            html.H5('Warning: Data is undersampled to 2000 elements.'),
+            html.Br(),
+            html.Br(),
+            html.Br(),
+        ]))
+
     for node_name in node_names:
         chart_cols = []
         for i_socket in range(num_sockets_per_node):
@@ -90,9 +103,8 @@ def get_main_content(node_names: list, num_sockets_per_node: int, num_mc_per_soc
                 chart_cols.append(dbc.Col([
                     html.H4(f'Node {node_name} - Socket {i_socket}'),
                     dcc.Graph(id=f"node-{node_name}-socket-{i_socket}"),
-                ]))
+                ], sm=12, md=6))
         chart_rows.append(dbc.Row(chart_cols))
-
 
     charts_tab = dbc.Container(chart_rows, id='graph-container', fluid=True)
     #     dbc.Row([
@@ -108,8 +120,8 @@ def get_main_content(node_names: list, num_sockets_per_node: int, num_mc_per_soc
     # ])
 
     tabs = dbc.Tabs([
-        dbc.Tab(system_info_tab, label="System Info", tab_id="system-tab"),
-        dbc.Tab(charts_tab, label="Charts", tab_id="charts-tab"),
+        dbc.Tab(system_info_tab, label="System Info", tab_id="system-tab", style=tab_style),
+        dbc.Tab(charts_tab, label="Charts", tab_id="charts-tab", style=tab_style),
     ], id="tabs", active_tab="charts-tab")
 
     return html.Div([
@@ -117,14 +129,15 @@ def get_main_content(node_names: list, num_sockets_per_node: int, num_mc_per_soc
     ], style=content_style)
 
 
-def get_layout(df: pd.DataFrame, num_nodes: int, num_sockets_per_node: int, num_mc_per_socket: int = None):
+def get_layout(df: pd.DataFrame, num_nodes: int, num_sockets_per_node: int,
+               num_mc_per_socket: int = None, is_undersampled: bool = False):
     return dbc.Container([
         dbc.Row([
             dbc.Col([
                 get_sidebar(df),
             ], width=2),
             dbc.Col([
-                get_main_content(num_nodes, num_sockets_per_node, num_mc_per_socket),
+                get_main_content(num_nodes, num_sockets_per_node, num_mc_per_socket, is_undersampled),
             ], width=10),
         ]),
     ], fluid=True)

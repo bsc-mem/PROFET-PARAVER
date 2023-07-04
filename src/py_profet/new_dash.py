@@ -176,9 +176,9 @@ def get_color_bar_update(toggled_time, labels):
     }
 
 
-def get_dash_app(df, node_names: list, num_sockets_per_node: int, num_mc_per_socket: int = None):
+def get_dash_app(df, node_names: list, num_sockets_per_node: int, num_mc_per_socket: int = None, is_undersampled: bool = False):
     app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-    app.layout = layouts.get_layout(df, node_names, num_sockets_per_node, num_mc_per_socket)
+    app.layout = layouts.get_layout(df, node_names, num_sockets_per_node, num_mc_per_socket, is_undersampled)
     return app
 
 
@@ -244,32 +244,47 @@ if __name__ == '__main__':
         df = pd.read_feather(args.trace_file)
     else:
         raise Exception(f'Unkown trace file extension ({args.trace_file.split(".")[-1]}) from {args.trace_file}.')
-
-    # load and process curves
-    curves = get_curves(args.curves_path, args.cpu_freq)
     
     node_names = sorted(df['node_name'].unique())
     num_nodes =  len(node_names)
     num_sockets_per_node = df.groupby(['node_name', 'socket']).ngroups // num_nodes
+    
+    # allow a maximum of elements to display. Randomly undersample if there are more elements than the limit
+    max_elements = 2000
+    is_undersampled = False
+    if len(df) > max_elements:
+        # TODO make each socket have the same number of elements
+        df = df.sample(max_elements)
+        is_undersampled = True
+
+    # load and process curves
+    curves = get_curves(args.curves_path, args.cpu_freq)
+    # get color bar update options
+    color_bar_update = get_color_bar_update(toggled_time=False, labels=labels)
 
     # save a pdf file with a default chart
-    store_pdf_path = os.path.dirname(os.path.abspath(args.trace_file))
-    pdf_filename = os.path.basename(os.path.abspath(args.trace_file)).replace('.prv', '.pdf')
-    store_pdf_file_path = os.path.join(store_pdf_path, pdf_filename)
-    default_fig = make_subplots(rows=1, cols=1)
-    default_fig = get_curves_fig(curves, default_fig)
-    # get application plot memory dots with default options
-    dots_fig = get_application_memory_dots_fig(df)
-    default_fig.add_trace(dots_fig.data[0])
-    default_fig.update_xaxes(title=labels['bw'])
-    default_fig.update_yaxes(title=labels['lat'])
-    color_bar_update = get_color_bar_update(toggled_time=False, labels=labels)
-    default_fig.update_coloraxes(**color_bar_update)
-    default_fig.write_image(store_pdf_file_path)
-    print('PDF chart file:', store_pdf_file_path)
-    print()
+    if args.plot_pdf:
+        store_pdf_path = os.path.dirname(os.path.abspath(args.trace_file))
+        if args.trace_file.endswith('.prv'):
+            pdf_filename = os.path.basename(os.path.abspath(args.trace_file)).replace('.prv', '.pdf')
+        elif args.trace_file.endswith('.feather'):
+            pdf_filename = os.path.basename(os.path.abspath(args.trace_file)).replace('.feather', '.pdf')
+        else:
+            raise Exception(f'Unkown trace file extension ({args.trace_file.split(".")[-1]}) from {args.trace_file}.')
+        store_pdf_file_path = os.path.join(store_pdf_path, pdf_filename)
+        default_fig = make_subplots(rows=1, cols=1)
+        default_fig = get_curves_fig(curves, default_fig)
+        # get application plot memory dots with default options
+        dots_fig = get_application_memory_dots_fig(df)
+        default_fig.add_trace(dots_fig.data[0])
+        default_fig.update_xaxes(title=labels['bw'])
+        default_fig.update_yaxes(title=labels['lat'])
+        default_fig.update_coloraxes(**color_bar_update)
+        default_fig.write_image(store_pdf_file_path)
+        print('PDF chart file:', store_pdf_file_path)
+        print()
 
-    app = get_dash_app(df, node_names, num_sockets_per_node, None)
+    app = get_dash_app(df, node_names, num_sockets_per_node, num_mc_per_socket=None, is_undersampled=is_undersampled)
 
     @app.callback(
         Output('graph-container', 'children'),
@@ -288,6 +303,16 @@ if __name__ == '__main__':
         # Warning: this function must exactly match the layout defined for the graph-container,
         # including text, the order of the inputs, etc.
         updated_graph_rows = []
+
+        if is_undersampled:
+            # add warning text
+            updated_graph_rows.append(dbc.Row([
+                html.H5('Warning: Data is undersampled to 2000 elements.'),
+                html.Br(),
+                html.Br(),
+                html.Br(),
+            ]))
+
         for node_name in node_names:
             updated_graph_cols = []
             for i_socket in range(1, num_sockets_per_node + 1):
@@ -313,7 +338,7 @@ if __name__ == '__main__':
                 col = dbc.Col([
                     html.H4(f'Node {node_name} - Socket {i_socket}'),
                     dcc.Graph(id=graph_id, figure=fig)
-                ])
+                ], sm=12, md=6)
                 updated_graph_cols.append(col)
             updated_graph_rows.append(dbc.Row(updated_graph_cols))
         return updated_graph_rows
