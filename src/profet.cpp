@@ -12,7 +12,6 @@
 #include <map>
 #include <cmath>
 #include <queue>
-#include <algorithm>
 #include <filesystem>
 #include <libgen.h>
 #include <unistd.h>
@@ -625,8 +624,8 @@ int main(int argc, char *argv[]) {
                                                            outputProcessModel, resourceModel, outputTraceBody, outputTraceFile);
       } while (processed);
 
-      // Update progress bar
-      updateProgress(mcRecord.t1 / traceEndTime);
+      // Update progress bar (make sure it is at most 100%)
+      updateProgress(min(mcRecord.t1 / traceEndTime, double(1)));
     }
 
     // Need to clear the currently stored records
