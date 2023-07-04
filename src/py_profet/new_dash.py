@@ -307,7 +307,7 @@ if __name__ == '__main__':
         if is_undersampled:
             # add warning text
             updated_graph_rows.append(dbc.Row([
-                html.H5('Warning: Data is undersampled to 2000 elements.'),
+                html.H5('Warning: Data is undersampled to 2000 elements.', style={"color": "red"}),
                 html.Br(),
                 html.Br(),
                 html.Br(),
