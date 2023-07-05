@@ -34,7 +34,6 @@ namespace fs = std::filesystem;
 #include "rowfileparser.h"
 
 
-
 string getProjectPath() {
   // Returns home path of current project
   char result[PATH_MAX];
@@ -54,6 +53,16 @@ string getProjectPath() {
 string PROJECT_PATH = getProjectPath();
 int PRECISION = 2; // Decimal precision for memory metrics
 int PROFET_BASE_EVENT_TYPE = 94000000; // Base event type for Profet events in Paraver
+// Order of the metrics in the output trace file, given by the keys in the metrics map with their name label
+vector<pair<string, string>> memoryMetricLabels = {
+  {"writeRatio", "Write ratio"},
+  {"bandwidth", "Bandwidth"},
+  {"maxBandwidth", "Maximum bandwidth"},
+  {"latency", "Latency"},
+  {"leadOffLatency", "Lead-off latency"},
+  {"maxLatency", "Maximum latency"},
+  {"stressScore", "Stress score"}
+};
 
 
 void printHelp() {
@@ -289,13 +298,13 @@ void writePreviousRecords(multimap<TRecordTime, MyRecord> &outputRecords,
   }
 }
 
-void writeMemoryMetricsRecord(vector<int> metrics,
+void writeMemoryMetricsRecord(unordered_map<string, int> metrics,
                               int nodeID,
                               int socketID,
                               bool keepOriginalTrace,
                               int mcIDcorrespondence,
                               unsigned long long lastPoppedTime,
-                              vector<float> lastWrittenMetrics,
+                              unordered_map<string, float> lastWrittenMetrics,
                               ProcessModel<> outputProcessModel,
                               ResourceModel<> outputResourceModel,
                               TraceBodyIO_v1< fstream, MyRecordContainer, ProcessModel<>, ResourceModel<>, TState, TEventType, MyMetadataManager, TTime, MyRecord > &outputTraceBody,
@@ -317,19 +326,24 @@ void writeMemoryMetricsRecord(vector<int> metrics,
   // cout << "Global Thread: " << thread << endl;
   // cout << "Last popped time: " << lastPoppedTime << "; metrics size: " << metrics.size() << endl;
   // cout << endl;
-  for (long unsigned int iMetric = 0; iMetric < metrics.size(); ++iMetric) {
+  // for (long unsigned int iMetric = 0; iMetric < metrics.size(); ++iMetric) {
+  int i = 0;
+  for (auto const& metricLabels : memoryMetricLabels) {
+    string key = metricLabels.first;
+    int val = metrics[key];
     MyRecord tmpRecord;
-    if (lastWrittenMetrics.empty() || lastWrittenMetrics[iMetric] != metrics[iMetric]) {
+    if (lastWrittenMetrics.empty() || lastWrittenMetrics[key] != val) {
       // Write new record only if the metric is different from the last written value in the same socket
       tmpRecord.type = EVENT;
       tmpRecord.time = lastPoppedTime;
       tmpRecord.thread = thread;
       tmpRecord.CPU = 0;
-      tmpRecord.URecordInfo.eventRecord.type = PROFET_BASE_EVENT_TYPE + iMetric + 1;
-      tmpRecord.URecordInfo.eventRecord.value = metrics[iMetric];
+      tmpRecord.URecordInfo.eventRecord.type = PROFET_BASE_EVENT_TYPE + i + 1;
+      tmpRecord.URecordInfo.eventRecord.value = val;
       // Write new record to output trace
       outputTraceBody.write(outputTraceFile, outputProcessModel, outputResourceModel, &tmpRecord);
     }
+    i++;
   }
 }
 
@@ -366,20 +380,23 @@ bool processAndWriteMemoryMetricsIfPossible(vector<NodeMemoryRecords> &nodes,
     // Write output trace file with memory metrics
     NodeMemoryRecords &node = nodes[smallestTimeINode];
     // cout << "Process " << smallestMCTime << " " << smallestTimeSocketID << " " << smallestTimeMCID << endl;
-    vector<float> lastWrittenMetrics = node.getLastWrittenMetrics(smallestTimeSocketID, smallestTimeMCID);
-    vector<float> metrics = node.processMemoryMetrics(profetPyAdapter, smallestTimeSocketID, smallestTimeMCID, allowEmptyQueues);
+    unordered_map<string, float> lastWrittenMetrics = node.getLastWrittenMetrics(smallestTimeSocketID, smallestTimeMCID);
+    unordered_map<string, float> metrics = node.processMemoryMetrics(profetPyAdapter, smallestTimeSocketID, smallestTimeMCID, allowEmptyQueues);
     // cout << "Example metrics: " << metrics[0] << " " << metrics[1] << endl;
 
     // Convert metrics to int because prv files do not accept decimals. The number of decimal places is specified in the pcf file
     // and it is stored in the PRECISION variable
-    vector<int> metrics_int(metrics.size());
+    unordered_map<string, int> metrics_int;
     float pow_10 = pow(10.0f, (float)PRECISION);
-    for (long unsigned int i = 0; i < metrics.size(); i++) {
+    // for (long unsigned int i = 0; i < metrics.size(); i++) {
+    for (auto const& metric : metrics) {
+      string key = metric.first;
+      float val = metric.second;
       // Do not allow negative metric values, they mean the calculated metric is not (theoretically) possible.
       // Warnings are already printed in these cases
-      if (metrics[i] >= 0) {
+      if (val >= 0) {
         // Round metric value to the closest int times 10^precision, paraver will then put the decimals properly
-        metrics_int[i] = round(metrics[i] * pow_10);
+        metrics_int[key] = round(val * pow_10);
       }
     }
 
@@ -651,7 +668,13 @@ int main(int argc, char *argv[]) {
   writeRowFile(processModel, inRowFile, rowOutputFile, nodes, perSocket);
 
   // Write new .pcf file for memory metrics. Metric labels are the same in each node
-  pcfMemParser->writeOutput(pcfOutputFile, nodes[0].getMetricLabels(), PRECISION);
+  vector<string> metricLabels(memoryMetricLabels.size());
+  int i = 0;
+  for (auto const& metric : memoryMetricLabels) {
+    metricLabels[i] = metric.second;
+    i++;
+  }
+  pcfMemParser->writeOutput(pcfOutputFile, metricLabels, PRECISION);
 
   // Set progress bar as finished
   updateProgress(1);

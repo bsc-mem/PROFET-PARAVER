@@ -33,7 +33,7 @@ class NodeMemoryRecords {
     map<int, vector<int>> MCsPerSocket;
     map<int, SocketMemoryRecords> sockets;
     // Keep track of the last metric values written in the prv file for each socket
-    map<string, vector<float>> lastWrittenMetrics;
+    map<string, unordered_map<string, float>> lastWrittenMetrics;
     // Sum all the metric values in each socket for computing the averages at the end
     map<string, map<string, float>> sumMetrics;
     // If memory metrics are computed per socket or per MC
@@ -54,15 +54,13 @@ class NodeMemoryRecords {
     void addRead(int socketID, int mcID, MemoryRecord record);
     void addWrite(int socketID, int mcID, MemoryRecord record);
 
-    vector<float> getLastWrittenMetrics(int socketID, int mcID);
-    void setLastWrittenMetrics(int socketID, int mcID, vector<float> metrics);
+    unordered_map<string, float> getLastWrittenMetrics(int socketID, int mcID);
+    void setLastWrittenMetrics(int socketID, int mcID, unordered_map<string, float> metrics);
     
     bool areAllSocketsEmpty();
 
     tuple<bool, unsigned long long, int, int> isProcessableData(bool allowEmptyQueues);
-    vector<float> processMemoryMetrics(ProfetPyAdapter &profetPyAdapter, int socketID, int mcID, bool allowEmptyQueues);
-
-    vector<string> getMetricLabels();
+    unordered_map<string, float> processMemoryMetrics(ProfetPyAdapter &profetPyAdapter, int socketID, int mcID, bool allowEmptyQueues);
 
     void printSocketsQueues();
     void printFinalMessage();
