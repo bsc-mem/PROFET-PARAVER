@@ -66,8 +66,8 @@ vector<pair<string, string>> memoryMetricLabels = {
   {"numWrites", "Number of memory writes"},
   {"bytesRead", "Bytes read"},
   {"bytesWritten", "Bytes written"},
-  {"bwRatio", "Bandwidth / Max. bandwidth ratio"},
-  {"latRatio", "Latency / Max. latency ratio"}
+  // {"bwRatio", "Bandwidth / Max. bandwidth ratio"},
+  // {"latRatio", "Latency / Max. latency ratio"}
 };
 
 
@@ -304,7 +304,7 @@ void writePreviousRecords(multimap<TRecordTime, MyRecord> &outputRecords,
   }
 }
 
-void writeMemoryMetricsRecord(unordered_map<string, int> metrics,
+void writeMemoryMetricsRecord(unordered_map<string, long long int> metrics,
                               int nodeID,
                               int socketID,
                               bool keepOriginalTrace,
@@ -336,7 +336,7 @@ void writeMemoryMetricsRecord(unordered_map<string, int> metrics,
   int i = 0;
   for (auto const& metricLabels : memoryMetricLabels) {
     string key = metricLabels.first;
-    int val = metrics[key];
+    long long int val = metrics[key];
     MyRecord tmpRecord;
     if (lastWrittenMetrics.empty() || lastWrittenMetrics[key] != val) {
       // Write new record only if the metric is different from the last written value in the same socket
@@ -392,7 +392,7 @@ bool processAndWriteMemoryMetricsIfPossible(vector<NodeMemoryRecords> &nodes,
 
     // Convert metrics to int because prv files do not accept decimals. The number of decimal places is specified in the pcf file
     // and it is stored in the PRECISION variable
-    unordered_map<string, int> metrics_int;
+    unordered_map<string, long long int> metrics_int;
     float pow_10 = pow(10.0f, (float)PRECISION);
     // for (long unsigned int i = 0; i < metrics.size(); i++) {
     for (auto const& metric : metrics) {
