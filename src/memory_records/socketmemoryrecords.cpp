@@ -105,10 +105,13 @@ bool SocketMemoryRecords::areAllQueuesEmpty() {
     return true;
 }
 
-pair<float, float> SocketMemoryRecords::processBandwidths(int mcID, uint cacheLineBytes, bool allowEmptyQueues) {
+tuple<float, float, int, int> SocketMemoryRecords::processBandwidths(int mcID, uint cacheLineBytes, bool allowEmptyQueues) {
     // Add all bandwidths, reads and writes for each subsequent MC in the socket
+    // Returns a map with the read and write bandwidths, as well as the total number of reads and writes
     float readBW = 0;
     float writeBW = 0;
+    int numReads = 0;
+    int numWrites = 0;
 
     // cout << "PROCESS BWS " << mcID << endl;
 
@@ -135,6 +138,8 @@ pair<float, float> SocketMemoryRecords::processBandwidths(int mcID, uint cacheLi
             }
             readBW += bws.first;
             writeBW += bws.second;
+            numReads += reads[id].front().n;
+            numWrites += writes[id].front().n;
             // cout << "reads: " << to_string(reads[mcID].front().n) << "; writes: " << to_string(writes[mcID].front().n) << endl;
             // cout << "reads t0: " << to_string(reads[mcID].front().t0) << "; writes t0: " << to_string(writes[mcID].front().t0) << endl;
             // cout << "reads t1: " << to_string(reads[mcID].front().t1) << "; writes t1: " << to_string(writes[mcID].front().t1) << endl;
@@ -164,11 +169,13 @@ pair<float, float> SocketMemoryRecords::processBandwidths(int mcID, uint cacheLi
         pair<float, float> bws = processBW(reads[mcID], writes[mcID], cacheLineBytes);
         readBW = bws.first;
         writeBW = bws.second;
+        numReads = reads[mcID].front().n;
+        numWrites = writes[mcID].front().n;
         // cout << "read BW: " << to_string(readBW) << "; write BW: " << to_string(writeBW) << endl;
         popOldestMCRecord(mcID);
     }
 
-    return {readBW, writeBW};
+    return {readBW, writeBW, numReads, numWrites};
 }
 
 void SocketMemoryRecords::printQueueSizes() {
