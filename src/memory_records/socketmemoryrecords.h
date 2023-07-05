@@ -51,7 +51,7 @@ class SocketMemoryRecords {
     bool areQueuesEmpty(int mcID);
     bool areAllQueuesEmpty();
 
-    pair<float, float> processBandwidths(int mcID, uint cacheLineBytes, bool allowEmptyQueues);
+    tuple<float, float, int, int> processBandwidths(int mcID, uint cacheLineBytes, bool allowEmptyQueues);
 
     void printQueueSizes();
     void printQueues();

@@ -117,10 +117,9 @@ unordered_map<string, float>NodeMemoryRecords::processMemoryMetrics(ProfetPyAdap
   // sockets[socketID].printQueues();
 
   // Calculates read and write bandwidths and pops the smaller (t1) record for saving memory
-  auto [readBW, writeBW] = sockets[socketID].processBandwidths(mcID, cacheLineBytes, allowEmptyQueues);
+  auto [readBW, writeBW, numReads, numWrites] = sockets[socketID].processBandwidths(mcID, cacheLineBytes, allowEmptyQueues);
 
   unordered_map<string, float> metrics;
-  // Warning: make sure the insert order matches the metric names returned in the function "getMetricLabels" 
   metrics["writeRatio"] = -1;
   metrics["bandwidth"] = -1;
   metrics["maxBandwidth"] = -1;
@@ -128,6 +127,12 @@ unordered_map<string, float>NodeMemoryRecords::processMemoryMetrics(ProfetPyAdap
   metrics["leadOffLatency"] = -1;
   metrics["maxLatency"] = -1;
   metrics["stressScore"] = -1;
+  metrics["numReads"] = -1;
+  metrics["numWrites"] = -1;
+  metrics["bytesRead"] = -1;
+  metrics["bytesWritten"] = -1;
+  metrics["bwRatio"] = -1;
+  metrics["latRatio"] = -1;
 
   if (readBW == -1 || writeBW == -1) {
     return metrics;
@@ -165,6 +170,12 @@ unordered_map<string, float>NodeMemoryRecords::processMemoryMetrics(ProfetPyAdap
   metrics["leadOffLatency"] = leadOffLatency;
   metrics["maxLatency"] = maxLatency;
   metrics["stressScore"] = stressScore;
+  metrics["numReads"] = numReads;
+  metrics["numWrites"] = numWrites;
+  metrics["bytesRead"] = numReads * cacheLineBytes;
+  metrics["bytesWritten"] = numWrites * cacheLineBytes;
+  metrics["bwRatio"] = metrics["bandwidth"] *100 / metrics["maxBandwidth"];
+  metrics["latRatio"] = metrics["latency"] *100 / metrics["maxLatency"];
 
   // sumMetrics is used for computing the average metrics at the end of the execution
   string id = getFullID(socketID, mcID);

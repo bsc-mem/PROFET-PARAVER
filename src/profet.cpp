@@ -61,7 +61,13 @@ vector<pair<string, string>> memoryMetricLabels = {
   {"latency", "Latency"},
   {"leadOffLatency", "Lead-off latency"},
   {"maxLatency", "Maximum latency"},
-  {"stressScore", "Stress score"}
+  {"stressScore", "Stress score"},
+  {"numReads", "Number of memory reads"},
+  {"numWrites", "Number of memory writes"},
+  {"bytesRead", "Bytes read"},
+  {"bytesWritten", "Bytes written"},
+  {"bwRatio", "Bandwidth / Max. bandwidth ratio"},
+  {"latRatio", "Latency / Max. latency ratio"}
 };
 
 
