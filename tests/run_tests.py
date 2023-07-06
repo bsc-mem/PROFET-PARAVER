@@ -58,7 +58,7 @@ def test_with_parameters(raw_file: str, processed_file: str, config_file: str, p
 
     if not no_tests:
         # run with command instead of importing the module. It is much better like this because of the way unittests work.
-        tests_exit_code = os.system(f'python3 tests/functional_test.py {raw_file} {processed_file} {precision} {nnodes} {nsockets} {nmcs}')
+        tests_exit_code = os.system(f'python3 tests/functional_test.py {raw_file} {processed_file} {precision} {nnodes} {nsockets} {nmcs} {int(exclude_original_trace)}')
         if fail_fast and tests_exit_code != 0:
             raise Exception('Functional tests failed.')
 
