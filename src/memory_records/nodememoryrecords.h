@@ -33,34 +33,34 @@ class NodeMemoryRecords {
     map<int, vector<int>> MCsPerSocket;
     map<int, SocketMemoryRecords> sockets;
     // Keep track of the last metric values written in the prv file for each socket
-    map<string, unordered_map<string, float>> lastWrittenMetrics;
+    map<string, unordered_map<string, double>> lastWrittenMetrics;
     // Sum all the metric values in each socket for computing the averages at the end
-    map<string, map<string, float>> sumMetrics;
+    map<string, map<string, double>> sumMetrics;
     // If memory metrics are computed per socket or per MC
     bool perSocket;
     string memorySystem;
     string pmuType;
     string cpuMicroArch;
     string cpuModel;
-    float cpuFreqGHz;
+    double cpuFreqGHz;
     int cacheLineBytes;
     int displayWarnings;
 
     NodeMemoryRecords();
     NodeMemoryRecords(int nodeID, string name, map<int, vector<int>> MCsPerSocket, bool perSocket,
                       string memorySystem, string pmuType, string cpuMicroArch, string cpuModel,
-                      float cpuFreqGHz, int cacheLineBytes, int displayWarnings);
+                      double cpuFreqGHz, int cacheLineBytes, int displayWarnings);
 
     void addRead(int socketID, int mcID, MemoryRecord record);
     void addWrite(int socketID, int mcID, MemoryRecord record);
 
-    unordered_map<string, float> getLastWrittenMetrics(int socketID, int mcID);
-    void setLastWrittenMetrics(int socketID, int mcID, unordered_map<string, float> metrics);
+    unordered_map<string, double> getLastWrittenMetrics(int socketID, int mcID);
+    void setLastWrittenMetrics(int socketID, int mcID, unordered_map<string, double> metrics);
     
     bool areAllSocketsEmpty();
 
     tuple<bool, unsigned long long, int, int> isProcessableData(bool allowEmptyQueues);
-    unordered_map<string, float> processMemoryMetrics(ProfetPyAdapter &profetPyAdapter, int socketID, int mcID, bool allowEmptyQueues);
+    unordered_map<string, double> processMemoryMetrics(ProfetPyAdapter &profetPyAdapter, int socketID, int mcID, bool allowEmptyQueues);
 
     void printSocketsQueues();
     void printFinalMessage();
