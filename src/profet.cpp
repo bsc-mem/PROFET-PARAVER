@@ -391,7 +391,7 @@ bool processAndWriteMemoryMetricsIfPossible(vector<NodeMemoryRecords> &nodes,
     // Convert metrics to int because prv files do not accept decimals. The number of decimal places is specified in the pcf file
     // and it is stored in the PRECISION variable
     unordered_map<string, long long int> metrics_int;
-    float pow_10 = pow(10.0f, (float)PRECISION);
+    double pow_10 = pow(10.0f, (double)PRECISION);
     // for (long unsigned int i = 0; i < metrics.size(); i++) {
     for (auto const& metric : metrics) {
       string key = metric.first;
