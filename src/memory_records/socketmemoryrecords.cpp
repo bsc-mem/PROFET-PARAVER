@@ -138,8 +138,12 @@ tuple<float, float, int, int> SocketMemoryRecords::processBandwidths(int mcID, u
             }
             readBW += bws.first;
             writeBW += bws.second;
-            numReads += reads[id].front().n;
-            numWrites += writes[id].front().n;
+            if (!reads[id].empty()) {
+                numReads += reads[id].front().n;
+            }
+            if (!writes[id].empty()) {
+                numWrites += writes[id].front().n;
+            }
             // cout << "reads: " << to_string(reads[mcID].front().n) << "; writes: " << to_string(writes[mcID].front().n) << endl;
             // cout << "reads t0: " << to_string(reads[mcID].front().t0) << "; writes t0: " << to_string(writes[mcID].front().t0) << endl;
             // cout << "reads t1: " << to_string(reads[mcID].front().t1) << "; writes t1: " << to_string(writes[mcID].front().t1) << endl;
@@ -169,8 +173,12 @@ tuple<float, float, int, int> SocketMemoryRecords::processBandwidths(int mcID, u
         pair<float, float> bws = processBW(reads[mcID], writes[mcID], cacheLineBytes);
         readBW = bws.first;
         writeBW = bws.second;
-        numReads = reads[mcID].front().n;
-        numWrites = writes[mcID].front().n;
+        if (!reads[mcID].empty()) {
+            numReads = reads[mcID].front().n;
+        }
+        if (!writes[mcID].empty()) {
+            numWrites = writes[mcID].front().n;
+        }
         // cout << "read BW: " << to_string(readBW) << "; write BW: " << to_string(writeBW) << endl;
         popOldestMCRecord(mcID);
     }
