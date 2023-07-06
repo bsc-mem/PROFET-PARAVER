@@ -209,13 +209,13 @@ void checkNodeNames(vector<string> nodeNames, string rowInputFile, int nNodes) {
   }
 }
 
-tuple<string, string, float, int> readConfigFile(string configFile) {
+tuple<string, string, double, int> readConfigFile(string configFile) {
   pt::ptree root;
   pt::read_json(configFile, root);
   // Read values
   string memorySystem = root.get<string>("memory_system");
   string cpuModel = root.get<string>("cpu_model");
-  float cpuFreqGHz = root.get<float>("cpu_freq_ghz");
+  double cpuFreqGHz = root.get<double>("cpu_freq_ghz");
   int cacheLineBytes = root.get<int>("cache_line_bytes");
 
   return {memorySystem, cpuModel, cpuFreqGHz, cacheLineBytes};
@@ -308,7 +308,7 @@ void writeMemoryMetricsRecord(unordered_map<string, long long int> metrics,
                               bool keepOriginalTrace,
                               int mcIDcorrespondence,
                               unsigned long long lastPoppedTime,
-                              unordered_map<string, float> lastWrittenMetrics,
+                              unordered_map<string, double> lastWrittenMetrics,
                               ProcessModel<> outputProcessModel,
                               ResourceModel<> outputResourceModel,
                               TraceBodyIO_v1< fstream, MyRecordContainer, ProcessModel<>, ResourceModel<>, TState, TEventType, MyMetadataManager, TTime, MyRecord > &outputTraceBody,
@@ -384,8 +384,8 @@ bool processAndWriteMemoryMetricsIfPossible(vector<NodeMemoryRecords> &nodes,
     // Write output trace file with memory metrics
     NodeMemoryRecords &node = nodes[smallestTimeINode];
     // cout << "Process " << smallestMCTime << " " << smallestTimeSocketID << " " << smallestTimeMCID << endl;
-    unordered_map<string, float> lastWrittenMetrics = node.getLastWrittenMetrics(smallestTimeSocketID, smallestTimeMCID);
-    unordered_map<string, float> metrics = node.processMemoryMetrics(profetPyAdapter, smallestTimeSocketID, smallestTimeMCID, allowEmptyQueues);
+    unordered_map<string, double> lastWrittenMetrics = node.getLastWrittenMetrics(smallestTimeSocketID, smallestTimeMCID);
+    unordered_map<string, double> metrics = node.processMemoryMetrics(profetPyAdapter, smallestTimeSocketID, smallestTimeMCID, allowEmptyQueues);
     // cout << "Example metrics: " << metrics[0] << " " << metrics[1] << endl;
 
     // Convert metrics to int because prv files do not accept decimals. The number of decimal places is specified in the pcf file
@@ -395,7 +395,7 @@ bool processAndWriteMemoryMetricsIfPossible(vector<NodeMemoryRecords> &nodes,
     // for (long unsigned int i = 0; i < metrics.size(); i++) {
     for (auto const& metric : metrics) {
       string key = metric.first;
-      float val = metric.second;
+      double val = metric.second;
       // Do not allow negative metric values, they mean the calculated metric is not (theoretically) possible.
       // Warnings are already printed in these cases
       if (val >= 0) {

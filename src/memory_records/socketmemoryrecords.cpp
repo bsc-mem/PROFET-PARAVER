@@ -105,11 +105,11 @@ bool SocketMemoryRecords::areAllQueuesEmpty() {
     return true;
 }
 
-tuple<float, float, int, int> SocketMemoryRecords::processBandwidths(int mcID, uint cacheLineBytes, bool allowEmptyQueues) {
+tuple<double, double, int, int> SocketMemoryRecords::processBandwidths(int mcID, uint cacheLineBytes, bool allowEmptyQueues) {
     // Add all bandwidths, reads and writes for each subsequent MC in the socket
     // Returns a map with the read and write bandwidths, as well as the total number of reads and writes
-    float readBW = 0;
-    float writeBW = 0;
+    double readBW = 0;
+    double writeBW = 0;
     int numReads = 0;
     int numWrites = 0;
 
@@ -131,7 +131,7 @@ tuple<float, float, int, int> SocketMemoryRecords::processBandwidths(int mcID, u
             if (reads[id].empty() && writes[id].empty()) {
                 continue;
             }
-            pair<float, float> bws = processBW(reads[id], writes[id], cacheLineBytes);
+            pair<double, double> bws = processBW(reads[id], writes[id], cacheLineBytes);
             if (bws.first == -1 || bws.second == -1) {
                 invalidBW = true;
                 break;
@@ -170,7 +170,7 @@ tuple<float, float, int, int> SocketMemoryRecords::processBandwidths(int mcID, u
         // cout << "reads: " << to_string(reads[mcID].front().n) << "; writes: " << to_string(writes[mcID].front().n) << endl;
         // cout << "reads t0: " << to_string(reads[mcID].front().t0) << "; writes t0: " << to_string(writes[mcID].front().t0) << endl;
         // cout << "reads t1: " << to_string(reads[mcID].front().t1) << "; writes t1: " << to_string(writes[mcID].front().t1) << endl;
-        pair<float, float> bws = processBW(reads[mcID], writes[mcID], cacheLineBytes);
+        pair<double, double> bws = processBW(reads[mcID], writes[mcID], cacheLineBytes);
         readBW = bws.first;
         writeBW = bws.second;
         if (!reads[mcID].empty()) {
@@ -205,7 +205,7 @@ void SocketMemoryRecords::printQueues() {
     printMapQueues(writes);
 }
 
-pair<float, float> SocketMemoryRecords::processBW(queue<MemoryRecord> readQ, queue<MemoryRecord> writeQ, uint cacheLineBytes) {
+pair<double, double> SocketMemoryRecords::processBW(queue<MemoryRecord> readQ, queue<MemoryRecord> writeQ, uint cacheLineBytes) {
     if (writeQ.empty()) {
         return {getMRBandwidth(readQ.front(), cacheLineBytes), 0};
     } else if (readQ.empty()) {
@@ -248,7 +248,7 @@ tuple<unsigned long long, int, int> SocketMemoryRecords::getSmallestElement() {
     return {smallerMCTime, smallerMCkey, state};
 }
 
-float SocketMemoryRecords::getMRBandwidth(MemoryRecord mr, uint cacheLineBytes) {
+double SocketMemoryRecords::getMRBandwidth(MemoryRecord mr, uint cacheLineBytes) {
     if (mr.t0 > mr.t1) {
         throw runtime_error("Cannot process bandwidth because the given time interval has t0 > t1.");
     } else if (mr.t0 == mr.t1) {
@@ -270,9 +270,9 @@ float SocketMemoryRecords::getMRBandwidth(MemoryRecord mr, uint cacheLineBytes) 
     }
 
     // Calculate total "load" in GB
-    float load = cacheLineBytes * mr.n / pow(10, 9);
+    double load = cacheLineBytes * mr.n / pow(10, 9);
     // Calculate elapsed times in seconds
-    float elapsedSeconds = (mr.t1 - mr.t0) / pow(10, 9);
+    double elapsedSeconds = (mr.t1 - mr.t0) / pow(10, 9);
     // Calculate read and write bandwidths in GB/s
     // cout << "Calc BW " << mr.n << " " << load << " " << elapsedSeconds << endl;
     return load / elapsedSeconds;

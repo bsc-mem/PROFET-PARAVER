@@ -38,10 +38,10 @@ class ProfetPyAdapter {
     string curvesPath;
     // Curves curves;
     // map with read ratios as keys and pairs of vectors of bandwidths and latencies as values
-    map<int, pair<vector<float>, vector<float>>> curves;
+    map<int, pair<vector<double>, vector<double>>> curves;
     // Same as previous curves but bws and lats are python list objects
     map<int, pair<PyObject*, PyObject*>> pyCurves;
-    vector<float> availableReadRatios;
+    vector<double> availableReadRatios;
     string projectSrcPath;
     string profetIntegrationPath;
     string pyProfetPath;
@@ -58,14 +58,14 @@ class ProfetPyAdapter {
 
     PyObject* getRowFromDB();
     string getCurvesPath();
-    void setCurvesBwsLats(string curvesPath, map<int, pair<vector<float>, vector<float>>> &curves, map<int, pair<PyObject*, PyObject*>> &pyCurves);
+    void setCurvesBwsLats(string curvesPath, map<int, pair<vector<double>, vector<double>>> &curves, map<int, pair<PyObject*, PyObject*>> &pyCurves);
     void checkSystemSupported();
 
     void printSupportedSystems();
 
-    tuple<float, float, float, float, float> computeMemoryMetrics(float cpuFreqGHz, float writeRatio, float bandwidth, bool displayWarnings);
+    tuple<double, double, double, double, double> computeMemoryMetrics(double cpuFreqGHz, double writeRatio, double bandwidth, bool displayWarnings);
 
-    void runDashApp(string traceFilePath, float precision, float cpuFreq, bool keepOriginalTraceFile);
+    void runDashApp(string traceFilePath, double precision, double cpuFreq, bool keepOriginalTraceFile);
 
   private:
     PyObject* getFunctionFromProfetIntegration(string fnName);

@@ -16,7 +16,7 @@ NodeMemoryRecords::NodeMemoryRecords() {}
 
 NodeMemoryRecords::NodeMemoryRecords(int nodeID, string name, map<int, vector<int>> MCsPerSocket,bool perSocket,
                                      string memorySystem, string pmuType, string cpuMicroArch, string cpuModel,
-                                     float cpuFreqGHz, int cacheLineBytes, int displayWarnings) {
+                                     double cpuFreqGHz, int cacheLineBytes, int displayWarnings) {
     this->nodeID = nodeID;
     this->name = name;
     // Memory controler ID vectors in each socket ID are already sorted
@@ -32,17 +32,17 @@ NodeMemoryRecords::NodeMemoryRecords(int nodeID, string name, map<int, vector<in
   
     // Initialize SocketMemoryRecords objects for each socket
     // Sum all the metric values in each socket for computing the averages at the end
-    map<string, map<string, float>> sumMetrics;
+    map<string, map<string, double>> sumMetrics;
     for (const auto &[socketID, memoryControllerIDs] : MCsPerSocket) {
         sockets[socketID] = SocketMemoryRecords(socketID, memoryControllerIDs, displayWarnings);
         if (perSocket) {
             string id = to_string(socketID);
-            lastWrittenMetrics[id] = unordered_map<string, float>();
+            lastWrittenMetrics[id] = unordered_map<string, double>();
             initSumMetrics(id);
         } else {
             for (int mcID : memoryControllerIDs) {
                 string id = getFullMCID(socketID, mcID);
-                lastWrittenMetrics[id] = unordered_map<string, float>();
+                lastWrittenMetrics[id] = unordered_map<string, double>();
                 initSumMetrics(id);
             }
         }
@@ -58,12 +58,12 @@ void NodeMemoryRecords::addWrite(int socketID, int mcID, MemoryRecord record) {
     sockets[socketID].addWrite(mcID, record);
 }
 
-unordered_map<string, float> NodeMemoryRecords::getLastWrittenMetrics(int socketID, int mcID) {
+unordered_map<string, double> NodeMemoryRecords::getLastWrittenMetrics(int socketID, int mcID) {
   string id = getFullID(socketID, mcID);
   return lastWrittenMetrics[id];
 }
 
-void NodeMemoryRecords::setLastWrittenMetrics(int socketID, int mcID, unordered_map<string, float> metrics) {
+void NodeMemoryRecords::setLastWrittenMetrics(int socketID, int mcID, unordered_map<string, double> metrics) {
   string id = getFullID(socketID, mcID);
   lastWrittenMetrics[id] = metrics;
 }
@@ -110,7 +110,7 @@ tuple<bool, unsigned long long, int, int> NodeMemoryRecords::isProcessableData(b
 }
 
 
-unordered_map<string, float>NodeMemoryRecords::processMemoryMetrics(ProfetPyAdapter &profetPyAdapter, int socketID, int mcID, bool allowEmptyQueues) {
+unordered_map<string, double>NodeMemoryRecords::processMemoryMetrics(ProfetPyAdapter &profetPyAdapter, int socketID, int mcID, bool allowEmptyQueues) {
   // Compute the necessary memory stress metrics and write them in the output file.
   // Pre: bandwidths have to be processable (there is the function "isProcessableData" for checking it before calling this method)
   
@@ -119,7 +119,7 @@ unordered_map<string, float>NodeMemoryRecords::processMemoryMetrics(ProfetPyAdap
   // Calculates read and write bandwidths and pops the smaller (t1) record for saving memory
   auto [readBW, writeBW, numReads, numWrites] = sockets[socketID].processBandwidths(mcID, cacheLineBytes, allowEmptyQueues);
 
-  unordered_map<string, float> metrics;
+  unordered_map<string, double> metrics;
   metrics["writeRatio"] = -1;
   metrics["bandwidth"] = -1;
   metrics["maxBandwidth"] = -1;
@@ -216,7 +216,7 @@ void NodeMemoryRecords::printFinalMessage() {
 
 
 void NodeMemoryRecords::initSumMetrics(string id) {
-    sumMetrics[id] = map<string, float>();
+    sumMetrics[id] = map<string, double>();
     sumMetrics[id]["n"] = 0;
     sumMetrics[id]["writeRatio"] = 0;
     sumMetrics[id]["bandwidth"] = 0;
