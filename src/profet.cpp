@@ -66,8 +66,6 @@ vector<pair<string, string>> memoryMetricLabels = {
   {"numWrites", "Number of memory writes"},
   {"bytesRead", "Bytes read"},
   {"bytesWritten", "Bytes written"},
-  // {"bwRatio", "Bandwidth / Max. bandwidth ratio"},
-  // {"latRatio", "Latency / Max. latency ratio"}
 };
 
 

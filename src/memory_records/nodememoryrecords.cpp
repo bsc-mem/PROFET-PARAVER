@@ -131,8 +131,6 @@ unordered_map<string, float>NodeMemoryRecords::processMemoryMetrics(ProfetPyAdap
   metrics["numWrites"] = -1;
   metrics["bytesRead"] = -1;
   metrics["bytesWritten"] = -1;
-  metrics["bwRatio"] = -1;
-  metrics["latRatio"] = -1;
 
   if (readBW == -1 || writeBW == -1) {
     return metrics;
@@ -174,8 +172,6 @@ unordered_map<string, float>NodeMemoryRecords::processMemoryMetrics(ProfetPyAdap
   metrics["numWrites"] = numWrites;
   metrics["bytesRead"] = numReads * cacheLineBytes;
   metrics["bytesWritten"] = numWrites * cacheLineBytes;
-  metrics["bwRatio"] = metrics["bandwidth"] *100 / metrics["maxBandwidth"];
-  metrics["latRatio"] = metrics["latency"] *100 / metrics["maxLatency"];
 
   // sumMetrics is used for computing the average metrics at the end of the execution
   string id = getFullID(socketID, mcID);
