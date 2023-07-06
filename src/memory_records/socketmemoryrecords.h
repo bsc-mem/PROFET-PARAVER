@@ -51,7 +51,7 @@ class SocketMemoryRecords {
     bool areQueuesEmpty(int mcID);
     bool areAllQueuesEmpty();
 
-    tuple<double, double, int, int> processBandwidths(int mcID, uint cacheLineBytes, bool allowEmptyQueues);
+    tuple<double, double, double, double> processBandwidths(int mcID, uint cacheLineBytes, bool allowEmptyQueues);
 
     void printQueueSizes();
     void printQueues();
@@ -59,9 +59,12 @@ class SocketMemoryRecords {
   private:
 
     pair<double, double> processBW(queue<MemoryRecord> readQ, queue<MemoryRecord> writeQ, uint cacheLineBytes);
+    pair<double, double> processMeanAccesses(queue<MemoryRecord> readQ, queue<MemoryRecord> writeQ);
     unsigned long long getLast(queue<MemoryRecord> q, unsigned long long lastPoppedMCTime);
     tuple<unsigned long long, int, int> getSmallestElement();
+    int checkMRTime(MemoryRecord mr);
     double getMRBandwidth(MemoryRecord mr, uint cacheLineBytes);
+    double getMeanAccesses(MemoryRecord mr);
     bool areAllQueuesFull(map<int, queue<MemoryRecord>> m);
     void popOldestMCRecord(int mcID);
     void popOldestRecords();
