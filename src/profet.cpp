@@ -62,12 +62,9 @@ vector<pair<string, string>> memoryMetricLabels = {
   {"leadOffLatency", "Lead-off latency"},
   {"maxLatency", "Maximum latency"},
   {"stressScore", "Stress score"},
-  {"numReads", "Number of memory reads"},
-  {"numWrites", "Number of memory writes"},
-  {"bytesRead", "Bytes read"},
-  {"bytesWritten", "Bytes written"},
+  {"meanReads", "Mean number of memory reads per second"},
+  {"meanWrites", "Mean number of memory writes per second"}
 };
-
 
 void printHelp() {
   cout << "Usage: profet [OPTION] <input_trace_file.prv> <output_trace_file.prv> <configuration_file.json>\n\n";
