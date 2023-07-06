@@ -16,7 +16,7 @@ NodeMemoryRecords::NodeMemoryRecords() {}
 
 NodeMemoryRecords::NodeMemoryRecords(int nodeID, string name, map<int, vector<int>> MCsPerSocket,bool perSocket,
                                      string memorySystem, string pmuType, string cpuMicroArch, string cpuModel,
-                                     float cpuFreqGHz, int cacheLineBytes, int displayWarnings) {
+                                     double cpuFreqGHz, int cacheLineBytes, int displayWarnings) {
     this->nodeID = nodeID;
     this->name = name;
     // Memory controler ID vectors in each socket ID are already sorted
@@ -32,17 +32,17 @@ NodeMemoryRecords::NodeMemoryRecords(int nodeID, string name, map<int, vector<in
   
     // Initialize SocketMemoryRecords objects for each socket
     // Sum all the metric values in each socket for computing the averages at the end
-    map<string, map<string, float>> sumMetrics;
+    map<string, map<string, double>> sumMetrics;
     for (const auto &[socketID, memoryControllerIDs] : MCsPerSocket) {
         sockets[socketID] = SocketMemoryRecords(socketID, memoryControllerIDs, displayWarnings);
         if (perSocket) {
             string id = to_string(socketID);
-            lastWrittenMetrics[id] = vector<float>();
+            lastWrittenMetrics[id] = unordered_map<string, double>();
             initSumMetrics(id);
         } else {
             for (int mcID : memoryControllerIDs) {
                 string id = getFullMCID(socketID, mcID);
-                lastWrittenMetrics[id] = vector<float>();
+                lastWrittenMetrics[id] = unordered_map<string, double>();
                 initSumMetrics(id);
             }
         }
@@ -58,12 +58,12 @@ void NodeMemoryRecords::addWrite(int socketID, int mcID, MemoryRecord record) {
     sockets[socketID].addWrite(mcID, record);
 }
 
-vector<float> NodeMemoryRecords::getLastWrittenMetrics(int socketID, int mcID) {
+unordered_map<string, double> NodeMemoryRecords::getLastWrittenMetrics(int socketID, int mcID) {
   string id = getFullID(socketID, mcID);
   return lastWrittenMetrics[id];
 }
 
-void NodeMemoryRecords::setLastWrittenMetrics(int socketID, int mcID, vector<float> metrics) {
+void NodeMemoryRecords::setLastWrittenMetrics(int socketID, int mcID, unordered_map<string, double> metrics) {
   string id = getFullID(socketID, mcID);
   lastWrittenMetrics[id] = metrics;
 }
@@ -110,59 +110,77 @@ tuple<bool, unsigned long long, int, int> NodeMemoryRecords::isProcessableData(b
 }
 
 
-vector<float> NodeMemoryRecords::processMemoryMetrics(ProfetPyAdapter &profetPyAdapter, int socketID, int mcID, bool allowEmptyQueues) {
+unordered_map<string, double>NodeMemoryRecords::processMemoryMetrics(ProfetPyAdapter &profetPyAdapter, int socketID, int mcID, bool allowEmptyQueues) {
   // Compute the necessary memory stress metrics and write them in the output file.
   // Pre: bandwidths have to be processable (there is the function "isProcessableData" for checking it before calling this method)
   
   // sockets[socketID].printQueues();
 
   // Calculates read and write bandwidths and pops the smaller (t1) record for saving memory
-  auto [readBW, writeBW] = sockets[socketID].processBandwidths(mcID, cacheLineBytes, allowEmptyQueues);
+  auto [readBW, writeBW, meanReads, meanWrites] = sockets[socketID].processBandwidths(mcID, cacheLineBytes, allowEmptyQueues);
+
+  unordered_map<string, double> metrics;
+  metrics["writeRatio"] = -1;
+  metrics["bandwidth"] = -1;
+  metrics["maxBandwidth"] = -1;
+  metrics["latency"] = -1;
+  metrics["leadOffLatency"] = -1;
+  metrics["maxLatency"] = -1;
+  metrics["stressScore"] = -1;
+  metrics["meanReads"] = -1;
+  metrics["meanWrites"] = -1;
 
   if (readBW == -1 || writeBW == -1) {
-    return { -1, -1, -1, -1, -1, -1, -1 };
+    return metrics;
   }
 
   if (readBW + writeBW == 0) {
-    return { -1, 0, -1, -1, -1, -1, -1 };
+    metrics["bandwidth"] = 0;
+    return metrics;
   }
 
-  float writeRatio = writeBW / (readBW + writeBW);
+  metrics["writeRatio"] = writeBW / (readBW + writeBW);
   // cout << writeBW << " " << readBW << " " << writeRatio << endl;
-  float bandwidth = readBW + writeBW;
+  metrics["bandwidth"] = readBW + writeBW;
   // cout << socketID << " " << readBW << " " << writeBW << " " << writeRatio << " " << bandwidth << endl;
 
   // Get computed memory metrics
-  auto [maxBandwidth, latency, leadOffLatency, maxLatency, stressScore] = profetPyAdapter.computeMemoryMetrics(cpuFreqGHz, writeRatio, bandwidth,
+  auto [maxBandwidth, latency, leadOffLatency, maxLatency, stressScore] = profetPyAdapter.computeMemoryMetrics(cpuFreqGHz, metrics["writeRatio"],
+                                                                                                               metrics["bandwidth"],
                                                                                                                displayWarnings);
   // cout << maxBandwidth << " " << latency << " " << leadOffLatency << " " << maxLatency << endl;
 
   if (latency == -1) {
     // If latency is -1, it means that bandwidth was off the charts, return negative metrics
     if (displayWarnings) {
-      cerr << "Warning: Erroneous recorded bandwidth. Setting write ratio to " << -writeRatio * 100 << "% and bandwidth to " << round(-bandwidth) << " GB/s" << endl;
+      cerr << "Warning: Erroneous recorded bandwidth. Setting write ratio to " << -metrics["writeRatio"] * 100 << "% and bandwidth to " << round(-metrics["bandwidth"]) << " GB/s" << endl;
     }
-    return { -writeRatio * 100, -bandwidth, -1, -1, -1, -1, -1 };
+    metrics["writeRatio"] = -metrics["writeRatio"] * 100;
+    metrics["bandwidth"] = -metrics["bandwidth"];
+    return metrics;
   }
+
+  metrics["writeRatio"] = metrics["writeRatio"] * 100;
+  metrics["maxBandwidth"] = maxBandwidth;
+  metrics["latency"] = latency;
+  metrics["leadOffLatency"] = leadOffLatency;
+  metrics["maxLatency"] = maxLatency;
+  metrics["stressScore"] = stressScore;
+  metrics["meanReads"] = meanReads;
+  metrics["meanWrites"] = meanWrites;
 
   // sumMetrics is used for computing the average metrics at the end of the execution
   string id = getFullID(socketID, mcID);
   sumMetrics[id]["n"] += 1;
-  sumMetrics[id]["writeRatio"] += writeRatio * 100;
-  sumMetrics[id]["bandwidth"] += bandwidth;
-  sumMetrics[id]["maxBandwidth"] += maxBandwidth;
-  sumMetrics[id]["latency"] += latency;
-  sumMetrics[id]["leadOffLatency"] += leadOffLatency;
-  sumMetrics[id]["maxLatency"] += maxLatency;
-  sumMetrics[id]["stressScore"] += stressScore;
+  sumMetrics[id]["writeRatio"] += metrics["writeRatio"];
+  sumMetrics[id]["bandwidth"] += metrics["bandwidth"];
+  sumMetrics[id]["maxBandwidth"] += metrics["maxBandwidth"];
+  sumMetrics[id]["latency"] += metrics["latency"];
+  sumMetrics[id]["leadOffLatency"] += metrics["leadOffLatency"];
+  sumMetrics[id]["maxLatency"] += metrics["maxLatency"];
+  sumMetrics[id]["stressScore"] += metrics["stressScore"];
   
-  vector<float> metrics = {writeRatio * 100, bandwidth, maxBandwidth, latency, leadOffLatency, maxLatency, stressScore};
   return metrics;
-}
-
-vector<string> NodeMemoryRecords::getMetricLabels() {
-  // TODO it would probably be good to return a map<string, vector<float>> of metrics in "processMemoryMetrics" instead (althought it is very "python dictionary-like")
-  return {"Write ratio", "Bandwidth", "Maximum bandwidth", "Latency", "Lead-off latency", "Maximum latency", "Stress score"};
 }
 
 void NodeMemoryRecords::printSocketsQueues() {
@@ -194,7 +212,7 @@ void NodeMemoryRecords::printFinalMessage() {
 
 
 void NodeMemoryRecords::initSumMetrics(string id) {
-    sumMetrics[id] = map<string, float>();
+    sumMetrics[id] = map<string, double>();
     sumMetrics[id]["n"] = 0;
     sumMetrics[id]["writeRatio"] = 0;
     sumMetrics[id]["bandwidth"] = 0;

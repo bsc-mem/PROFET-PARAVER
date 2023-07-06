@@ -18,7 +18,7 @@ int getPyDictInt(PyObject* pyDict, string attribute) {
     return (int)PyLong_AsLong(itemValue);
 }
 
-float getPyDictFloat(PyObject* pyDict, string attribute) {
+double getPyDictDouble(PyObject* pyDict, string attribute) {
     PyObject* itemValue = PyDict_GetItemString(pyDict, attribute.c_str());
     return PyFloat_AsDouble(itemValue);
 }
@@ -28,17 +28,17 @@ string getPyDictString(PyObject* pyDict, string attribute) {
     return _PyUnicode_AsString(itemValue);
 }
 
-float getClosestValue(vector<float> values, float target) {
+double getClosestValue(vector<double> values, double target) {
     if (values.empty()) {
         // Handle the case when the vector is empty
         return 0.0f; // or any appropriate value
     }
 
-    float closestValue = values[0]; // Assume the first element is the closest initially
-    float minDifference = abs(target - closestValue);
+    double closestValue = values[0]; // Assume the first element is the closest initially
+    double minDifference = abs(target - closestValue);
 
     for (size_t i = 1; i < values.size(); ++i) {
-        float difference = abs(target - values[i]);
+        double difference = abs(target - values[i]);
         if (difference < minDifference) {
             closestValue = values[i];
             minDifference = difference;
@@ -48,7 +48,7 @@ float getClosestValue(vector<float> values, float target) {
     return closestValue;
 }
 
-PyObject* cppVectorToPythonList(vector<float> vec) {
+PyObject* cppVectorToPythonList(vector<double> vec) {
     PyObject* pyList = PyList_New(vec.size());
     for (size_t i = 0; i < vec.size(); ++i) {
         PyObject* item = PyFloat_FromDouble(vec[i]);
