@@ -104,6 +104,11 @@ def prv_to_df(trace_file_path, row_file_path, precision, excluded_original, save
             for i in range(6, len(sp)-1, 2):
                 metric_id = int(sp[i])
                 last_metric_digit = int(metric_id % 10)
+
+                if last_metric_digit > len(metric_keys):
+                    # we're over the desired metrics, no need to continue
+                    break
+
                 metric_key = metric_keys[last_metric_digit - 1]
                 val = float(sp[i+1].strip())
 
@@ -114,6 +119,10 @@ def prv_to_df(trace_file_path, row_file_path, precision, excluded_original, save
                     # we stored the calculated metric as a negative number for identifying it as an error or an irregularity.
                     val = float(val / 10**precision)
                 row[metric_key] = val
+
+                if metric_key == metric_keys[-1]:
+                    # we've processed the last metric key we want, no need to continue (even if there are other events pending)
+                    break
 
             df.append(row)
         df = pd.DataFrame(df)
