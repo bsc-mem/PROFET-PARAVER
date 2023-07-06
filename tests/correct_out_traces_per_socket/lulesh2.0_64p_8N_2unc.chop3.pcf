@@ -427,5 +427,9 @@ EVENT_TYPE
 0   94000005    Lead-off latency
 0   94000006    Maximum latency
 0   94000007    Stress score
+0   94000008    Number of memory reads
+0   94000009    Number of memory writes
+0   94000010    Bytes read
+0   94000011    Bytes written
 PRECISION 2
 
