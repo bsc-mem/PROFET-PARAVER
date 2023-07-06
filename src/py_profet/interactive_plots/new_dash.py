@@ -123,5 +123,5 @@ if __name__ == '__main__':
 
     app = get_dash_app(df, config_json, system_arch, max_elements)
     register_callbacks(app, df, curves, config_json, system_arch, args.trace_file, labels, stress_score_config, max_elements)
-    app.run_server(debug=False)
-    # app.run_server(debug=True)
+    # app.run_server(debug=False)
+    app.run_server(debug=True)
