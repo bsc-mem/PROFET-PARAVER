@@ -28,7 +28,7 @@ def metric_val(line_sp, metric_id, precision):
     return line_sp[pos] / 10**precision
 
 
-def prv_out_to_df(prv_path, precision):
+def prv_out_to_df(prv_path, precision, base_evt, exclude_original_trace):
     df = []
     with open(prv_path, 'r') as f:
         # skip header
@@ -39,20 +39,24 @@ def prv_out_to_df(prv_path, precision):
 
             l = list(map(lambda i: int(i), line.split(':')))
             app_id = l[2]
-            if app_id == 1:
-                df.append({'node': 1, 'time': l[5]})
+            if not exclude_original_trace and app_id == 1:
+                pass
+                # df.append({'node': 1, 'time': l[5]})
             else:
                 df.append({
                     'node': l[2],
                     'socket': l[3],
                     'mc': l[4],
                     'time': l[5],
-                    'wratio': metric_val(l, 1, precision),
-                    'bw': metric_val(l, 2, precision),
-                    'max_bw': metric_val(l, 3, precision),
-                    'lat': metric_val(l, 4, precision),
-                    'min_lat': metric_val(l, 5, precision),
-                    'max_lat': metric_val(l, 6, precision),
+                    'wratio': metric_val(l, base_evt + 1, precision),
+                    'bw': metric_val(l, base_evt + 2, precision),
+                    'max_bw': metric_val(l, base_evt + 3, precision),
+                    'lat': metric_val(l, base_evt + 4, precision),
+                    'min_lat': metric_val(l, base_evt + 5, precision),
+                    'max_lat': metric_val(l, base_evt + 6, precision),
+                    'stress_score': metric_val(l, base_evt + 7, precision),
+                    'mean_reads': metric_val(l, base_evt + 8, precision),
+                    'mean_writes': metric_val(l, base_evt + 9, precision),
                 })
 
     df = pd.DataFrame(df).ffill()
@@ -82,7 +86,7 @@ class TestOutput(unittest.TestCase):
     def setUpClass(self):
         if self.PROCESSED_FILE == None:
             raise Exception('Required file for testing has not been set up yet.')
-        self.out_df = prv_out_to_df(self.PROCESSED_FILE, self.PRECISION)
+        self.out_df = prv_out_to_df(self.PROCESSED_FILE, self.PRECISION, self.PROFET_BASE_EVENT_TYPE, self.EXCLUDE_ORIGINAL_TRACE)
 
     def test_same_prv_output(self):
         # assert that the output prv file is equal to the previously correct one
@@ -144,12 +148,31 @@ class TestOutput(unittest.TestCase):
                     df_skt = df_node[df_node['socket'] == i_skt]
                     self.assertEqual(self.N_MCS, df_skt['mc'].nunique())
 
+    def test_equal_write_ratio(self):
+        # assert that the given write ratio equals the number of writes divided by the total number of accesses
+        calc_wratio = self.out_df['mean_writes'] * 100 / (self.out_df['mean_writes'] + self.out_df['mean_reads'])
+        # replace nan values with 0, as in some cases there are no reads or writes (they are all 0)
+        calc_wratio = calc_wratio.fillna(0).round(self.PRECISION)
+        comp = self.out_df['wratio'] == calc_wratio
+        if not all(comp):
+            idxs = np.where(~comp)[0]
+            diffs = abs(self.out_df.iloc[idxs]['wratio'] - calc_wratio.iloc[idxs])
+            # allow a difference of 1% between the calculated and the given write ratio (due to rounding errors)
+            if not all(diffs <= 1):
+                print(f'Number of elements with wrong write ratio: {sum(~comp)}')
+                return False
+        return True
+
 
 if __name__ == '__main__':
     # TODO usage
 
+    # base event type for Profet events in Paraver
+    TestOutput.PROFET_BASE_EVENT_TYPE = 94000000
+
     # receive output file path as argument
     # NOTE: use sys.argv.pop(), as sys.argv[i] does not work properly
+    TestOutput.EXCLUDE_ORIGINAL_TRACE = bool(int(sys.argv.pop()))
     TestOutput.N_MCS = int(sys.argv.pop())
     TestOutput.N_SOCKETS = int(sys.argv.pop())
     TestOutput.N_NODES = int(sys.argv.pop())
