@@ -74,6 +74,7 @@ def get_node_names(row_file_path):
 
 def prv_to_df(trace_file_path, row_file_path, precision, excluded_original, save_feather=False):
     node_names = get_node_names(row_file_path)
+    num_lines = sum(1 for _ in open(trace_file_path))
 
     df = []
     metric_keys = ['wr', 'bw', 'max_bw', 'lat', 'min_lat', 'max_lat', 'stress_score']
@@ -82,6 +83,8 @@ def prv_to_df(trace_file_path, row_file_path, precision, excluded_original, save
         # all_lines = f.readlines()
         # do not read all lines at once, read them line by line to save memory
         for i, line in enumerate(f):
+            if i % 100000 == 0:
+                print(f'Loading is {i/num_lines*100:.2f}% complete.', end='\r')
             if first_line or line.startswith('#') or line.startswith('c'):
                 # skip header, comments and communicator lines
                 first_line = False
