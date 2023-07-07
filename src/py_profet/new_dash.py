@@ -76,6 +76,17 @@ def prv_to_df(trace_file_path, row_file_path, precision, excluded_original, save
     node_names = get_node_names(row_file_path)
     num_lines = sum(1 for _ in open(trace_file_path))
 
+    rand_lines = []
+    file_stats = os.stat(trace_file_path)
+    file_mb = file_stats.st_size / (1024 ** 2)
+    # directly undersample if file is big
+    if file_mb > 100:
+        # lines to undersample to have close to 100 MB
+        undersample_n_lines = int((100 / file_mb) * num_lines)
+        print(f'File size is {file_mb:.2f} MB, with {num_lines:,} lines. Undersampling to {10000/file_mb:.0f}% of original file).')
+        # take random rows sample. Sort them in descending order to then process it using pop() for efficiency
+        rand_lines = sorted(np.random.choice(num_lines, size=undersample_n_lines, replace=False), reverse=True)
+
     df = []
     metric_keys = ['wr', 'bw', 'max_bw', 'lat', 'min_lat', 'max_lat', 'stress_score']
     with open(trace_file_path) as f:
@@ -85,6 +96,14 @@ def prv_to_df(trace_file_path, row_file_path, precision, excluded_original, save
         for i, line in enumerate(f):
             if i % 100000 == 0:
                 print(f'Loading is {i/num_lines*100:.2f}% complete.', end='\r')
+
+            if len(rand_lines):
+                if i == rand_lines[-1]:
+                    rand_lines.pop()
+                else:
+                    # skip line if it is not in the random sample
+                    continue
+
             if first_line or line.startswith('#') or line.startswith('c'):
                 # skip header, comments and communicator lines
                 first_line = False
