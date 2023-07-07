@@ -71,7 +71,7 @@ def get_sidebar(df: pd.DataFrame):
 
 
 def get_main_content(node_names: list, num_sockets_per_node: int,
-                     num_mc_per_socket: int = None, is_undersampled: bool = False):
+                     num_mc_per_socket: int = None, undersample: int = None):
     content_style = {
         "margin-left": "1rem",
         "margin-right": "2rem",
@@ -87,10 +87,10 @@ def get_main_content(node_names: list, num_sockets_per_node: int,
     ])
 
     chart_rows = []
-    if is_undersampled:
+    if undersample is not None:
         # add warning text
         chart_rows.append(dbc.Row([
-            html.H5('Warning: Data is undersampled to 2000 elements.', style={"color": "red"}),
+            html.H5(f'Warning: Data is undersampled to {undersample:,} elements.', style={"color": "red"}),
             html.Br(),
             html.Br(),
             html.Br(),
@@ -130,14 +130,14 @@ def get_main_content(node_names: list, num_sockets_per_node: int,
 
 
 def get_layout(df: pd.DataFrame, num_nodes: int, num_sockets_per_node: int,
-               num_mc_per_socket: int = None, is_undersampled: bool = False):
+               num_mc_per_socket: int = None, undersample: int = None):
     return dbc.Container([
         dbc.Row([
             dbc.Col([
                 get_sidebar(df),
             ], width=2),
             dbc.Col([
-                get_main_content(num_nodes, num_sockets_per_node, num_mc_per_socket, is_undersampled),
+                get_main_content(num_nodes, num_sockets_per_node, num_mc_per_socket, undersample),
             ], width=10),
         ]),
     ], fluid=True)

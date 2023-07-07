@@ -185,9 +185,9 @@ def get_color_bar_update(toggled_time, labels):
     }
 
 
-def get_dash_app(df, node_names: list, num_sockets_per_node: int, num_mc_per_socket: int = None, is_undersampled: bool = False):
+def get_dash_app(df, node_names: list, num_sockets_per_node: int, num_mc_per_socket: int = None, undersample: int = None):
     app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-    app.layout = layouts.get_layout(df, node_names, num_sockets_per_node, num_mc_per_socket, is_undersampled)
+    app.layout = layouts.get_layout(df, node_names, num_sockets_per_node, num_mc_per_socket, undersample)
     return app
 
 
@@ -201,8 +201,7 @@ def get_curves_fig(curves, fig):
                             text=f"{w_ratio}%", showarrow=False, arrowhead=1)
     return fig
 
-
-def get_application_memory_dots_fig(df, node_name=None, i_socket=None, time_range=(), bw_range=(), lat_range=(), opacity=0.01):
+def filter_df(df, node_name=None, i_socket=None, time_range=(), bw_range=(), lat_range=()):
     mask = [True] * len(df)
     if node_name is not None:
         mask &= df['node_name'] == node_name
@@ -216,7 +215,9 @@ def get_application_memory_dots_fig(df, node_name=None, i_socket=None, time_rang
         mask &= (df['bw'] >= bw_range[0]) & (df['bw'] < bw_range[1])
     if len(lat_range):
         mask &= (df['lat'] >= lat_range[0]) & (df['lat'] < lat_range[1])
+    return df[mask]
 
+def get_application_memory_dots_fig(df, opacity=0.01):
     # if show_time:
         # use rainbow color map
         # import matplotlib as mpl
@@ -227,7 +228,7 @@ def get_application_memory_dots_fig(df, node_name=None, i_socket=None, time_rang
         # dots_fig = px.scatter(df[mask], x='bw', y='lat', color='timestamp', color_discrete_map=color_list)
         # dots_fig = px.scatter(df[mask], x='bw', y='lat', color='timestamp')
     # else:
-    dots_fig = px.scatter(df[mask], x='bw', y='lat', color='stress_score', color_continuous_scale=stress_score_scale)
+    dots_fig = px.scatter(df, x='bw', y='lat', color='stress_score', color_continuous_scale=stress_score_scale)
 
     marker_opts = dict(size=10, opacity=opacity)
     dots_fig.update_traces(marker=marker_opts)
@@ -259,12 +260,15 @@ if __name__ == '__main__':
     num_sockets_per_node = df.groupby(['node_name', 'socket']).ngroups // num_nodes
     
     # allow a maximum of elements to display. Randomly undersample if there are more elements than the limit
-    max_elements = 2000
+    max_elements = 10000
     is_undersampled = False
     if len(df) > max_elements:
         # TODO make each socket have the same number of elements
         df = df.sample(max_elements)
         is_undersampled = True
+    else:
+        # if not undersampled, set max_elements to None
+        max_elements = None
 
     # load and process curves
     curves = get_curves(args.curves_path, args.cpu_freq)
@@ -293,7 +297,7 @@ if __name__ == '__main__':
         print('PDF chart file:', store_pdf_file_path)
         print()
 
-    app = get_dash_app(df, node_names, num_sockets_per_node, num_mc_per_socket=None, is_undersampled=is_undersampled)
+    app = get_dash_app(df, node_names, num_sockets_per_node, num_mc_per_socket=None, undersample=max_elements)
 
     @app.callback(
         Output('graph-container', 'children'),
@@ -316,7 +320,7 @@ if __name__ == '__main__':
         if is_undersampled:
             # add warning text
             updated_graph_rows.append(dbc.Row([
-                html.H5('Warning: Data is undersampled to 2000 elements.', style={"color": "red"}),
+                html.H5(f'Warning: Data is undersampled to {max_elements:,} elements.', style={"color": "red"}),
                 html.Br(),
                 html.Br(),
                 html.Br(),
@@ -325,15 +329,16 @@ if __name__ == '__main__':
         for node_name in node_names:
             updated_graph_cols = []
             for i_socket in range(1, num_sockets_per_node + 1):
-                fig = make_subplots(rows=1, cols=1)
+                # filter df
+                filt_df = filter_df(df, node_name, i_socket, slider_range_time, slider_range_bw, slider_range_lat)
 
+                fig = make_subplots(rows=1, cols=1)
                 if toggled_curves:
                     # plot curves
                     fig = get_curves_fig(curves, fig)
 
                 # plot application bw-lat dots
-                dots_fig = get_application_memory_dots_fig(df, node_name, i_socket, slider_range_time, 
-                                                           slider_range_bw, slider_range_lat, slider_opacity)
+                dots_fig = get_application_memory_dots_fig(filt_df, slider_opacity)
                 fig.add_trace(dots_fig.data[0])
 
                 # labels = {'bw': 'Bandwidth (GB/s)', 'lat': 'Latency (ns)', 'timestamp': 'Timestamp (ns)'}
@@ -344,8 +349,12 @@ if __name__ == '__main__':
 
                 # update graph
                 graph_id = f"node-{node_name}-socket-{i_socket}"
+                # mc_bw_balance = filt_df['bw'].groupby('timestamp').mean() / filt_df['bw'].groupby('timestamp').max()
+                # mc_lat_balance = filt_df['lat'].groupby('timestamp').mean() / filt_df['lat'].groupby('timestamp').max()
                 col = dbc.Col([
                     html.H4(f'Node {node_name} - Socket {i_socket}'),
+                    # html.H6(f'Memory channel bandwidth balance: {mc_bw_balance.mean():.2f}'),
+                    # html.H6(f'Memory channel latency balance: {mc_lat_balance.mean():.2f}'),
                     dcc.Graph(id=graph_id, figure=fig)
                 ], sm=12, md=6)
                 updated_graph_cols.append(col)
