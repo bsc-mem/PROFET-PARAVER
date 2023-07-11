@@ -321,66 +321,66 @@ if __name__ == '__main__':
 
     app = get_dash_app(df, node_names, num_sockets_per_node, num_mc_per_socket=None, undersample=max_elements)
 
-    @app.callback(
-        Output('graph-container', 'children'),
-        # Output("scatter-plot", "figure"),
-        # Input('graph-container', 'id'),
-        Input('toggle-curves', 'value'),
-        # Input('toggle-time', 'value'),
-        # Input('dropdown-node', 'value'),
-        # Input('dropdown-socket', 'value'),
-        # Input('dropdown-mc', 'value'),
-        Input("range-slider-time", "value"),
-        Input("range-slider-bw", "value"),
-        Input("range-slider-lat", "value"),
-        Input("slider-opacity", "value"))
-    def update_chart(toggled_curves, slider_range_time, slider_range_bw, slider_range_lat, slider_opacity):
-        # Warning: this function must exactly match the layout defined for the graph-container,
-        # including text, the order of the inputs, etc.
-        updated_graph_rows = []
+    # @app.callback(
+    #     Output('graph-container', 'children'),
+    #     # Output("scatter-plot", "figure"),
+    #     # Input('graph-container', 'id'),
+    #     Input('toggle-curves', 'value'),
+    #     # Input('toggle-time', 'value'),
+    #     # Input('dropdown-node', 'value'),
+    #     # Input('dropdown-socket', 'value'),
+    #     # Input('dropdown-mc', 'value'),
+    #     Input("range-slider-time", "value"),
+    #     Input("range-slider-bw", "value"),
+    #     Input("range-slider-lat", "value"),
+    #     Input("slider-opacity", "value"))
+    # def update_chart(toggled_curves, slider_range_time, slider_range_bw, slider_range_lat, slider_opacity):
+    #     # Warning: this function must exactly match the layout defined for the graph-container,
+    #     # including text, the order of the inputs, etc.
+    #     updated_graph_rows = []
 
-        if is_undersampled:
-            # add warning text
-            updated_graph_rows.append(dbc.Row([
-                html.H5(f'Warning: Data is undersampled to {max_elements:,} elements.', style={"color": "red"}),
-                html.Br(),
-                html.Br(),
-                html.Br(),
-            ]))
+    #     if is_undersampled:
+    #         # add warning text
+    #         updated_graph_rows.append(dbc.Row([
+    #             html.H5(f'Warning: Data is undersampled to {max_elements:,} elements.', style={"color": "red"}),
+    #             html.Br(),
+    #             html.Br(),
+    #             html.Br(),
+    #         ]))
 
-        for node_name in node_names:
-            updated_graph_cols = []
-            for i_socket in range(1, num_sockets_per_node + 1):
-                # filter df
-                filt_df = filter_df(df, node_name, i_socket, slider_range_time, slider_range_bw, slider_range_lat)
+    #     for node_name in node_names:
+    #         updated_graph_cols = []
+    #         for i_socket in range(1, num_sockets_per_node + 1):
+    #             # filter df
+    #             filt_df = filter_df(df, node_name, i_socket, slider_range_time, slider_range_bw, slider_range_lat)
 
-                fig = make_subplots(rows=1, cols=1)
-                if toggled_curves:
-                    # plot curves
-                    fig = get_curves_fig(curves, fig)
+    #             fig = make_subplots(rows=1, cols=1)
+    #             if toggled_curves:
+    #                 # plot curves
+    #                 fig = get_curves_fig(curves, fig)
 
-                # plot application bw-lat dots
-                dots_fig = get_application_memory_dots_fig(filt_df, slider_opacity)
-                fig.add_trace(dots_fig.data[0])
+    #             # plot application bw-lat dots
+    #             dots_fig = get_application_memory_dots_fig(filt_df, slider_opacity)
+    #             fig.add_trace(dots_fig.data[0])
 
-                # labels = {'bw': 'Bandwidth (GB/s)', 'lat': 'Latency (ns)', 'timestamp': 'Timestamp (ns)'}
-                fig.update_xaxes(title=labels['bw'])
-                fig.update_yaxes(title=labels['lat'])
-                # color_bar_update = get_color_bar_update(toggled_time, labels)
-                fig.update_coloraxes(**color_bar_update)
+    #             # labels = {'bw': 'Bandwidth (GB/s)', 'lat': 'Latency (ns)', 'timestamp': 'Timestamp (ns)'}
+    #             fig.update_xaxes(title=labels['bw'])
+    #             fig.update_yaxes(title=labels['lat'])
+    #             # color_bar_update = get_color_bar_update(toggled_time, labels)
+    #             fig.update_coloraxes(**color_bar_update)
 
-                # update graph
-                graph_id = f"node-{node_name}-socket-{i_socket}"
-                # mc_bw_balance = filt_df['bw'].groupby('timestamp').mean() / filt_df['bw'].groupby('timestamp').max()
-                # mc_lat_balance = filt_df['lat'].groupby('timestamp').mean() / filt_df['lat'].groupby('timestamp').max()
-                col = dbc.Col([
-                    html.H4(f'Node {node_name} - Socket {i_socket}'),
-                    # html.H6(f'Memory channel bandwidth balance: {mc_bw_balance.mean():.2f}'),
-                    # html.H6(f'Memory channel latency balance: {mc_lat_balance.mean():.2f}'),
-                    dcc.Graph(id=graph_id, figure=fig)
-                ], sm=12, md=6)
-                updated_graph_cols.append(col)
-            updated_graph_rows.append(dbc.Row(updated_graph_cols))
-        return updated_graph_rows
+    #             # update graph
+    #             graph_id = f"node-{node_name}-socket-{i_socket}"
+    #             # mc_bw_balance = filt_df['bw'].groupby('timestamp').mean() / filt_df['bw'].groupby('timestamp').max()
+    #             # mc_lat_balance = filt_df['lat'].groupby('timestamp').mean() / filt_df['lat'].groupby('timestamp').max()
+    #             col = dbc.Col([
+    #                 html.H4(f'Node {node_name} - Socket {i_socket}'),
+    #                 # html.H6(f'Memory channel bandwidth balance: {mc_bw_balance.mean():.2f}'),
+    #                 # html.H6(f'Memory channel latency balance: {mc_lat_balance.mean():.2f}'),
+    #                 dcc.Graph(id=graph_id, figure=fig)
+    #             ], sm=12, md=6)
+    #             updated_graph_cols.append(col)
+    #         updated_graph_rows.append(dbc.Row(updated_graph_cols))
+    #     return updated_graph_rows
 
     app.run_server(debug=True)

@@ -182,7 +182,7 @@ tuple<float, float, float, float, float> ProfetPyAdapter::computeMemoryMetrics(f
 }
 
 void ProfetPyAdapter::runDashApp(string traceFilePath, float precision, float cpuFreq, bool keepOriginalTraceFile) {
-    string dashPlotsPath = pyProfetPath + "new_dash.py";
+    string dashPlotsPath = pyProfetPath + "interactive_plots/new_dash.py";
     string traceFileFlag = " --trace-file " + traceFilePath;
     string curvesDirFlag = " --bw-lat-curves-dir " + curvesPath;
     string precisionFlag = " --precision " + to_string(int(precision));

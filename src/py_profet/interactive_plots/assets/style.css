@@ -1,0 +1,33 @@
+body {
+    background-color: #F5F5F5;  /* soft gray color for whole webpage background */
+    font-family: "Arial, sans-serif";  /* Use Arial as default font */
+}
+
+/* Sliders */
+.rc-slider-track, .rc-slider-handle {
+    background-color: #1f3970 !important;
+    border-color: #1f3970 !important;
+}
+.rc-slider-step span {
+    background-color: #1f3970 !important;
+}
+.rc-slider-dot-active {
+    border-color: #1f3970 !important;
+}
+
+/* ToggleSwitch
+.dash-bootstrap .custom-switch .custom-control-input:checked~.custom-control-label::before {
+    background-color: #1f3970;
+    border-color: #1f3970;
+} */
+
+/* Tabs */
+.nav-tabs .nav-item.show .nav-link, .nav-tabs .nav-link.active {
+    color: #fff;
+    background-color: #1f3970;
+    border-color: #dee2e6 #dee2e6 #fff;
+}
+.nav-tabs .nav-link {
+    color: #6c757d;
+    border: none;
+}

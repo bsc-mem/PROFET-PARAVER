@@ -230,7 +230,7 @@ bool isMemoryEvent(map<int, MemoryEvent> memEventTypes, TEventValue evtValue) {
 void addProcessModelHierarchy(map<int, vector<int>> MCsPerSocket, int nNodes, ProcessModel <> &originalProcessModel,
                               ProcessModel<> &outputProcessModel, bool perSocket, bool keepOriginalTrace) {
   if (keepOriginalTrace) {
-    // Keep hierarchy of the original process model (only the 1st app, we  can ignore the second (memory counters))
+    // Keep hierarchy of the original process model (only the 1st app, we can ignore the second (memory counters))
     // We can assume we always have 2 apps.
     auto originalFirstApplIt = originalProcessModel.cbegin();
     outputProcessModel.addApplication();
@@ -553,7 +553,7 @@ int main(int argc, char *argv[]) {
   addProcessModelHierarchy(MCsPerSocket, nNodes, processModel, outputProcessModel, perSocket, keepOriginalTrace);
 
   // Communicators to be dumped to the output trace
-  std::vector< std::string > outCommunicators;
+  vector <string> outCommunicators;
   if (keepOriginalTrace) {
     outCommunicators = communicators;
   }
