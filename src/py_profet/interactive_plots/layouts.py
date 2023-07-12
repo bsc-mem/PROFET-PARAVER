@@ -124,28 +124,27 @@ def get_charts_tab(node_names: list, num_sockets_per_node: int,
         ], style={'padding-bottom': '1rem', 'padding-top': '2rem'}))
 
     for node_name in node_names:
-        for i_socket in range(0, num_sockets_per_node, 2):
-            chart_cols = []
-            for j in range(2):
-                if i_socket + j < num_sockets_per_node:
-                    chart_cols.append(dbc.Col([
-                        html.Br(),
-                        dcc.Graph(id=f"node-{node_name}-socket-{i_socket + j + 1}",
-                                  figure={
-                                        'data': [],
-                                        'layout': {
-                                            'title': {
-                                                'text': f'Node {node_name} - Socket {i_socket + j + 1}',
-                                                'font': {
-                                                    'size': 24,  # Increase size
-                                                    'color': 'black',  # Or any other color you prefer
-                                                    'family': 'Arial, sans-serif',  # Specify font family
-                                                }
-                                            },
+        chart_cols = []
+        for i_socket in range(num_sockets_per_node):
+            chart_cols.append(dbc.Col([
+                html.Br(),
+                dcc.Graph(id=f"node-{node_name}-socket-{i_socket + 1}",
+                            figure={
+                                'data': [],
+                                'layout': {
+                                    'title': {
+                                        'text': f'Node {node_name} - Socket {i_socket + 1}',
+                                        'font': {
+                                            'size': 24,  # Increase size
+                                            'color': 'black',  # Or any other color you prefer
+                                            'family': 'Arial, sans-serif',  # Specify font family
                                         }
-                                  }),
-                    ], sm=12, md=6))
-            chart_rows.append(dbc.Row(chart_cols))
+                                    },
+                                }
+                            }),
+            ], sm=12, md=6))
+        # Add row for each node
+        chart_rows.append(dbc.Row(chart_cols))
 
     return dcc.Loading(
         id="loading",
