@@ -386,4 +386,5 @@ if __name__ == '__main__':
             updated_graph_rows.append(dbc.Row(updated_graph_cols))
         return updated_graph_rows
 
-    app.run_server(debug=True)
+    app.run_server(debug=False)
+    # app.run_server(debug=True)

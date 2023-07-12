@@ -147,7 +147,12 @@ def get_charts_tab(node_names: list, num_sockets_per_node: int,
                     ], sm=12, md=6))
             chart_rows.append(dbc.Row(chart_cols))
 
-    return dbc.Container(chart_rows, id='graph-container', fluid=True)
+    return dcc.Loading(
+        id="loading",
+        type="default",  # changes the loading spinner
+        children=[dbc.Container(chart_rows, id='graph-container', fluid=True)],
+        fullscreen=True,
+    )
 
 
 def get_main_content(cpu_freq: float, node_names: list, num_sockets_per_node: int,
