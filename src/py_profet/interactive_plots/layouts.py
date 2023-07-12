@@ -93,7 +93,15 @@ def get_sidebar(df: pd.DataFrame):
     ], style=SIDEBAR_STYLE)  # Apply the sidebar style
 
 
-def get_system_info_tab(cpu_freq: float, node_names: list, num_sockets_per_node: int, num_mc_per_socket: int = None):
+def get_system_info_tab(cpu_freq: float, system_arch: dict):
+    sockets_per_node = [len(sockets) for sockets in system_arch.values()]
+    if len(set(sockets_per_node)) == 1:
+        # each node has the same number of sockets
+        sockets_per_node_str = sockets_per_node[0]
+    else:
+        # show the number of sockets per node individually
+        sockets_per_node_str = ', '.join([str(n) for n in sockets_per_node])
+
     return html.Div([
         html.H4('System Information', style={'margin-bottom': '1rem'}),
         dbc.Table([
@@ -105,17 +113,16 @@ def get_system_info_tab(cpu_freq: float, node_names: list, num_sockets_per_node:
             ]),
             html.Tbody([
                 html.Tr([html.Td('CPU frequency'), html.Td(f'{cpu_freq} GHz')]),
-                html.Tr([html.Td('Number of nodes'), html.Td(len(node_names))]),
-                html.Tr([html.Td('Node labels'), html.Td(', '.join(node_names))]),
-                html.Tr([html.Td('Sockets per node'), html.Td(num_sockets_per_node)]),
+                html.Tr([html.Td('Number of nodes'), html.Td(len(system_arch.keys()))]),
+                html.Tr([html.Td('Node labels'), html.Td(', '.join(system_arch.keys()))]),
+                html.Tr([html.Td('Sockets per node'), html.Td(sockets_per_node_str)]),
                 # html.Tr([html.Td('Data 9'), html.Td('Data 10')]),
             ])
         ], bordered=True, hover=False, responsive=True, striped=True, className='system-info-table')
     ], style=CONTENT_STYLE)
 
 
-def get_charts_tab(node_names: list, num_sockets_per_node: int,
-                   num_mc_per_socket: int = None, undersample: int = None):
+def get_charts_tab(system_arch: dict, undersample: int = None):
     chart_rows = []
     if undersample is not None:
         # add warning text
@@ -123,17 +130,17 @@ def get_charts_tab(node_names: list, num_sockets_per_node: int,
             html.H5(f'Warning: Data is undersampled to {undersample:,} elements.', style={"color": "red"}),
         ], style={'padding-bottom': '1rem', 'padding-top': '2rem'}))
 
-    for node_name in node_names:
+    for node_name, sockets in system_arch.items():
         chart_cols = []
-        for i_socket in range(num_sockets_per_node):
+        for i_socket, mcs in sockets.items():
             chart_cols.append(dbc.Col([
                 html.Br(),
-                dcc.Graph(id=f"node-{node_name}-socket-{i_socket + 1}",
+                dcc.Graph(id=f"node-{node_name}-socket-{i_socket}",
                             figure={
                                 'data': [],
                                 'layout': {
                                     'title': {
-                                        'text': f'Node {node_name} - Socket {i_socket + 1}',
+                                        'text': f'Node {node_name} - Socket {i_socket}',
                                         'font': {
                                             'size': 24,  # Increase size
                                             'color': 'black',  # Or any other color you prefer
@@ -154,10 +161,9 @@ def get_charts_tab(node_names: list, num_sockets_per_node: int,
     )
 
 
-def get_main_content(cpu_freq: float, node_names: list, num_sockets_per_node: int,
-                     num_mc_per_socket: int = None, undersample: int = None):
-    system_info_tab = get_system_info_tab(cpu_freq, node_names, num_sockets_per_node, num_mc_per_socket)
-    charts_tab = get_charts_tab(node_names, num_sockets_per_node, num_mc_per_socket, undersample)
+def get_main_content(cpu_freq: float, system_arch: dict, undersample: int = None):
+    system_info_tab = get_system_info_tab(cpu_freq, system_arch)
+    charts_tab = get_charts_tab(system_arch, undersample)
 
     # Reordering tabs to make them right-aligned
     tabs = dbc.Tabs([
@@ -171,15 +177,14 @@ def get_main_content(cpu_freq: float, node_names: list, num_sockets_per_node: in
 
 
 # Update the layout function
-def get_layout(df: pd.DataFrame, cpu_freq: float, node_names: list, num_sockets_per_node: int,
-               num_mc_per_socket: int = None, undersample: int = None):
+def get_layout(df: pd.DataFrame, cpu_freq: float, system_arch: dict, undersample: int = None):
     return dbc.Container([
         dbc.Row([
             dbc.Col([
                 get_sidebar(df),
             ], width=2),
             dbc.Col([
-                get_main_content(cpu_freq, node_names, num_sockets_per_node, num_mc_per_socket, undersample),
+                get_main_content(cpu_freq, system_arch, undersample),
             ], width=10),
         ]),
     ], fluid=True, style=BODY_STYLE)  # Applying the page style to the layout

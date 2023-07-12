@@ -207,9 +207,9 @@ def get_color_bar_update(toggled_time, labels):
     }
 
 
-def get_dash_app(df, cpu_freq: float, node_names: list, num_sockets_per_node: int, num_mc_per_socket: int = None, undersample: int = None):
+def get_dash_app(df, cpu_freq: float, system_arch: dict, undersample: int = None):
     app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-    app.layout = layouts.get_layout(df, cpu_freq, node_names, num_sockets_per_node, num_mc_per_socket, undersample)
+    app.layout = layouts.get_layout(df, cpu_freq, system_arch, undersample)
     return app
 
 
@@ -275,9 +275,15 @@ if __name__ == '__main__':
     else:
         raise Exception(f'Unkown trace file extension ({args.trace_file.split(".")[-1]}) from {args.trace_file}.')
     
-    node_names = sorted(df['node_name'].unique())
-    num_nodes =  len(node_names)
-    num_sockets_per_node = df.groupby(['node_name', 'socket']).ngroups // num_nodes
+    # node_names = sorted(df['node_name'].unique())
+    grouped = df.groupby(['node_name', 'socket'])['mc'].unique()
+    system_arch = defaultdict(dict)
+    for (a, b), unique_c in grouped.items():
+        system_arch[a][b] = sorted(unique_c.tolist())
+    print(dict(system_arch))
+    # import sys
+    # sys.exit(0)
+    # num_sockets_per_node = df.groupby(['node_name', 'socket']).ngroups // num_nodes
     
     # allow a maximum of elements to display. Randomly undersample if there are more elements than the limit
     max_elements = 10000
@@ -317,7 +323,7 @@ if __name__ == '__main__':
         print('PDF chart file:', store_pdf_file_path)
         print()
 
-    app = get_dash_app(df, args.cpu_freq, node_names, num_sockets_per_node, num_mc_per_socket=None, undersample=max_elements)
+    app = get_dash_app(df, args.cpu_freq, system_arch, undersample=max_elements)
 
     @app.callback(
         Output('graph-container', 'children'),
@@ -337,9 +343,9 @@ if __name__ == '__main__':
                 html.H5(f'Warning: Data is undersampled to {max_elements:,} elements.', style={"color": "red"}),
             ], style={'padding-bottom': '1rem', 'padding-top': '2rem'}))
 
-        for node_name in node_names:
+        for node_name, sockets in system_arch.items():
             updated_graph_cols = []
-            for i_socket in range(1, num_sockets_per_node + 1):
+            for i_socket, mcs in sockets.items():
                 # filter df
                 filt_df = filter_df(df, node_name, i_socket, slider_range_time, slider_range_bw, slider_range_lat)
 
