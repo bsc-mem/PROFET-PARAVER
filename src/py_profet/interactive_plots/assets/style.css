@@ -1,6 +1,7 @@
 body {
     background-color: #F5F5F5;  /* soft gray color for whole webpage background */
     font-family: "Arial, sans-serif";  /* Use Arial as default font */
+    overflow-x: hidden;  /* Prevent horizontal scrollbar  */
 }
 
 /* Sliders */
@@ -30,4 +31,19 @@ body {
 .nav-tabs .nav-link {
     color: #6c757d;
     border: none;
+}
+
+/* System info table */
+.system-info-table {
+    font-family: Arial, sans-serif;
+    text-align: left;
+    width: 60%;
+}
+.system-info-table thead {
+    background-color: #1f3970;
+    color: white;
+    /* text-align: center; */
+}
+.system-info-table tbody tr:nth-child(odd) {
+    background-color: #ffffff;  /* Lighter stripe color for odd rows */
 }

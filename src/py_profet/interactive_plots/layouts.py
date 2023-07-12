@@ -60,7 +60,7 @@ def get_sidebar(df: pd.DataFrame):
             html.Div(id='toggle-time-output'),
         ], style={'padding-bottom': '1rem'}),
         dbc.Row([
-            html.P("Filter by timestamp:"),
+            html.P("Timestamp (ns):"),
             dcc.RangeSlider(
                 id='range-slider-time',
                 min=df['timestamp'].min(), max=df['timestamp'].max(), step=1000000,
@@ -69,7 +69,7 @@ def get_sidebar(df: pd.DataFrame):
             ),
         ], style={'padding-bottom': '1rem'}),
         dbc.Row([
-            html.P("Filter by bandwidth:"),
+            html.P("Bandwidth (GB/s):"),
             dcc.RangeSlider(
                 id='range-slider-bw',
                 min=df['bw'].min(), max=df['bw'].max(), step=1,
@@ -78,7 +78,7 @@ def get_sidebar(df: pd.DataFrame):
             ),
         ], style={'padding-bottom': '1rem'}),
         dbc.Row([
-            html.P("Filter by latency:"),
+            html.P("Latency (ns):"),
             dcc.RangeSlider(
                 id='range-slider-lat',
                 min=df['lat'].min(), max=df['lat'].max(), step=1,
@@ -93,39 +93,71 @@ def get_sidebar(df: pd.DataFrame):
     ], style=SIDEBAR_STYLE)  # Apply the sidebar style
 
 
-def get_main_content(node_names: list, num_sockets_per_node: int,
-                     num_mc_per_socket: int = None, undersample: int = None):
-    system_info_tab = html.Div([
-        html.H4('System Info'),
-    ])
+def get_system_info_tab(cpu_freq: float, node_names: list, num_sockets_per_node: int, num_mc_per_socket: int = None):
+    return html.Div([
+        html.H4('System Information', style={'margin-bottom': '1rem'}),
+        dbc.Table([
+            html.Thead([
+                html.Tr([
+                    html.Th('Header 1'),
+                    html.Th('Header 2'),
+                ])
+            ]),
+            html.Tbody([
+                html.Tr([html.Td('CPU frequency'), html.Td(f'{cpu_freq} GHz')]),
+                html.Tr([html.Td('Number of nodes'), html.Td(len(node_names))]),
+                html.Tr([html.Td('Node labels'), html.Td(', '.join(node_names))]),
+                html.Tr([html.Td('Sockets per node'), html.Td(num_sockets_per_node)]),
+                # html.Tr([html.Td('Data 9'), html.Td('Data 10')]),
+            ])
+        ], bordered=True, hover=False, responsive=True, striped=True, className='system-info-table')
+    ], style=CONTENT_STYLE)
 
+
+def get_charts_tab(node_names: list, num_sockets_per_node: int,
+                   num_mc_per_socket: int = None, undersample: int = None):
     chart_rows = []
     if undersample is not None:
         # add warning text
         chart_rows.append(dbc.Row([
             html.H5(f'Warning: Data is undersampled to {undersample:,} elements.', style={"color": "red"}),
-            html.Br(),
-            html.Br(),
-            html.Br(),
-        ]))
+        ], style={'padding-bottom': '1rem', 'padding-top': '2rem'}))
 
     for node_name in node_names:
-        for i_socket in range(0, num_sockets_per_node, 2):  # change here
+        for i_socket in range(0, num_sockets_per_node, 2):
             chart_cols = []
-            for j in range(2):  # and here
-                if i_socket+j < num_sockets_per_node:  # and here
+            for j in range(2):
+                if i_socket + j < num_sockets_per_node:
                     chart_cols.append(dbc.Col([
                         html.Br(),
-                        html.H4(f'Node {node_name} - Socket {i_socket+j}'),  # and here
-                        dcc.Graph(id=f"node-{node_name}-socket-{i_socket+j}"),  # and here
+                        dcc.Graph(id=f"node-{node_name}-socket-{i_socket + j + 1}",
+                                  figure={
+                                        'data': [],
+                                        'layout': {
+                                            'title': {
+                                                'text': f'Node {node_name} - Socket {i_socket + j + 1}',
+                                                'font': {
+                                                    'size': 24,  # Increase size
+                                                    'color': 'black',  # Or any other color you prefer
+                                                    'family': 'Arial, sans-serif',  # Specify font family
+                                                }
+                                            },
+                                        }
+                                  }),
                     ], sm=12, md=6))
             chart_rows.append(dbc.Row(chart_cols))
 
-    charts_tab = dbc.Container(chart_rows, id='graph-container', fluid=True)
+    return dbc.Container(chart_rows, id='graph-container', fluid=True)
+
+
+def get_main_content(cpu_freq: float, node_names: list, num_sockets_per_node: int,
+                     num_mc_per_socket: int = None, undersample: int = None):
+    system_info_tab = get_system_info_tab(cpu_freq, node_names, num_sockets_per_node, num_mc_per_socket)
+    charts_tab = get_charts_tab(node_names, num_sockets_per_node, num_mc_per_socket, undersample)
 
     # Reordering tabs to make them right-aligned
     tabs = dbc.Tabs([
-        dbc.Tab(system_info_tab, label="System Info", tab_id="system-tab"),
+        dbc.Tab(system_info_tab, label="System", tab_id="system-tab"),
         dbc.Tab(charts_tab, label="Charts", tab_id="charts-tab"),
     ], id="tabs", active_tab="charts-tab")
 
@@ -135,7 +167,7 @@ def get_main_content(node_names: list, num_sockets_per_node: int,
 
 
 # Update the layout function
-def get_layout(df: pd.DataFrame, num_nodes: int, num_sockets_per_node: int,
+def get_layout(df: pd.DataFrame, cpu_freq: float, node_names: list, num_sockets_per_node: int,
                num_mc_per_socket: int = None, undersample: int = None):
     return dbc.Container([
         dbc.Row([
@@ -143,7 +175,7 @@ def get_layout(df: pd.DataFrame, num_nodes: int, num_sockets_per_node: int,
                 get_sidebar(df),
             ], width=2),
             dbc.Col([
-                get_main_content(num_nodes, num_sockets_per_node, num_mc_per_socket, undersample),
+                get_main_content(cpu_freq, node_names, num_sockets_per_node, num_mc_per_socket, undersample),
             ], width=10),
         ]),
     ], fluid=True, style=BODY_STYLE)  # Applying the page style to the layout
