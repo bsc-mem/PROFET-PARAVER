@@ -223,12 +223,14 @@ def get_curves_fig(curves, fig):
                             text=f"{w_ratio}%", showarrow=False, arrowhead=1)
     return fig
 
-def filter_df(df, node_name=None, i_socket=None, time_range=(), bw_range=(), lat_range=()):
+def filter_df(df, node_name=None, i_socket=None, i_mc=None, time_range=(), bw_range=(), lat_range=()):
     mask = [True] * len(df)
     if node_name is not None:
         mask &= df['node_name'] == node_name
     if i_socket is not None:
         mask &= df['socket'] == int(i_socket)
+    if i_mc is not None:
+        mask &= df['mc'] == int(i_mc)
     # if mc != '-' and mc != 'All':
     #     mask &= df['mc'] == int(mc)
     if len(time_range):
@@ -275,15 +277,12 @@ if __name__ == '__main__':
     else:
         raise Exception(f'Unkown trace file extension ({args.trace_file.split(".")[-1]}) from {args.trace_file}.')
     
-    # node_names = sorted(df['node_name'].unique())
+    # get system architecture (nodes, sockets per node, mcs per socket) in a dict form
     grouped = df.groupby(['node_name', 'socket'])['mc'].unique()
     system_arch = defaultdict(dict)
     for (a, b), unique_c in grouped.items():
         system_arch[a][b] = sorted(unique_c.tolist())
-    print(dict(system_arch))
-    # import sys
-    # sys.exit(0)
-    # num_sockets_per_node = df.groupby(['node_name', 'socket']).ngroups // num_nodes
+    # print(dict(system_arch))
     
     # allow a maximum of elements to display. Randomly undersample if there are more elements than the limit
     max_elements = 10000
@@ -346,49 +345,56 @@ if __name__ == '__main__':
         for node_name, sockets in system_arch.items():
             updated_graph_cols = []
             for i_socket, mcs in sockets.items():
-                # filter df
-                filt_df = filter_df(df, node_name, i_socket, slider_range_time, slider_range_bw, slider_range_lat)
+                for id_mc in mcs:
+                    if len(mcs) > 1:
+                        graph_title = f'Node {node_name} - Socket {i_socket} - MC {id_mc}'
+                        graph_id = f'node-{node_name}-socket-{i_socket}-mc-{id_mc}'
+                    else:
+                        graph_title = f'Node {node_name} - Socket {i_socket}'
+                        graph_id = f'node-{node_name}-socket-{i_socket}'
 
-                fig = make_subplots(rows=1, cols=1)
-                if toggled_curves:
-                    # plot curves
-                    fig = get_curves_fig(curves, fig)
+                    # filter df
+                    filt_df = filter_df(df, node_name, i_socket, id_mc, slider_range_time, slider_range_bw, slider_range_lat)
 
-                # plot application bw-lat dots
-                dots_fig = get_application_memory_dots_fig(filt_df, slider_opacity)
-                fig.add_trace(dots_fig.data[0])
+                    fig = make_subplots(rows=1, cols=1)
+                    if toggled_curves:
+                        # plot curves
+                        fig = get_curves_fig(curves, fig)
 
-                # labels = {'bw': 'Bandwidth (GB/s)', 'lat': 'Latency (ns)', 'timestamp': 'Timestamp (ns)'}
-                fig.update_xaxes(title=labels['bw'])
-                fig.update_yaxes(title=labels['lat'])
-                # color_bar_update = get_color_bar_update(toggled_time, labels)
-                fig.update_coloraxes(**color_bar_update)
+                    # plot application bw-lat dots
+                    dots_fig = get_application_memory_dots_fig(filt_df, slider_opacity)
+                    fig.add_trace(dots_fig.data[0])
 
-                # update the layout with a title
-                fig.update_layout(
-                    title={
-                        'text': f'Node {node_name} - Socket {i_socket}',
-                        'font': {
-                            'size': 24,
-                            'color': 'black',
-                            'family': 'Arial, sans-serif',
-                        },
-                        'x':0.5,
-                        'xanchor': 'center'
-                    }
-                )
+                    # labels = {'bw': 'Bandwidth (GB/s)', 'lat': 'Latency (ns)', 'timestamp': 'Timestamp (ns)'}
+                    fig.update_xaxes(title=labels['bw'])
+                    fig.update_yaxes(title=labels['lat'])
+                    # color_bar_update = get_color_bar_update(toggled_time, labels)
+                    fig.update_coloraxes(**color_bar_update)
 
-                # update graph
-                graph_id = f"node-{node_name}-socket-{i_socket}"
-                # mc_bw_balance = filt_df['bw'].groupby('timestamp').mean() / filt_df['bw'].groupby('timestamp').max()
-                # mc_lat_balance = filt_df['lat'].groupby('timestamp').mean() / filt_df['lat'].groupby('timestamp').max()
-                col = dbc.Col([
-                    html.Br(),
-                    # html.H6(f'Memory channel bandwidth balance: {mc_bw_balance.mean():.2f}'),
-                    # html.H6(f'Memory channel latency balance: {mc_lat_balance.mean():.2f}'),
-                    dcc.Graph(id=graph_id, figure=fig)
-                ], sm=12, md=6)
-                updated_graph_cols.append(col)
+                    # update the layout with a title
+                    fig.update_layout(
+                        title={
+                            'text': graph_title,
+                            'font': {
+                                'size': 24,
+                                'color': 'black',
+                                'family': 'Arial, sans-serif',
+                            },
+                            'x':0.5,
+                            'xanchor': 'center'
+                        }
+                    )
+
+                    # update graph
+                    # mc_bw_balance = filt_df['bw'].groupby('timestamp').mean() / filt_df['bw'].groupby('timestamp').max()
+                    # mc_lat_balance = filt_df['lat'].groupby('timestamp').mean() / filt_df['lat'].groupby('timestamp').max()
+                    col = dbc.Col([
+                        html.Br(),
+                        # html.H6(f'Memory channel bandwidth balance: {mc_bw_balance.mean():.2f}'),
+                        # html.H6(f'Memory channel latency balance: {mc_lat_balance.mean():.2f}'),
+                        dcc.Graph(id=graph_id, figure=fig)
+                    ], sm=12, md=6)
+                    updated_graph_cols.append(col)
             updated_graph_rows.append(dbc.Row(updated_graph_cols))
         return updated_graph_rows
 

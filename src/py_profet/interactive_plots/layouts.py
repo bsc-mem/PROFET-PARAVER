@@ -133,23 +133,30 @@ def get_charts_tab(system_arch: dict, undersample: int = None):
     for node_name, sockets in system_arch.items():
         chart_cols = []
         for i_socket, mcs in sockets.items():
-            chart_cols.append(dbc.Col([
-                html.Br(),
-                dcc.Graph(id=f"node-{node_name}-socket-{i_socket}",
-                            figure={
-                                'data': [],
-                                'layout': {
-                                    'title': {
-                                        'text': f'Node {node_name} - Socket {i_socket}',
-                                        'font': {
-                                            'size': 24,  # Increase size
-                                            'color': 'black',  # Or any other color you prefer
-                                            'family': 'Arial, sans-serif',  # Specify font family
-                                        }
-                                    },
-                                }
-                            }),
-            ], sm=12, md=6))
+            for id_mc in mcs:
+                if len(mcs) > 1:
+                    title = f'Node {node_name} - Socket {i_socket} - MC {id_mc}'
+                    graph_id = f'node-{node_name}-socket-{i_socket}-mc-{id_mc}'
+                else:
+                    title = f'Node {node_name} - Socket {i_socket}'
+                    graph_id = f'node-{node_name}-socket-{i_socket}'
+                chart_cols.append(dbc.Col([
+                    html.Br(),
+                    dcc.Graph(id=graph_id,
+                                figure={
+                                    'data': [],
+                                    'layout': {
+                                        'title': {
+                                            'text': title,
+                                            'font': {
+                                                'size': 24,  # Increase size
+                                                'color': 'black',  # Or any other color you prefer
+                                                'family': 'Arial, sans-serif',  # Specify font family
+                                            }
+                                        },
+                                    }
+                                }),
+                ], sm=12, md=6))
         # Add row for each node
         chart_rows.append(dbc.Row(chart_cols))
 
