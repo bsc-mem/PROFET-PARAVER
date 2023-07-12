@@ -332,8 +332,7 @@ if __name__ == '__main__':
         Input("range-slider-lat", "value"),
         Input("slider-opacity", "value"))
     def update_chart(toggled_curves, slider_range_time, slider_range_bw, slider_range_lat, slider_opacity):
-        # Warning: this function must exactly match the layout defined for the graph-container,
-        # including text, the order of the inputs, etc.
+        # built graphs for each node, socket and mc
         updated_graph_rows = []
 
         if is_undersampled:

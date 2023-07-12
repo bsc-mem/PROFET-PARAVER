@@ -123,39 +123,16 @@ def get_system_info_tab(cpu_freq: float, system_arch: dict):
 
 
 def get_charts_tab(system_arch: dict, undersample: int = None):
+    # there is no need to do this processing, but doing it (similarly to how we build the graphs when updated)
+    # makes the loading spinner appear right when the page is loaded, without delay
     chart_rows = []
-    if undersample is not None:
-        # add warning text
-        chart_rows.append(dbc.Row([
-            html.H5(f'Warning: Data is undersampled to {undersample:,} elements.', style={"color": "red"}),
-        ], style={'padding-bottom': '1rem', 'padding-top': '2rem'}))
-
     for node_name, sockets in system_arch.items():
         chart_cols = []
         for i_socket, mcs in sockets.items():
             for id_mc in mcs:
-                if len(mcs) > 1:
-                    title = f'Node {node_name} - Socket {i_socket} - MC {id_mc}'
-                    graph_id = f'node-{node_name}-socket-{i_socket}-mc-{id_mc}'
-                else:
-                    title = f'Node {node_name} - Socket {i_socket}'
-                    graph_id = f'node-{node_name}-socket-{i_socket}'
                 chart_cols.append(dbc.Col([
                     html.Br(),
-                    dcc.Graph(id=graph_id,
-                                figure={
-                                    'data': [],
-                                    'layout': {
-                                        'title': {
-                                            'text': title,
-                                            'font': {
-                                                'size': 24,  # Increase size
-                                                'color': 'black',  # Or any other color you prefer
-                                                'family': 'Arial, sans-serif',  # Specify font family
-                                            }
-                                        },
-                                    }
-                                }),
+                    dcc.Graph(),
                 ], sm=12, md=6))
         # Add row for each node
         chart_rows.append(dbc.Row(chart_cols))
