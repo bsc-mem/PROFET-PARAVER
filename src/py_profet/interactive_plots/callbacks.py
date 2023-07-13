@@ -1,12 +1,52 @@
 import os
 import json
-from dash import dcc, html, Input, Output, State
+import base64
+from dash import dcc, html, no_update, Input, Output, State
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 
 import utils
 
 def register_callbacks(app, df, curves, system_arch, trace_file, labels, stress_score_config, max_elements=None):
+
+    # we need all the elements as outputs for updating them in case of loading a json file
+    # if a json file is not loaded, the callback has still to return the real values
+    # for plotting the graphs, so that's why need the States here
+    @app.callback(
+        Output('curves-color-dropdown', 'value'),
+        Output('curves-transparency-slider', 'value'),
+        Output('time-range-slider', 'value'),
+        Output('bw-range-slider', 'value'),
+        Output('lat-range-slider', 'value'),
+        Output('markers-transparency-slider', 'value'),
+        Input('upload-config', 'contents'),
+        State('curves-color-dropdown', 'value'),
+        State('curves-transparency-slider', 'value'),
+        State('time-range-slider', 'value'),
+        State('bw-range-slider', 'value'),
+        State('lat-range-slider', 'value'),
+        State('markers-transparency-slider', 'value')
+    )
+    def load_config(contents, curves_color, curves_transparency, 
+                    time_range, bw_range, lat_range, markers_transparency):
+        if contents is None:
+            return curves_color, curves_transparency, time_range, bw_range, lat_range, markers_transparency
+        
+        content_type, content_string = contents.split(',')
+        decoded = base64.b64decode(content_string)
+        try:
+            if 'json' in content_type:
+                # assume that the user uploaded a JSON file
+                json_file = json.loads(decoded)
+                return_order = ['curves_color', 'curves_transparency', 'time_range',
+                                'bw_range', 'lat_range', 'markers_transparency']
+                return [json_file.get(key) for key in return_order]
+        except Exception as e:
+            print(e)
+            return html.Div([
+                'There was an error processing this file.'
+            ])
+                     
     @app.callback(
         Output('download-config', 'data'),
         Input('save-config', 'n_clicks'),
@@ -41,7 +81,6 @@ def register_callbacks(app, df, curves, system_arch, trace_file, labels, stress_
 
     @app.callback(
         Output('graph-container', 'children'),
-        # Input('upload-config', 'filename'),
         Input('curves-color-dropdown', 'value'),
         Input('curves-transparency-slider', 'value'),
         Input('time-range-slider', 'value'),
