@@ -258,6 +258,34 @@ def get_application_memory_dots_fig(df, opacity=0.01):
     dots_fig.update_traces(marker=marker_opts)
     return dots_fig
 
+def get_graph_fig(df, toggled_curves, slider_opacity, graph_title, x_title, y_title, color_bar_update):
+    fig = make_subplots(rows=1, cols=1)
+    if toggled_curves:
+        fig = get_curves_fig(curves, fig)
+
+    # plot application bw-lat dots
+    dots_fig = get_application_memory_dots_fig(df, slider_opacity)
+    fig.add_trace(dots_fig.data[0])
+
+    fig.update_xaxes(title=x_title)
+    fig.update_yaxes(title=y_title)
+    fig.update_coloraxes(**color_bar_update)
+
+    # update the layout with a title
+    fig.update_layout(
+        title={
+            'text': graph_title,
+            'font': {
+                'size': 24,
+                'color': 'black',
+                'family': 'Arial, sans-serif',
+            },
+            'x':0.5,
+            'xanchor': 'center'
+        }
+    )
+    return fig
+
 if __name__ == '__main__':
     # read and process arguments
     args = parse_args()
@@ -342,59 +370,52 @@ if __name__ == '__main__':
             ], style={'padding-bottom': '1rem', 'padding-top': '2rem'}))
 
         for node_name, sockets in system_arch.items():
-            updated_graph_cols = []
+            # Create a new container for each node
+            node_container = dbc.Container([], id=f'node-{node_name}-container', fluid=True)
+            node_container.children.append(html.H2(f'Node {node_name}', style={'padding-top': '2rem'}))
+            # Create a row for the sockets to sit in. This variable is unused if len(mcs) == 1 (visualization is per socket)
+            sockets_row = dbc.Row([])
+
             for i_socket, mcs in sockets.items():
+                if len(mcs) > 1:
+                    # Create a new container for each socket within the node container
+                    socket_container = dbc.Container([], id=f'node-{node_name}-socket-{i_socket}-container', fluid=True)
+                    socket_container.children.append(html.H3(f'Socket {i_socket}', style={'padding-top': '1rem'}))
+                    mcs_row = dbc.Row([])
+
                 for id_mc in mcs:
-                    if len(mcs) > 1:
-                        graph_title = f'Node {node_name} - Socket {i_socket} - MC {id_mc}'
-                        graph_id = f'node-{node_name}-socket-{i_socket}-mc-{id_mc}'
-                    else:
-                        graph_title = f'Node {node_name} - Socket {i_socket}'
-                        graph_id = f'node-{node_name}-socket-{i_socket}'
+                    graph_title = f'MC {id_mc}' if len(mcs) > 1 else f'Socket {i_socket}'
 
                     # filter df
                     filt_df = filter_df(df, node_name, i_socket, id_mc, slider_range_time, slider_range_bw, slider_range_lat)
+                    fig = get_graph_fig(filt_df, toggled_curves, slider_opacity, graph_title, labels['bw'], labels['lat'], color_bar_update)
 
-                    fig = make_subplots(rows=1, cols=1)
-                    if toggled_curves:
-                        # plot curves
-                        fig = get_curves_fig(curves, fig)
+                    if len(mcs) > 1:  # Add graph to MC container if there are multiple MCs
+                        mc_col = dbc.Col([
+                            html.Br(),
+                            dcc.Graph(id=f'node-{node_name}-socket-{i_socket}-mc-{id_mc}', figure=fig)
+                        ], sm=12, md=6)
+                        mcs_row.children.append(mc_col)
+                    else:
+                        # Add the graph to the socket container
+                        socket_col = dbc.Col([
+                            html.Br(),
+                            dcc.Graph(id=f'node-{node_name}-socket-{i_socket}-mc-{id_mc}', figure=fig)
+                        ], sm=12, md=6)
+                        sockets_row.children.append(socket_col)
 
-                    # plot application bw-lat dots
-                    dots_fig = get_application_memory_dots_fig(filt_df, slider_opacity)
-                    fig.add_trace(dots_fig.data[0])
-
-                    # labels = {'bw': 'Bandwidth (GB/s)', 'lat': 'Latency (ns)', 'timestamp': 'Timestamp (ns)'}
-                    fig.update_xaxes(title=labels['bw'])
-                    fig.update_yaxes(title=labels['lat'])
-                    # color_bar_update = get_color_bar_update(toggled_time, labels)
-                    fig.update_coloraxes(**color_bar_update)
-
-                    # update the layout with a title
-                    fig.update_layout(
-                        title={
-                            'text': graph_title,
-                            'font': {
-                                'size': 24,
-                                'color': 'black',
-                                'family': 'Arial, sans-serif',
-                            },
-                            'x':0.5,
-                            'xanchor': 'center'
-                        }
-                    )
-
-                    # update graph
                     # mc_bw_balance = filt_df['bw'].groupby('timestamp').mean() / filt_df['bw'].groupby('timestamp').max()
                     # mc_lat_balance = filt_df['lat'].groupby('timestamp').mean() / filt_df['lat'].groupby('timestamp').max()
-                    col = dbc.Col([
-                        html.Br(),
-                        # html.H6(f'Memory channel bandwidth balance: {mc_bw_balance.mean():.2f}'),
-                        # html.H6(f'Memory channel latency balance: {mc_lat_balance.mean():.2f}'),
-                        dcc.Graph(id=graph_id, figure=fig)
-                    ], sm=12, md=6)
-                    updated_graph_cols.append(col)
-            updated_graph_rows.append(dbc.Row(updated_graph_cols))
+                if len(mcs) > 1:
+                    # Add the completed socket container to the node container's row
+                    socket_container.children.append(mcs_row)
+                    node_container.children.append(socket_container)
+                
+            if len(mcs) == 1:
+                node_container.children.append(sockets_row)
+            # Add the completed node container to the overall layout
+            updated_graph_rows.append(node_container)
+
         return updated_graph_rows
 
     app.run_server(debug=False)
