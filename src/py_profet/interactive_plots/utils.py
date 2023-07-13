@@ -141,7 +141,7 @@ def filter_df(df, node_name=None, i_socket=None, i_mc=None, time_range=(), bw_ra
     # if mc != '-' and mc != 'All':
     #     mask &= df['mc'] == int(mc)
     if len(time_range):
-        mask &= (df['timestamp'] >= time_range[0]) & (df['timestamp'] < time_range[1])
+        mask &= (df['timestamp'] >= time_range[0]*1e9) & (df['timestamp'] < time_range[1]*1e9)
     if len(bw_range):
         mask &= (df['bw'] >= bw_range[0]) & (df['bw'] < bw_range[1])
     if len(lat_range):

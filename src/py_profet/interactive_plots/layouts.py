@@ -43,7 +43,7 @@ TAB_ACTIVE_STYLE = {
 
 def get_sidebar(df: pd.DataFrame):
     # Define marks for sliders
-    marks_time = {i: str(int(i)) for i in np.linspace(df['timestamp'].min(), df['timestamp'].max(), 5)}
+    marks_time = {i: str(round(i, 1)) for i in np.linspace(df['timestamp'].min()/1e9, df['timestamp'].max()/1e9, 5)}
     marks_bw = {i: str(int(i)) for i in np.linspace(df['bw'].min(), df['bw'].max(), 5)}
     marks_lat = {i: str(int(i)) for i in np.linspace(df['lat'].min(), df['lat'].max(), 5)}
     marks_opacity = {i: str(i) for i in np.linspace(0, 1, 5)}
@@ -96,12 +96,12 @@ def get_sidebar(df: pd.DataFrame):
         #     html.Div(id='toggle-time-output'),
         # ], className='sidebar-element'),
         dbc.Row([
-            html.P("Timestamp (ns):"),
+            html.P("Timestamp (s):"),
             dcc.RangeSlider(
                 id='time-range-slider',
-                min=df['timestamp'].min(), max=df['timestamp'].max(), step=1000000,
+                min=df['timestamp'].min()/1e9, max=df['timestamp'].max()/1e9, step=0.1,
                 marks=marks_time,
-                value=[df['timestamp'].min(), df['timestamp'].max()]
+                value=[df['timestamp'].min()/1e9, df['timestamp'].max()/1e9]
             ),
         ], className='sidebar-element'),
         dbc.Row([
