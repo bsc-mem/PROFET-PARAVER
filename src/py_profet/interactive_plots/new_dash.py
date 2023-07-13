@@ -213,14 +213,16 @@ def get_dash_app(df, cpu_freq: float, system_arch: dict):
     return app
 
 
-def get_curves_fig(curves, fig):
-    curve_opacity_step = 0.1666
+def get_curves_fig(curves, fig, color='black', transparency=1):
     for i, w_ratio in enumerate(range(0, 51, 10)):
-        curve_fig = px.line(x=curves[w_ratio]['bandwidths'], y=curves[w_ratio]['latencies'])
-        curve_fig.update_traces(opacity=1-curve_opacity_step*i)
+        curve_fig = px.line(x=curves[w_ratio]['bandwidths'], y=curves[w_ratio]['latencies'], color_discrete_sequence=[color])
+        curve_opacity_step = transparency / len(range(0, 51, 10))
+        curve_transparency = transparency - curve_opacity_step * i
+        curve_fig.update_traces(opacity=max(0, curve_transparency))
+        curve_text = f'{w_ratio}%' if curve_transparency > 0 else ''
         fig.add_trace(curve_fig.data[0])
         fig.add_annotation(x=curves[w_ratio]['bandwidths'][-1], y=curves[w_ratio]['latencies'][-1] + 15,
-                            text=f"{w_ratio}%", showarrow=False, arrowhead=1)
+                            text=curve_text, showarrow=False, arrowhead=1)
     return fig
 
 def filter_df(df, node_name=None, i_socket=None, i_mc=None, time_range=(), bw_range=(), lat_range=()):
@@ -248,13 +250,13 @@ def get_application_memory_dots_fig(df, opacity=0.01):
     dots_fig.update_traces(marker=marker_opts)
     return dots_fig
 
-def get_graph_fig(df, toggled_curves, slider_opacity, graph_title, x_title, y_title, color_bar_update):
+def get_graph_fig(df, curves_color, curves_transparency, markers_transparency, graph_title, x_title, y_title, color_bar_update):
     fig = make_subplots(rows=1, cols=1)
-    if toggled_curves:
-        fig = get_curves_fig(curves, fig)
+    # if curves_color != "none":
+    fig = get_curves_fig(curves, fig, curves_color, curves_transparency)
 
     # plot application bw-lat dots
-    dots_fig = get_application_memory_dots_fig(df, slider_opacity)
+    dots_fig = get_application_memory_dots_fig(df, markers_transparency)
     fig.add_trace(dots_fig.data[0])
 
     fig.update_xaxes(title=x_title)
@@ -344,12 +346,17 @@ if __name__ == '__main__':
 
     @app.callback(
         Output('graph-container', 'children'),
-        Input('toggle-curves', 'value'),
-        Input("range-slider-time", "value"),
-        Input("range-slider-bw", "value"),
-        Input("range-slider-lat", "value"),
-        Input("slider-opacity", "value"))
-    def update_chart(toggled_curves, slider_range_time, slider_range_bw, slider_range_lat, slider_opacity):
+        Input('upload-config', 'filename'),
+        Input('save-config', 'n_clicks'),
+        Input('curves-color-dropdown', 'value'),
+        Input('curves-transparency-slider', 'value'),
+        Input('time-range-slider', 'value'),
+        Input('bw-range-slider', 'value'),
+        Input('lat-range-slider', 'value'),
+        Input('markers-transparency-slider', 'value')
+    )
+    def update_chart(upload_config_filename, save_config_filename, curves_color, curves_transparency, 
+                    time_range, bw_range, lat_range, markers_transparency):
         # built graphs for each node, socket and mc
         updated_graph_rows = []
 
@@ -375,9 +382,10 @@ if __name__ == '__main__':
 
                 for id_mc in mcs:
                     # Filter the dataframe to only include the selected node, socket and MC
-                    filt_df = filter_df(df, node_name, i_socket, id_mc, slider_range_time, slider_range_bw, slider_range_lat)
+                    filt_df = filter_df(df, node_name, i_socket, id_mc, time_range, bw_range, lat_range)
                     graph_title = f'MC {id_mc}' if len(mcs) > 1 else f'Socket {i_socket}'
-                    fig = get_graph_fig(filt_df, toggled_curves, slider_opacity, graph_title, labels['bw'], labels['lat'], color_bar_update)
+                    fig = get_graph_fig(filt_df, curves_color, curves_transparency, markers_transparency,
+                                        graph_title, labels['bw'], labels['lat'], color_bar_update)
 
                     bw_balance = filt_df['bw'].mean() / filt_df['bw'].max()
                     lat_balance = filt_df['lat'].mean() / filt_df['lat'].max()

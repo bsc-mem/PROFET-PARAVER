@@ -4,6 +4,18 @@ body {
     overflow-x: hidden;  /* Prevent horizontal scrollbar  */
 }
 
+.sidebar-element {
+    padding-bottom: 2rem;
+}
+.sidebar-button {
+    background-color: #1f3970;
+    border-color: #1f3970;
+    color: #fff;
+    width: 60%;
+    margin: auto;
+    display: block;
+}
+
 /* Sliders */
 .rc-slider-track, .rc-slider-handle {
     background-color: #1f3970 !important;

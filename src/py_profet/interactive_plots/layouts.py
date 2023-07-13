@@ -12,11 +12,11 @@ BODY_STYLE = {
 }
 
 SIDEBAR_STYLE = {
-    "padding": "2rem 1rem",
+    "padding": "1rem 1rem",
     "background-color": "white",
     "border-radius": "10px",
     "margin-bottom": "1rem",
-    "margin-top": "2rem",
+    # "margin-top": ".5rem",
 }
 
 CONTENT_STYLE = {
@@ -50,46 +50,80 @@ def get_sidebar(df: pd.DataFrame):
 
     return html.Div([
         dbc.Row([
-            html.P("Show curves:"),
-            daq.ToggleSwitch(
-                id='toggle-curves',
-                value=True
+            html.P("Load Configuration:"),
+            dcc.Upload(
+                id='upload-config',
+                children=dbc.Button("Upload", id='upload-config-button', n_clicks=0, className='sidebar-button'),
             ),
-            html.Div(id='toggle-curves-output'),
-            html.Div(id='toggle-time-output'),
-        ], style={'padding-bottom': '1rem'}),
+        ], className='sidebar-element'),
+        dbc.Row([
+            html.P("Save Configuration:"),
+            dbc.Button("Save", id='save-config', n_clicks=0, className='sidebar-button'),
+        ], className='sidebar-element'),
+        dbc.Row([
+            html.P("Curves Color:"),
+            dcc.Dropdown(
+                id='curves-color-dropdown',
+                options=[
+                    {'label': 'Black', 'value': 'black'},
+                    {'label': 'Red', 'value': 'red'},
+                    {'label': 'Green', 'value': 'green'},
+                    {'label': 'Blue', 'value': 'blue'},
+                    # {'label': 'Rainbow', 'value': 'rainbow'},
+                    # {'label': 'None', 'value': 'none'},
+                ],
+                value='black',
+            ),
+            # daq.ColorPicker(
+            #     id='curves-color-picker',
+            #     value=dict(hex='#000000')
+            # ),
+        ], className='sidebar-element'),
+        dbc.Row([
+            html.P("Curves Transparency:"),
+            dcc.Slider(0, 1, 0.01, value=1, id='curves-transparency-slider', marks=marks_opacity),
+        ], className='sidebar-element'),
+        # dbc.Row([
+        #     html.P("Show curves:"),
+        #     daq.ToggleSwitch(
+        #         id='toggle-curves',
+        #         value=True
+        #     ),
+        #     html.Div(id='toggle-curves-output'),
+        #     html.Div(id='toggle-time-output'),
+        # ], className='sidebar-element'),
         dbc.Row([
             html.P("Timestamp (ns):"),
             dcc.RangeSlider(
-                id='range-slider-time',
+                id='time-range-slider',
                 min=df['timestamp'].min(), max=df['timestamp'].max(), step=1000000,
                 marks=marks_time,
                 value=[df['timestamp'].min(), df['timestamp'].max()]
             ),
-        ], style={'padding-bottom': '1rem'}),
+        ], className='sidebar-element'),
         dbc.Row([
             html.P("Bandwidth (GB/s):"),
             dcc.RangeSlider(
-                id='range-slider-bw',
+                id='bw-range-slider',
                 min=df['bw'].min(), max=df['bw'].max(), step=1,
                 marks=marks_bw,
                 value=[df['bw'].min(), df['bw'].max()]
             ),
-        ], style={'padding-bottom': '1rem'}),
+        ], className='sidebar-element'),
         dbc.Row([
             html.P("Latency (ns):"),
             dcc.RangeSlider(
-                id='range-slider-lat',
+                id='lat-range-slider',
                 min=df['lat'].min(), max=df['lat'].max(), step=1,
                 marks=marks_lat,
                 value=[df['lat'].min(), df['lat'].max()]
             ),
-        ], style={'padding-bottom': '1rem'}),
+        ], className='sidebar-element'),
         dbc.Row([
-            html.P("Transparecy:"),
-            dcc.Slider(0, 1, 0.01, value=0.1, id='slider-opacity', marks=marks_opacity),
-        ], style={'padding-bottom': '1rem'}),
-    ], style=SIDEBAR_STYLE)  # Apply the sidebar style
+            html.P("Markers Transparency:"),
+            dcc.Slider(0, 1, 0.01, value=0.1, id='markers-transparency-slider', marks=marks_opacity),
+        ], className='sidebar-element'),
+    ], style=SIDEBAR_STYLE)
 
 def get_summary_platform_row(cpu_freq: float, summary_table_attrs: dict):
     return dbc.Row([
@@ -235,7 +269,7 @@ def get_main_content(df: pd.DataFrame, cpu_freq: float, system_arch: dict):
     tabs = dbc.Tabs([
         dbc.Tab(system_info_tab, label="Summary", tab_id="summary-tab"),
         dbc.Tab(charts_tab, label="Charts", tab_id="charts-tab"),
-    ], id="tabs", active_tab="summary-tab")
+    ], id="tabs", active_tab="charts-tab")
 
     return html.Div([
         tabs,
