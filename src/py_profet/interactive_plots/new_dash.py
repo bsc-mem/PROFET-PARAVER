@@ -207,9 +207,9 @@ def get_color_bar_update(toggled_time, labels):
     }
 
 
-def get_dash_app(df, cpu_freq: float, system_arch: dict, undersample: int = None):
+def get_dash_app(df, cpu_freq: float, system_arch: dict):
     app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-    app.layout = layouts.get_layout(df, cpu_freq, system_arch, undersample)
+    app.layout = layouts.get_layout(df, cpu_freq, system_arch)
     return app
 
 
@@ -242,16 +242,6 @@ def filter_df(df, node_name=None, i_socket=None, i_mc=None, time_range=(), bw_ra
     return df[mask]
 
 def get_application_memory_dots_fig(df, opacity=0.01):
-    # if show_time:
-        # use rainbow color map
-        # import matplotlib as mpl
-        # import matplotlib.colors as mcolors
-        # cmap = mpl.colormaps['rainbow']
-        # color_list = [mcolors.rgb2hex(cmap(i)) for i in range(cmap.N)]
-        # print(color_list)
-        # dots_fig = px.scatter(df[mask], x='bw', y='lat', color='timestamp', color_discrete_map=color_list)
-        # dots_fig = px.scatter(df[mask], x='bw', y='lat', color='timestamp')
-    # else:
     dots_fig = px.scatter(df, x='bw', y='lat', color='stress_score', color_continuous_scale=stress_score_scale)
 
     marker_opts = dict(size=10, opacity=opacity)
@@ -350,7 +340,7 @@ if __name__ == '__main__':
         print('PDF chart file:', store_pdf_file_path)
         print()
 
-    app = get_dash_app(df, args.cpu_freq, system_arch, undersample=max_elements)
+    app = get_dash_app(df, args.cpu_freq, system_arch)
 
     @app.callback(
         Output('graph-container', 'children'),

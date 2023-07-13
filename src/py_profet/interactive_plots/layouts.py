@@ -41,7 +41,6 @@ TAB_ACTIVE_STYLE = {
 }
 
 
-
 def get_sidebar(df: pd.DataFrame):
     # Define marks for sliders
     marks_time = {i: str(int(i)) for i in np.linspace(df['timestamp'].min(), df['timestamp'].max(), 5)}
@@ -92,8 +91,79 @@ def get_sidebar(df: pd.DataFrame):
         ], style={'padding-bottom': '1rem'}),
     ], style=SIDEBAR_STYLE)  # Apply the sidebar style
 
+def get_summary_platform_row(cpu_freq: float, summary_table_attrs: dict):
+    return dbc.Row([
+        html.H2('Platform', className='summary-section-title'),
+        # Server
+        dbc.Col([
+            dbc.Table([
+                html.Thead([
+                    html.Tr([
+                        html.Th('Server', className='fixed-width-header'),
+                    ])
+                ], className='no-border-thead'),
+                html.Tbody([
+                    html.Tr([html.Td('Name'), html.Td(f'TODO')]),
+                    html.Tr([html.Td('Number of nodes'), html.Td('TODO')]),
+                    html.Tr([html.Td('Sockets per node'), html.Td('TODO')]),
+                    html.Tr([html.Td('Hyper-threading'), html.Td('TODO: ON/OFF')]),
+                ])
+            ], **summary_table_attrs),
+        ], md=4),
+        # CPU
+        dbc.Col([
+            dbc.Table([
+                html.Thead([
+                    html.Tr([
+                        html.Th('CPU', className='fixed-width-header'),
+                    ])
+                ], className='no-border-thead'),
+                html.Tbody([
+                    html.Tr([html.Td('Name'), html.Td('TODO')]),
+                    html.Tr([html.Td('Number of cores'), html.Td('TODO')]),
+                    html.Tr([html.Td('Frequency'), html.Td(f'{cpu_freq} GHz')]),
+                ])
+            ], **summary_table_attrs)
+        ], md=4),
+        # Memory
+        dbc.Col([
+            dbc.Table([
+                html.Thead([
+                    html.Tr([
+                        html.Th('Memory', className='fixed-width-header'),
+                    ])
+                ], className='no-border-thead'),
+                html.Tbody([
+                    html.Tr([html.Td('Name'), html.Td('TODO')]),
+                    html.Tr([html.Td('Number of channels'), html.Td('TODO')]),
+                    html.Tr([html.Td('Frequency'), html.Td(f'TODO')]),
+                ])
+            ], **summary_table_attrs)
+        ], md=4),
+    ])
 
-def get_system_info_tab(cpu_freq: float, system_arch: dict):
+def get_summary_memory_row(df: pd.DataFrame, summary_table_attrs: dict):
+    return dbc.Row([
+        html.H2('Memory profile', className='summary-section-title'),
+        dbc.Col([
+            dbc.Table([
+                html.Thead([
+                    html.Tr([
+                        html.Th('Header?', className='fixed-width-header'),
+                    ])
+                ], className='no-border-thead'),
+                html.Tbody([
+                    html.Tr([html.Td('Lead-off latency'), html.Td(f'{df["lat"].min():.1f} ns')]),
+                    html.Tr([html.Td('Max. measured bandwidth'), html.Td(f'{df["bw"].max():.1f} GB/s')]),
+                    html.Tr([html.Td('Stream bandwidth'), html.Td('TODO')]),
+                ])
+            ], **summary_table_attrs),
+        ], md=4),
+    ])
+
+def get_summary_trace_row(df: pd.DataFrame, system_arch: dict, summary_table_attrs: dict):
+    execution_duration_sec = (df['timestamp'].max() - df['timestamp'].min()) / 1e9
+
     sockets_per_node = [len(sockets) for sockets in system_arch.values()]
     if len(set(sockets_per_node)) == 1:
         # each node has the same number of sockets
@@ -102,27 +172,40 @@ def get_system_info_tab(cpu_freq: float, system_arch: dict):
         # show the number of sockets per node individually
         sockets_per_node_str = ', '.join([str(n) for n in sockets_per_node])
 
-    return html.Div([
-        html.H4('System Information', style={'margin-bottom': '1rem'}),
-        dbc.Table([
-            html.Thead([
-                html.Tr([
-                    html.Th('Header 1'),
-                    html.Th('Header 2'),
+    return dbc.Row([
+        html.H2('Trace', className='summary-section-title'),
+        dbc.Col([
+            dbc.Table([
+                html.Thead([
+                    html.Tr([
+                        html.Th('Header?', className='fixed-width-header'),
+                    ])
+                ], className='no-border-thead'),
+                html.Tbody([
+                    html.Tr([html.Td('Duration'), html.Td(f'{execution_duration_sec:.1f} s')]),
+                    html.Tr([html.Td('Number of nodes'), html.Td(len(system_arch.keys()))]),
+                    html.Tr([html.Td('Node labels'), html.Td(', '.join(system_arch.keys()))]),
+                    html.Tr([html.Td('Sockets per node'), html.Td(sockets_per_node_str)]),
+                    html.Tr([html.Td('Cores'), html.Td('TODO')]),
                 ])
-            ]),
-            html.Tbody([
-                html.Tr([html.Td('CPU frequency'), html.Td(f'{cpu_freq} GHz')]),
-                html.Tr([html.Td('Number of nodes'), html.Td(len(system_arch.keys()))]),
-                html.Tr([html.Td('Node labels'), html.Td(', '.join(system_arch.keys()))]),
-                html.Tr([html.Td('Sockets per node'), html.Td(sockets_per_node_str)]),
-                # html.Tr([html.Td('Data 9'), html.Td('Data 10')]),
-            ])
-        ], bordered=True, hover=False, responsive=True, striped=True, className='system-info-table')
+            ], **summary_table_attrs),
+        ], md=4),
+    ])
+
+def get_summary_tab(df: pd.DataFrame, cpu_freq: float, system_arch: dict):
+    summary_table_attrs = {'bordered': True, 'hover': False, 'responsive': True,
+                           'striped': True, 'className': 'summary-table'}
+
+    return html.Div([
+        # Platform summary
+        get_summary_platform_row(cpu_freq, summary_table_attrs),
+        # Memory profile summary
+        get_summary_memory_row(df, summary_table_attrs),
+        # Trace summary
+        get_summary_trace_row(df, system_arch, summary_table_attrs),
     ], style=CONTENT_STYLE)
 
-
-def get_charts_tab(system_arch: dict, undersample: int = None):
+def get_charts_tab(system_arch: dict):
     # there is no need to do this processing, but doing it (similarly to how we build the graphs when updated)
     # makes the loading spinner appear right when the page is loaded, without delay
     chart_rows = []
@@ -144,31 +227,29 @@ def get_charts_tab(system_arch: dict, undersample: int = None):
         fullscreen=True,
     )
 
-
-def get_main_content(cpu_freq: float, system_arch: dict, undersample: int = None):
-    system_info_tab = get_system_info_tab(cpu_freq, system_arch)
-    charts_tab = get_charts_tab(system_arch, undersample)
+def get_main_content(df: pd.DataFrame, cpu_freq: float, system_arch: dict):
+    system_info_tab = get_summary_tab(df, cpu_freq, system_arch)
+    charts_tab = get_charts_tab(system_arch)
 
     # Reordering tabs to make them right-aligned
     tabs = dbc.Tabs([
-        dbc.Tab(system_info_tab, label="System", tab_id="system-tab"),
+        dbc.Tab(system_info_tab, label="Summary", tab_id="summary-tab"),
         dbc.Tab(charts_tab, label="Charts", tab_id="charts-tab"),
-    ], id="tabs", active_tab="charts-tab")
+    ], id="tabs", active_tab="summary-tab")
 
     return html.Div([
         tabs,
     ], style=CONTENT_STYLE)
 
-
 # Update the layout function
-def get_layout(df: pd.DataFrame, cpu_freq: float, system_arch: dict, undersample: int = None):
+def get_layout(df: pd.DataFrame, cpu_freq: float, system_arch: dict):
     return dbc.Container([
         dbc.Row([
             dbc.Col([
                 get_sidebar(df),
             ], width=2),
             dbc.Col([
-                get_main_content(cpu_freq, system_arch, undersample),
+                get_main_content(df, cpu_freq, system_arch),
             ], width=10),
         ]),
     ], fluid=True, style=BODY_STYLE)  # Applying the page style to the layout

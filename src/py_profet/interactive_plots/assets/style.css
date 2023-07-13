@@ -33,17 +33,30 @@ body {
     border: none;
 }
 
-/* System info table */
-.system-info-table {
+.summary-section-title {
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+}
+
+/* Summary table */
+.summary-table {
     font-family: Arial, sans-serif;
     text-align: left;
     width: 60%;
+    margin-bottom: 3rem;
 }
-.system-info-table thead {
+.summary-table thead {
     background-color: #1f3970;
     color: white;
     /* text-align: center; */
 }
-.system-info-table tbody tr:nth-child(odd) {
+.summary-table tbody tr:nth-child(odd) {
     background-color: #ffffff;  /* Lighter stripe color for odd rows */
 }
+.no-border-thead {
+    border-top: none !important;
+    border-right: none !important;
+}
+/* .fixed-width-header {
+    width: 200px; /* adjust as needed */
+} */
