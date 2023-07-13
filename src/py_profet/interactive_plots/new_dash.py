@@ -384,25 +384,27 @@ if __name__ == '__main__':
                     mcs_row = dbc.Row([])
 
                 for id_mc in mcs:
-                    graph_title = f'MC {id_mc}' if len(mcs) > 1 else f'Socket {i_socket}'
-
-                    # filter df
+                    # Filter the dataframe to only include the selected node, socket and MC
                     filt_df = filter_df(df, node_name, i_socket, id_mc, slider_range_time, slider_range_bw, slider_range_lat)
+                    graph_title = f'MC {id_mc}' if len(mcs) > 1 else f'Socket {i_socket}'
                     fig = get_graph_fig(filt_df, toggled_curves, slider_opacity, graph_title, labels['bw'], labels['lat'], color_bar_update)
 
-                    if len(mcs) > 1:  # Add graph to MC container if there are multiple MCs
-                        mc_col = dbc.Col([
-                            html.Br(),
-                            dcc.Graph(id=f'node-{node_name}-socket-{i_socket}-mc-{id_mc}', figure=fig)
-                        ], sm=12, md=6)
-                        mcs_row.children.append(mc_col)
+                    bw_balance = filt_df['bw'].mean() / filt_df['bw'].max()
+                    lat_balance = filt_df['lat'].mean() / filt_df['lat'].max()
+                    # print(f'Node {node_name}, socket {i_socket}, MC {id_mc}: BW balance: {bw_balance:.2f} ({filt_df["bw"].mean():.2f}, {filt_df["bw"].max():.2f})')
+                    # print(f'Node {node_name}, socket {i_socket}, MC {id_mc}: Lat balance: {lat_balance:.2f} ({filt_df["lat"].mean():.2f}, {filt_df["lat"].max():.2f})')
+                    col = dbc.Col([
+                        html.Br(),
+                        dcc.Graph(id=f'node-{node_name}-socket-{i_socket}-mc-{id_mc}', figure=fig),
+                        html.H6(f'BW balance: {bw_balance:.2f}', style={'padding-left': '5rem'}),
+                        html.H6(f'Lat. balance: {lat_balance:.2f}', style={'padding-left': '5rem'}),
+                    ], sm=12, md=6)
+                    if len(mcs) > 1:
+                        # Add graph to MC container if there are multiple MCs
+                        mcs_row.children.append(col)
                     else:
                         # Add the graph to the socket container
-                        socket_col = dbc.Col([
-                            html.Br(),
-                            dcc.Graph(id=f'node-{node_name}-socket-{i_socket}-mc-{id_mc}', figure=fig)
-                        ], sm=12, md=6)
-                        sockets_row.children.append(socket_col)
+                        sockets_row.children.append(col)
 
                     # mc_bw_balance = filt_df['bw'].groupby('timestamp').mean() / filt_df['bw'].groupby('timestamp').max()
                     # mc_lat_balance = filt_df['lat'].groupby('timestamp').mean() / filt_df['lat'].groupby('timestamp').max()
