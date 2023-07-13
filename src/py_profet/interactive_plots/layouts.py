@@ -50,16 +50,19 @@ def get_sidebar(df: pd.DataFrame):
 
     return html.Div([
         dbc.Row([
-            html.P("Load Configuration:"),
+            html.P("Configuration:"),
             dcc.Upload(
                 id='upload-config',
-                children=dbc.Button("Upload", id='upload-config-button', n_clicks=0, className='sidebar-button'),
+                children=dbc.Button("Load", id='upload-config-button', n_clicks=0, className='sidebar-button'),
             ),
+            dcc.Download(id='download-config'),
+            dbc.Button("Save", id='save-config', n_clicks=0, className='sidebar-button', style={'margin-top': '1rem'}),
         ], className='sidebar-element'),
-        dbc.Row([
-            html.P("Save Configuration:"),
-            dbc.Button("Save", id='save-config', n_clicks=0, className='sidebar-button'),
-        ], className='sidebar-element'),
+        # dbc.Row([
+        #     # html.P("Save Configuration:"),
+        #     dcc.Download(id='download-config'),
+        #     dbc.Button("Save", id='save-config', n_clicks=0, className='sidebar-button'),
+        # ], className='sidebar-element'),
         dbc.Row([
             html.P("Curves Color:"),
             dcc.Dropdown(

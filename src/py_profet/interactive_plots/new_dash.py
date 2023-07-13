@@ -7,30 +7,28 @@ You should have received a copy of the BSD-3 license with
 this file. If not, please visit: https://opensource.org/licenses/BSD-3-Clause
 '''
 
-import plotly.graph_objects as go
-import plotly.express as px
 from plotly.subplots import make_subplots
-import numpy as np
 import pandas as pd
 import os
 import argparse
 from collections import defaultdict
-from dash import Dash, dcc, html, Input, Output
-import matplotlib.pyplot as plt
-import dash_daq as daq
+from dash import Dash
 import dash_bootstrap_components as dbc
+from callbacks import register_callbacks
 
 import layouts
-
+import utils
 
 # define a custom continuous color scale for stress score
-stress_score_min, stress_score_max = 0, 1
-stress_score_scale = [
-    (0.0, 'green'),
-    (0.5, 'yellow'),
-    (1.0, 'red'),
-]
-
+stress_score_config = {
+    'min': 0,
+    'max': 1,
+    'colorscale': [
+        (0.0, 'green'),
+        (0.5, 'yellow'),
+        (1.0, 'red'),
+    ],
+}
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -51,237 +49,38 @@ def parse_args():
     
     return parser.parse_args()
 
-
-def get_node_names(row_file_path):
-    # get the name of the nodes specified in the .row file
-    node_counter = 0
-    n_nodes = None
-    node_names = []
-    with open(row_file_path, 'r') as f:
-        for l in f.readlines():
-            if 'LEVEL APPL SIZE' in l:
-                n_nodes = int(l.strip().split(' ')[-1])
-                node_counter = 1
-                continue
-            if node_counter:
-                node_names.append(l.strip())
-                node_counter += 1
-                if node_counter > n_nodes:
-                    # all node names have been read
-                    break
-    return node_names
-
-
-def prv_to_df(trace_file_path, row_file_path, precision, excluded_original, save_feather=False):
-    node_names = get_node_names(row_file_path)
-    num_lines = sum(1 for _ in open(trace_file_path))
-
-    rand_lines = []
-    file_stats = os.stat(trace_file_path)
-    file_mb = file_stats.st_size / (1024 ** 2)
-    # directly undersample if file is big
-    if file_mb > 100:
-        # lines to undersample to have close to 100 MB
-        undersample_n_lines = int((100 / file_mb) * num_lines)
-        print(f'File size is {file_mb:.2f} MB, with {num_lines:,} lines. Undersampling to {10000/file_mb:.0f}% of original file).')
-        # take random rows sample. Sort them in descending order to then process it using pop() for efficiency
-        rand_lines = sorted(np.random.choice(num_lines, size=undersample_n_lines, replace=False), reverse=True)
-
-    df = []
-    metric_keys = ['wr', 'bw', 'max_bw', 'lat', 'min_lat', 'max_lat', 'stress_score']
-    with open(trace_file_path) as f:
-        first_line = True
-        # all_lines = f.readlines()
-        # do not read all lines at once, read them line by line to save memory
-        for i, line in enumerate(f):
-            if i % 100000 == 0:
-                print(f'Loading is {i/num_lines*100:.2f}% complete.', end='\r')
-
-            if len(rand_lines):
-                if i == rand_lines[-1]:
-                    rand_lines.pop()
-                else:
-                    # skip line if it is not in the random sample
-                    continue
-
-            if first_line or line.startswith('#') or line.startswith('c'):
-                # skip header, comments and communicator lines
-                first_line = False
-                continue
-
-            sp = line.split(':')
-            row = defaultdict()
-            row['node'] = int(sp[2])
-            
-            if not excluded_original and row['node'] == 1:
-                # skip first application (original trace values) when it is excluded
-                continue
-
-            row['node_name'] = node_names[row['node'] - 1]
-            row['socket'] = int(sp[3])
-            row['mc'] = int(sp[4])
-            row['timestamp'] = int(sp[5])
-
-            # process subsequent metric IDs and values after the timestamp
-            for i in range(6, len(sp)-1, 2):
-                metric_id = int(sp[i])
-                last_metric_digit = int(metric_id % 10)
-
-                if last_metric_digit > len(metric_keys):
-                    # we're over the desired metrics, no need to continue
-                    break
-
-                metric_key = metric_keys[last_metric_digit - 1]
-                val = float(sp[i+1].strip())
-
-                # negative values are set for identifying irregular data, include all of them for now and remove whole negative rows later (see next lines)
-                if val != -1:
-                    # apply precision of the prv file.
-                    # if it is negative but different than -1, apply precision as well, as
-                    # we stored the calculated metric as a negative number for identifying it as an error or an irregularity.
-                    val = float(val / 10**precision)
-                row[metric_key] = val
-
-                if metric_key == metric_keys[-1]:
-                    # we've processed the last metric key we want, no need to continue (even if there are other events pending)
-                    break
-
-            df.append(row)
-        df = pd.DataFrame(df)
-        # perform a forward fill for copying above values of NaN (prvparser is purpously omitting equal consecutive values of a metric)
-        df = df.ffill()
-        # keep only rows with non-negative values, which means we logged erroneous or irregular data
-        # also, keep NaN values for performing a forward-fill
-        df = df[(pd.isnull(df[metric_keys]).any(axis=1)) | (df[metric_keys] >= 0).all(axis=1)].reset_index(drop=True)
-        # calculate read ratio
-        df['rr'] = 100 - df['wr']
-
-        # TODO hard-coded drop 0s. Decide what to do with them in the output trace
-        df = df[~((df['bw'] == 0) & (df['lat'] == 0))].reset_index(drop=True)
-
-        if save_feather:
-            trace_feather_path = trace_file_path.replace('.prv', '.feather')
-            df.to_feather(trace_feather_path)
-
-        return df
-
-
-def get_curves(curves_path, cpu_freq):
-    curves = {}
-    # load and process curves
-    for curve_file in os.listdir(curves_path):
-    # for curve_file in os.listdir(curves_dir):
-        if 'bwlat_' in curve_file:
-            # with open( os.path.join(curves_dir, curve_file) ) as f:
-            with open( os.path.join(curves_path, curve_file) ) as f:
-                bws = []
-                lats = []
-                for line in f.readlines():
-                    sp = line.split()
-                    # bw MB/s to GB/s
-                    bws.append(float(sp[0]) / 1000)
-                    lats.append(float(sp[1]))
-                # add special case of bw = 0 (then latency is the minimum recorded).
-                # TODO it'd be better to use the Curve module instead of hardcoding a bw of 0 to the lowest latency (this behavior might change at some point)
-                bws.append(0)
-                lats.append(lats[-1])
-                read_ratio = int(curve_file.split('_')[1].replace('.txt', ''))
-                curves[100 - read_ratio] = {
-                    'bandwidths': bws[::-1],
-                    'latencies': np.array(lats[::-1]) / cpu_freq
-                }
-    return curves
-
-
-def get_color_bar_update(toggled_time, labels):
-    if toggled_time:
-        return {
-            'colorbar': {'title': labels['timestamp'],},
-            'colorscale': 'burg',
-        }
-    return {
-        'colorbar': {'title': labels['stress_score'],},
-        'colorscale': stress_score_scale,
-        'cmin': stress_score_min,
-        'cmax': stress_score_max,
-    }
-
-
 def get_dash_app(df, cpu_freq: float, system_arch: dict):
     app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
     app.layout = layouts.get_layout(df, cpu_freq, system_arch)
     return app
 
-
-def get_curves_fig(curves, fig, color='black', transparency=1):
-    for i, w_ratio in enumerate(range(0, 51, 10)):
-        curve_fig = px.line(x=curves[w_ratio]['bandwidths'], y=curves[w_ratio]['latencies'], color_discrete_sequence=[color])
-        curve_opacity_step = transparency / len(range(0, 51, 10))
-        curve_transparency = transparency - curve_opacity_step * i
-        curve_fig.update_traces(opacity=max(0, curve_transparency))
-        curve_text = f'{w_ratio}%' if curve_transparency > 0 else ''
-        fig.add_trace(curve_fig.data[0])
-        fig.add_annotation(x=curves[w_ratio]['bandwidths'][-1], y=curves[w_ratio]['latencies'][-1] + 15,
-                            text=curve_text, showarrow=False, arrowhead=1)
-    return fig
-
-def filter_df(df, node_name=None, i_socket=None, i_mc=None, time_range=(), bw_range=(), lat_range=()):
-    mask = [True] * len(df)
-    if node_name is not None:
-        mask &= df['node_name'] == node_name
-    if i_socket is not None:
-        mask &= df['socket'] == int(i_socket)
-    if i_mc is not None:
-        mask &= df['mc'] == int(i_mc)
-    # if mc != '-' and mc != 'All':
-    #     mask &= df['mc'] == int(mc)
-    if len(time_range):
-        mask &= (df['timestamp'] >= time_range[0]) & (df['timestamp'] < time_range[1])
-    if len(bw_range):
-        mask &= (df['bw'] >= bw_range[0]) & (df['bw'] < bw_range[1])
-    if len(lat_range):
-        mask &= (df['lat'] >= lat_range[0]) & (df['lat'] < lat_range[1])
-    return df[mask]
-
-def get_application_memory_dots_fig(df, opacity=0.01):
-    dots_fig = px.scatter(df, x='bw', y='lat', color='stress_score', color_continuous_scale=stress_score_scale)
-
-    marker_opts = dict(size=10, opacity=opacity)
-    dots_fig.update_traces(marker=marker_opts)
-    return dots_fig
-
-def get_graph_fig(df, curves_color, curves_transparency, markers_transparency, graph_title, x_title, y_title, color_bar_update):
-    fig = make_subplots(rows=1, cols=1)
-    # if curves_color != "none":
-    fig = get_curves_fig(curves, fig, curves_color, curves_transparency)
-
-    # plot application bw-lat dots
-    dots_fig = get_application_memory_dots_fig(df, markers_transparency)
-    fig.add_trace(dots_fig.data[0])
-
-    fig.update_xaxes(title=x_title)
-    fig.update_yaxes(title=y_title)
-    fig.update_coloraxes(**color_bar_update)
-
-    # update the layout with a title
-    fig.update_layout(
-        title={
-            'text': graph_title,
-            'font': {
-                'size': 24,
-                'color': 'black',
-                'family': 'Arial, sans-serif',
-            },
-            'x':0.5,
-            'xanchor': 'center'
-        }
-    )
-    return fig
+def save_pdf(trace_file: str):
+    store_pdf_path = os.path.dirname(os.path.abspath(trace_file))
+    if trace_file.endswith('.prv'):
+        pdf_filename = os.path.basename(os.path.abspath(trace_file)).replace('.prv', '.pdf')
+    elif trace_file.endswith('.feather'):
+        pdf_filename = os.path.basename(os.path.abspath(trace_file)).replace('.feather', '.pdf')
+    else:
+        raise Exception(f'Unkown trace file extension ({trace_file.split(".")[-1]}) from {trace_file}.')
+    store_pdf_file_path = os.path.join(store_pdf_path, pdf_filename)
+    default_fig = make_subplots(rows=1, cols=1)
+    default_fig = utils.get_curves_fig(curves, default_fig)
+    # get application plot memory dots with default options
+    dots_fig = utils.get_application_memory_dots_fig(df, stress_score_config['colorscale'])
+    default_fig.add_trace(dots_fig.data[0])
+    default_fig.update_xaxes(title=labels['bw'])
+    default_fig.update_yaxes(title=labels['lat'])
+    color_bar = utils.get_color_bar(labels, stress_score_config)
+    default_fig.update_coloraxes(**color_bar)
+    default_fig.write_image(store_pdf_file_path)
+    print('PDF chart file:', store_pdf_file_path)
+    print()
 
 if __name__ == '__main__':
     # read and process arguments
     args = parse_args()
-    labels = {'bw': 'Bandwidth (GB/s)', 'lat': 'Latency (ns)', 'timestamp': 'Timestamp (ns)', 'stress_score': 'Stress score'}
+    labels = {'bw': 'Bandwidth (GB/s)', 'lat': 'Latency (ns)',
+              'timestamp': 'Timestamp (ns)', 'stress_score': 'Stress score'}
 
     # load and process trace
     # trace_file = '../prv_profet_visualizations/traces/petar_workshop/xhpcg.mpich-x86-64_10ms.chop1.profet.prv'
@@ -291,7 +90,7 @@ if __name__ == '__main__':
     # do it for all other cases (e.g. .pdf below)
     row_file_path = args.trace_file.replace('.prv', '.row')
     if args.trace_file.endswith('.prv'):
-        df = prv_to_df(args.trace_file, row_file_path, args.precision, args.excluded_original, args.save_feather)
+        df = utils.prv_to_df(args.trace_file, row_file_path, args.precision, args.excluded_original, args.save_feather)
     elif args.trace_file.endswith('.feather'):
         df = pd.read_feather(args.trace_file)
     else:
@@ -306,117 +105,23 @@ if __name__ == '__main__':
     
     # allow a maximum of elements to display. Randomly undersample if there are more elements than the limit
     max_elements = 10000
-    is_undersampled = False
     if len(df) > max_elements:
         # TODO make each socket have the same number of elements
         df = df.sample(max_elements)
-        is_undersampled = True
     else:
         # if not undersampled, set max_elements to None
         max_elements = None
 
     # load and process curves
-    curves = get_curves(args.curves_path, args.cpu_freq)
+    curves = utils.get_curves(args.curves_path, args.cpu_freq)
     # get color bar update options
-    color_bar_update = get_color_bar_update(toggled_time=False, labels=labels)
+    color_bar = utils.get_color_bar(labels, stress_score_config)
 
     # save a pdf file with a default chart
     if args.plot_pdf:
-        store_pdf_path = os.path.dirname(os.path.abspath(args.trace_file))
-        if args.trace_file.endswith('.prv'):
-            pdf_filename = os.path.basename(os.path.abspath(args.trace_file)).replace('.prv', '.pdf')
-        elif args.trace_file.endswith('.feather'):
-            pdf_filename = os.path.basename(os.path.abspath(args.trace_file)).replace('.feather', '.pdf')
-        else:
-            raise Exception(f'Unkown trace file extension ({args.trace_file.split(".")[-1]}) from {args.trace_file}.')
-        store_pdf_file_path = os.path.join(store_pdf_path, pdf_filename)
-        default_fig = make_subplots(rows=1, cols=1)
-        default_fig = get_curves_fig(curves, default_fig)
-        # get application plot memory dots with default options
-        dots_fig = get_application_memory_dots_fig(df)
-        default_fig.add_trace(dots_fig.data[0])
-        default_fig.update_xaxes(title=labels['bw'])
-        default_fig.update_yaxes(title=labels['lat'])
-        default_fig.update_coloraxes(**color_bar_update)
-        default_fig.write_image(store_pdf_file_path)
-        print('PDF chart file:', store_pdf_file_path)
-        print()
+        save_pdf(args.trace_file)
 
     app = get_dash_app(df, args.cpu_freq, system_arch)
-
-    @app.callback(
-        Output('graph-container', 'children'),
-        Input('upload-config', 'filename'),
-        Input('save-config', 'n_clicks'),
-        Input('curves-color-dropdown', 'value'),
-        Input('curves-transparency-slider', 'value'),
-        Input('time-range-slider', 'value'),
-        Input('bw-range-slider', 'value'),
-        Input('lat-range-slider', 'value'),
-        Input('markers-transparency-slider', 'value')
-    )
-    def update_chart(upload_config_filename, save_config_filename, curves_color, curves_transparency, 
-                    time_range, bw_range, lat_range, markers_transparency):
-        # built graphs for each node, socket and mc
-        updated_graph_rows = []
-
-        if is_undersampled:
-            # add warning text
-            updated_graph_rows.append(dbc.Row([
-                html.H5(f'Warning: Data is undersampled to {max_elements:,} elements.', style={"color": "red"}),
-            ], style={'padding-bottom': '1rem', 'padding-top': '2rem'}))
-
-        for node_name, sockets in system_arch.items():
-            # Create a new container for each node
-            node_container = dbc.Container([], id=f'node-{node_name}-container', fluid=True)
-            node_container.children.append(html.H2(f'Node {node_name}', style={'padding-top': '2rem'}))
-            # Create a row for the sockets to sit in. This variable is unused if len(mcs) == 1 (visualization is per socket)
-            sockets_row = dbc.Row([])
-
-            for i_socket, mcs in sockets.items():
-                if len(mcs) > 1:
-                    # Create a new container for each socket within the node container
-                    socket_container = dbc.Container([], id=f'node-{node_name}-socket-{i_socket}-container', fluid=True)
-                    socket_container.children.append(html.H3(f'Socket {i_socket}', style={'padding-top': '1rem'}))
-                    mcs_row = dbc.Row([])
-
-                for id_mc in mcs:
-                    # Filter the dataframe to only include the selected node, socket and MC
-                    filt_df = filter_df(df, node_name, i_socket, id_mc, time_range, bw_range, lat_range)
-                    graph_title = f'MC {id_mc}' if len(mcs) > 1 else f'Socket {i_socket}'
-                    fig = get_graph_fig(filt_df, curves_color, curves_transparency, markers_transparency,
-                                        graph_title, labels['bw'], labels['lat'], color_bar_update)
-
-                    bw_balance = filt_df['bw'].mean() / filt_df['bw'].max()
-                    lat_balance = filt_df['lat'].mean() / filt_df['lat'].max()
-                    # print(f'Node {node_name}, socket {i_socket}, MC {id_mc}: BW balance: {bw_balance:.2f} ({filt_df["bw"].mean():.2f}, {filt_df["bw"].max():.2f})')
-                    # print(f'Node {node_name}, socket {i_socket}, MC {id_mc}: Lat balance: {lat_balance:.2f} ({filt_df["lat"].mean():.2f}, {filt_df["lat"].max():.2f})')
-                    col = dbc.Col([
-                        html.Br(),
-                        dcc.Graph(id=f'node-{node_name}-socket-{i_socket}-mc-{id_mc}', figure=fig),
-                        html.H6(f'BW balance: {bw_balance:.2f}', style={'padding-left': '5rem'}),
-                        html.H6(f'Lat. balance: {lat_balance:.2f}', style={'padding-left': '5rem'}),
-                    ], sm=12, md=6)
-                    if len(mcs) > 1:
-                        # Add graph to MC container if there are multiple MCs
-                        mcs_row.children.append(col)
-                    else:
-                        # Add the graph to the socket container
-                        sockets_row.children.append(col)
-
-                    # mc_bw_balance = filt_df['bw'].groupby('timestamp').mean() / filt_df['bw'].groupby('timestamp').max()
-                    # mc_lat_balance = filt_df['lat'].groupby('timestamp').mean() / filt_df['lat'].groupby('timestamp').max()
-                if len(mcs) > 1:
-                    # Add the completed socket container to the node container's row
-                    socket_container.children.append(mcs_row)
-                    node_container.children.append(socket_container)
-                
-            if len(mcs) == 1:
-                node_container.children.append(sockets_row)
-            # Add the completed node container to the overall layout
-            updated_graph_rows.append(node_container)
-
-        return updated_graph_rows
-
-    app.run_server(debug=False)
-    # app.run_server(debug=True)
+    register_callbacks(app, df, curves, system_arch, args.trace_file, labels, stress_score_config, max_elements)
+    # app.run_server(debug=False)
+    app.run_server(debug=True)
