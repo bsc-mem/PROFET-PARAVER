@@ -42,13 +42,14 @@ TAB_ACTIVE_STYLE = {
 
 
 def get_sidebar(df: pd.DataFrame):
+    node_names = sorted(df['node_name'].unique())
     # Define marks for sliders
     marks_time = {i: str(round(i, 1)) for i in np.linspace(df['timestamp'].min()/1e9, df['timestamp'].max()/1e9, 5)}
     marks_bw = {i: str(int(i)) for i in np.linspace(df['bw'].min(), df['bw'].max(), 5)}
     marks_lat = {i: str(int(i)) for i in np.linspace(df['lat'].min(), df['lat'].max(), 5)}
     marks_opacity = {i: str(i) for i in np.linspace(0, 1, 5)}
 
-    return html.Div([
+    sidebar = html.Div([
         dbc.Row([
             html.P("Configuration:"),
             dcc.Upload(
@@ -63,6 +64,18 @@ def get_sidebar(df: pd.DataFrame):
         #     dcc.Download(id='download-config'),
         #     dbc.Button("Save", id='save-config', n_clicks=0, className='sidebar-button'),
         # ], className='sidebar-element'),
+        dbc.Row([
+            html.P("Node selection:"),
+            dcc.Dropdown(
+                id='node-selection-dropdown',
+                # options=[{'label': 'All', 'value': 'all'}] + node_options,
+                options=[{'label': node_name, 'value': node_name} for node_name in node_names],
+                value=[node_name for node_name in node_names],
+                searchable=True,
+                clearable=True,
+                multi=True,
+            ),
+        ], className='sidebar-element'),
         dbc.Row([
             html.P("Curves Color:"),
             dcc.Dropdown(
@@ -127,6 +140,9 @@ def get_sidebar(df: pd.DataFrame):
             dcc.Slider(0, 1, 0.01, value=0.1, id='markers-transparency-slider', marks=marks_opacity),
         ], className='sidebar-element'),
     ], style=SIDEBAR_STYLE)
+
+    # keep the side bar in a collapsed state, so we can hide it when the charts tab is not selected
+    return dbc.Collapse([sidebar], id="sidebar")
 
 def get_summary_platform_row(cpu_freq: float, summary_table_attrs: dict):
     return dbc.Row([
@@ -272,7 +288,7 @@ def get_main_content(df: pd.DataFrame, cpu_freq: float, system_arch: dict):
     tabs = dbc.Tabs([
         dbc.Tab(system_info_tab, label="Summary", tab_id="summary-tab"),
         dbc.Tab(charts_tab, label="Charts", tab_id="charts-tab"),
-    ], id="tabs", active_tab="charts-tab")
+    ], id="tabs", active_tab="summary-tab")
 
     return html.Div([
         tabs,
@@ -282,11 +298,7 @@ def get_main_content(df: pd.DataFrame, cpu_freq: float, system_arch: dict):
 def get_layout(df: pd.DataFrame, cpu_freq: float, system_arch: dict):
     return dbc.Container([
         dbc.Row([
-            dbc.Col([
-                get_sidebar(df),
-            ], width=2),
-            dbc.Col([
-                get_main_content(df, cpu_freq, system_arch),
-            ], width=10),
+            dbc.Col([get_sidebar(df)], width=2),
+            dbc.Col([get_main_content(df, cpu_freq, system_arch)], width=10),
         ]),
     ], fluid=True, style=BODY_STYLE)  # Applying the page style to the layout

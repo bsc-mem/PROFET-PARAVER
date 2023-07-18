@@ -35,7 +35,7 @@ def prv_to_df(trace_file_path, row_file_path, precision, excluded_original, save
     if file_mb > 100:
         # lines to undersample to have close to 100 MB
         undersample_n_lines = int((100 / file_mb) * num_lines)
-        print(f'File size is {file_mb:.2f} MB, with {num_lines:,} lines. Undersampling to {10000/file_mb:.0f}% of original file).')
+        print(f'File size is {file_mb:.2f} MB, with {num_lines:,} lines. Undersampling to {10000/file_mb:.0f}% of original file.')
         # take random rows sample. Sort them in descending order to then process it using pop() for efficiency
         rand_lines = sorted(np.random.choice(num_lines, size=undersample_n_lines, replace=False), reverse=True)
 

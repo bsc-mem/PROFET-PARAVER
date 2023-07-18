@@ -9,10 +9,19 @@ import utils
 
 def register_callbacks(app, df, curves, system_arch, trace_file, labels, stress_score_config, max_elements=None):
 
+    # toggle sidebar, showing it when the charts tab is selected and hidding it otherwise
+    @app.callback(
+        Output("sidebar", "is_open"),
+        Input("tabs", "active_tab")
+    )
+    def toggle_sidebar(active_tab):
+        return active_tab == "charts-tab"
+
     # we need all the elements as outputs for updating them in case of loading a json file
     # if a json file is not loaded, the callback has still to return the real values
     # for plotting the graphs, so that's why need the States here
     @app.callback(
+        Output('node-selection-dropdown', 'value'),
         Output('curves-color-dropdown', 'value'),
         Output('curves-transparency-slider', 'value'),
         Output('time-range-slider', 'value'),
@@ -20,17 +29,18 @@ def register_callbacks(app, df, curves, system_arch, trace_file, labels, stress_
         Output('lat-range-slider', 'value'),
         Output('markers-transparency-slider', 'value'),
         Input('upload-config', 'contents'),
+        State('node-selection-dropdown', 'value'),
         State('curves-color-dropdown', 'value'),
         State('curves-transparency-slider', 'value'),
         State('time-range-slider', 'value'),
         State('bw-range-slider', 'value'),
         State('lat-range-slider', 'value'),
-        State('markers-transparency-slider', 'value')
+        State('markers-transparency-slider', 'value'),
     )
-    def load_config(contents, curves_color, curves_transparency, 
-                    time_range, bw_range, lat_range, markers_transparency):
+    def load_config(contents, selected_nodes, curves_color, curves_transparency, time_range, 
+                    bw_range, lat_range, markers_transparency):
         if contents is None:
-            return curves_color, curves_transparency, time_range, bw_range, lat_range, markers_transparency
+            return selected_nodes, curves_color, curves_transparency, time_range, bw_range, lat_range, markers_transparency
         
         content_type, content_string = contents.split(',')
         decoded = base64.b64decode(content_string)
@@ -38,7 +48,7 @@ def register_callbacks(app, df, curves, system_arch, trace_file, labels, stress_
             if 'json' in content_type:
                 # assume that the user uploaded a JSON file
                 json_file = json.loads(decoded)
-                return_order = ['curves_color', 'curves_transparency', 'time_range',
+                return_order = ['selected_nodes', 'curves_color', 'curves_transparency', 'time_range',
                                 'bw_range', 'lat_range', 'markers_transparency']
                 return [json_file.get(key) for key in return_order]
         except Exception as e:
@@ -50,15 +60,16 @@ def register_callbacks(app, df, curves, system_arch, trace_file, labels, stress_
     @app.callback(
         Output('download-config', 'data'),
         Input('save-config', 'n_clicks'),
+        State('node-selection-dropdown', 'value'),
         State('curves-color-dropdown', 'value'),
         State('curves-transparency-slider', 'value'),
         State('time-range-slider', 'value'),
         State('bw-range-slider', 'value'),
         State('lat-range-slider', 'value'),
-        State('markers-transparency-slider', 'value')
+        State('markers-transparency-slider', 'value'),
     )
-    def save_config(save_n_clicks, curves_color, curves_transparency, 
-                    time_range, bw_range, lat_range, markers_transparency):
+    def save_config(save_n_clicks, selected_nodes, curves_color, curves_transparency, time_range, 
+                    bw_range, lat_range, markers_transparency):
         if save_n_clicks is None or save_n_clicks == 0:
             raise PreventUpdate
 
@@ -70,6 +81,7 @@ def register_callbacks(app, df, curves, system_arch, trace_file, labels, stress_
             'bw_range': bw_range,
             'lat_range': lat_range,
             'markers_transparency': markers_transparency,
+            'selected_nodes': selected_nodes,
         }, indent=2)
 
         # You can choose a default filename, but the user will still
@@ -81,15 +93,16 @@ def register_callbacks(app, df, curves, system_arch, trace_file, labels, stress_
 
     @app.callback(
         Output('graph-container', 'children'),
+        Input('node-selection-dropdown', 'value'),
         Input('curves-color-dropdown', 'value'),
         Input('curves-transparency-slider', 'value'),
         Input('time-range-slider', 'value'),
         Input('bw-range-slider', 'value'),
         Input('lat-range-slider', 'value'),
-        Input('markers-transparency-slider', 'value')
+        Input('markers-transparency-slider', 'value'),
     )
-    def update_chart(curves_color, curves_transparency, 
-                     time_range, bw_range, lat_range, markers_transparency):
+    def update_chart(selected_nodes, curves_color, curves_transparency, time_range, 
+                     bw_range, lat_range, markers_transparency):
         # built graphs for each node, socket and mc
         updated_graph_rows = []
 
@@ -102,9 +115,12 @@ def register_callbacks(app, df, curves, system_arch, trace_file, labels, stress_
         color_bar = utils.get_color_bar(labels, stress_score_config)
 
         for node_name, sockets in system_arch.items():
+            if node_name not in selected_nodes:
+                continue
+
             # Create a new container for each node
             node_container = dbc.Container([], id=f'node-{node_name}-container', fluid=True)
-            node_container.children.append(html.H2(f'Node {node_name}', style={'padding-top': '2rem'}))
+            node_container.children.append(html.H2(f'Node {node_name}', style={'padding-top': '3rem'}))
             # Create a row for the sockets to sit in. This variable is unused if len(mcs) == 1 (visualization is per socket)
             sockets_row = dbc.Row([])
 
@@ -112,7 +128,7 @@ def register_callbacks(app, df, curves, system_arch, trace_file, labels, stress_
                 if len(mcs) > 1:
                     # Create a new container for each socket within the node container
                     socket_container = dbc.Container([], id=f'node-{node_name}-socket-{i_socket}-container', fluid=True)
-                    socket_container.children.append(html.H3(f'Socket {i_socket}', style={'padding-top': '1rem'}))
+                    socket_container.children.append(html.H3(f'Socket {i_socket}', style={'padding-top': '0rem'}))
                     mcs_row = dbc.Row([])
 
                 for id_mc in mcs:
@@ -124,13 +140,15 @@ def register_callbacks(app, df, curves, system_arch, trace_file, labels, stress_
 
                     bw_balance = filt_df['bw'].mean() / filt_df['bw'].max()
                     lat_balance = filt_df['lat'].mean() / filt_df['lat'].max()
-                    # print(f'Node {node_name}, socket {i_socket}, MC {id_mc}: BW balance: {bw_balance:.2f} ({filt_df["bw"].mean():.2f}, {filt_df["bw"].max():.2f})')
-                    # print(f'Node {node_name}, socket {i_socket}, MC {id_mc}: Lat balance: {lat_balance:.2f} ({filt_df["lat"].mean():.2f}, {filt_df["lat"].max():.2f})')
+                    stress_balance = filt_df['stress_score'].mean() / filt_df['stress_score'].max()
+                    # print(f'Node {node_name}, socket {i_socket}, MC {id_mc}: BW balance: {bw_balance:.2f} ({filt_df["bw"].mean():.2f}, {filt_df["bw"].max():.2f}); std = {filt_df["bw"].std():.2f}')
+                    # print(f'Node {node_name}, socket {i_socket}, MC {id_mc}: Lat balance: {lat_balance:.2f} ({filt_df["lat"].mean():.2f}, {filt_df["lat"].max():.2f}); std = {filt_df["lat"].std():.2f}')
                     col = dbc.Col([
                         html.Br(),
                         dcc.Graph(id=f'node-{node_name}-socket-{i_socket}-mc-{id_mc}', figure=fig),
                         html.H6(f'BW balance: {bw_balance:.2f}', style={'padding-left': '5rem'}),
                         html.H6(f'Lat. balance: {lat_balance:.2f}', style={'padding-left': '5rem'}),
+                        html.H6(f'Stress balance: {stress_balance:.2f}', style={'padding-left': '5rem'}),
                     ], sm=12, md=6)
                     if len(mcs) > 1:
                         # Add graph to MC container if there are multiple MCs
@@ -139,8 +157,6 @@ def register_callbacks(app, df, curves, system_arch, trace_file, labels, stress_
                         # Add the graph to the socket container
                         sockets_row.children.append(col)
 
-                    # mc_bw_balance = filt_df['bw'].groupby('timestamp').mean() / filt_df['bw'].groupby('timestamp').max()
-                    # mc_lat_balance = filt_df['lat'].groupby('timestamp').mean() / filt_df['lat'].groupby('timestamp').max()
                 if len(mcs) > 1:
                     # Add the completed socket container to the node container's row
                     socket_container.children.append(mcs_row)
