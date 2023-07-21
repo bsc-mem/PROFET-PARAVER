@@ -4,42 +4,6 @@ from dash import Dash, dcc, html, Input, Output
 import dash_daq as daq
 import dash_bootstrap_components as dbc
 
-# Define global style variables
-BODY_STYLE = {
-    "font-family": "Arial, sans-serif",  # Use Arial as default font
-    "background-color": "#F5F5F5",  # Soft gray color for page background
-    "margin": "2rem 1rem",  # Space from top and sides of the page
-}
-
-SIDEBAR_STYLE = {
-    "padding": "1rem 1rem",
-    "background-color": "white",
-    "border-radius": "10px",
-    "margin-bottom": "1rem",
-    # "margin-top": ".5rem",
-}
-
-CONTENT_STYLE = {
-    "background-color": "white",
-    "margin-left": "2rem",
-    "margin-right": "2rem",
-    "padding": "2rem 1rem",
-}
-
-TAB_STYLE = {
-    "borderTop": "1px solid #d6d6d6",
-    "backgroundColor": "white",
-    "color": "#6c757d",
-    "padding": ".5rem",
-}
-
-TAB_ACTIVE_STYLE = {
-    "borderTop": "1px solid #d6d6d6",
-    "backgroundColor": "#1f3970",
-    "color": "white",
-    "padding": ".5rem",
-}
-
 
 def get_sidebar(df: pd.DataFrame):
     node_names = sorted(df['node_name'].unique())
@@ -139,7 +103,7 @@ def get_sidebar(df: pd.DataFrame):
             html.P("Markers Transparency:"),
             dcc.Slider(0, 1, 0.01, value=0.1, id='markers-transparency-slider', marks=marks_opacity),
         ], className='sidebar-element'),
-    ], style=SIDEBAR_STYLE)
+    ], className='sidebar')
 
     # keep the side bar in a collapsed state, so we can hide it when the charts tab is not selected
     return dbc.Collapse([sidebar], id="sidebar")
@@ -256,7 +220,7 @@ def get_summary_tab(df: pd.DataFrame, cpu_freq: float, system_arch: dict):
         get_summary_memory_row(df, summary_table_attrs),
         # Trace summary
         get_summary_trace_row(df, system_arch, summary_table_attrs),
-    ], style=CONTENT_STYLE)
+    ], className='tab-content')
 
 def get_charts_tab(system_arch: dict):
     # there is no need to do this processing, but doing it (similarly to how we build the graphs when updated)
@@ -292,7 +256,7 @@ def get_main_content(df: pd.DataFrame, cpu_freq: float, system_arch: dict):
 
     return html.Div([
         tabs,
-    ], style=CONTENT_STYLE)
+    ], className='tab-content')
 
 # Update the layout function
 def get_layout(df: pd.DataFrame, cpu_freq: float, system_arch: dict):
@@ -301,4 +265,6 @@ def get_layout(df: pd.DataFrame, cpu_freq: float, system_arch: dict):
             dbc.Col([get_sidebar(df)], width=2),
             dbc.Col([get_main_content(df, cpu_freq, system_arch)], width=10),
         ]),
-    ], fluid=True, style=BODY_STYLE)  # Applying the page style to the layout
+    ], fluid=True)
+
+
