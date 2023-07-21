@@ -148,19 +148,20 @@ def filter_df(df, node_name=None, i_socket=None, i_mc=None, time_range=(), bw_ra
         mask &= (df['lat'] >= lat_range[0]) & (df['lat'] < lat_range[1])
     return df[mask]
 
-def get_graph_fig(df, curves, curves_color, curves_transparency, markers_transparency,
-                  graph_title, x_title, y_title, stress_score_scale, color_bar):
+def get_graph_fig(df, curves, curves_color, curves_transparency, markers_color, markers_transparency,
+                  graph_title, x_title, y_title, stress_score_scale=None, color_bar=None):
     fig = make_subplots(rows=1, cols=1)
     # if curves_color != "none":
     fig = get_curves_fig(curves, fig, curves_color, curves_transparency)
 
     # plot application bw-lat dots
-    dots_fig = get_application_memory_dots_fig(df, stress_score_scale, markers_transparency)
+    dots_fig = get_application_memory_dots_fig(df, markers_color, stress_score_scale, markers_transparency)
     fig.add_trace(dots_fig.data[0])
 
     fig.update_xaxes(title=x_title)
     fig.update_yaxes(title=y_title)
-    fig.update_coloraxes(**color_bar)
+    if color_bar is not None:
+        fig.update_coloraxes(**color_bar)
 
     # update the layout with a title
     fig.update_layout(
@@ -215,8 +216,11 @@ def get_curves_fig(curves, fig, color='black', transparency=1):
                             text=curve_text, showarrow=False, arrowhead=1)
     return fig
 
-def get_application_memory_dots_fig(df, stress_score_scale, opacity=0.01):
-    dots_fig = px.scatter(df, x='bw', y='lat', color='stress_score', color_continuous_scale=stress_score_scale)
+def get_application_memory_dots_fig(df, color, stress_score_scale=None, opacity=0.01):
+    if color == 'stress_score':
+        dots_fig = px.scatter(df, x='bw', y='lat', color='stress_score', color_continuous_scale=stress_score_scale)
+    else:
+        dots_fig = px.scatter(df, x='bw', y='lat', color_discrete_sequence=[color])
 
     marker_opts = dict(size=10, opacity=opacity)
     dots_fig.update_traces(marker=marker_opts)

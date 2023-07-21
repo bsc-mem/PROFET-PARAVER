@@ -25,22 +25,22 @@ def register_callbacks(app, df, curves, system_arch, trace_file, labels, stress_
         Output('curves-color-dropdown', 'value'),
         Output('curves-transparency-slider', 'value'),
         Output('time-range-slider', 'value'),
-        Output('bw-range-slider', 'value'),
-        Output('lat-range-slider', 'value'),
+        # Output('bw-range-slider', 'value'),
+        # Output('lat-range-slider', 'value'),
         Output('markers-transparency-slider', 'value'),
         Input('upload-config', 'contents'),
         State('node-selection-dropdown', 'value'),
         State('curves-color-dropdown', 'value'),
         State('curves-transparency-slider', 'value'),
         State('time-range-slider', 'value'),
-        State('bw-range-slider', 'value'),
-        State('lat-range-slider', 'value'),
+        # State('bw-range-slider', 'value'),
+        # State('lat-range-slider', 'value'),
         State('markers-transparency-slider', 'value'),
     )
     def load_config(contents, selected_nodes, curves_color, curves_transparency, time_range, 
-                    bw_range, lat_range, markers_transparency):
+                    markers_transparency):
         if contents is None:
-            return selected_nodes, curves_color, curves_transparency, time_range, bw_range, lat_range, markers_transparency
+            return selected_nodes, curves_color, curves_transparency, time_range, markers_transparency
         
         content_type, content_string = contents.split(',')
         decoded = base64.b64decode(content_string)
@@ -49,7 +49,7 @@ def register_callbacks(app, df, curves, system_arch, trace_file, labels, stress_
                 # assume that the user uploaded a JSON file
                 json_file = json.loads(decoded)
                 return_order = ['selected_nodes', 'curves_color', 'curves_transparency', 'time_range',
-                                'bw_range', 'lat_range', 'markers_transparency']
+                                'markers_transparency']
                 return [json_file.get(key) for key in return_order]
         except Exception as e:
             print(e)
@@ -64,12 +64,12 @@ def register_callbacks(app, df, curves, system_arch, trace_file, labels, stress_
         State('curves-color-dropdown', 'value'),
         State('curves-transparency-slider', 'value'),
         State('time-range-slider', 'value'),
-        State('bw-range-slider', 'value'),
-        State('lat-range-slider', 'value'),
+        # State('bw-range-slider', 'value'),
+        # State('lat-range-slider', 'value'),
         State('markers-transparency-slider', 'value'),
     )
     def save_config(save_n_clicks, selected_nodes, curves_color, curves_transparency, time_range, 
-                    bw_range, lat_range, markers_transparency):
+                    markers_transparency):
         if save_n_clicks is None or save_n_clicks == 0:
             raise PreventUpdate
 
@@ -78,8 +78,8 @@ def register_callbacks(app, df, curves, system_arch, trace_file, labels, stress_
             'curves_color': curves_color,
             'curves_transparency': curves_transparency,
             'time_range': time_range,
-            'bw_range': bw_range,
-            'lat_range': lat_range,
+            # 'bw_range': bw_range,
+            # 'lat_range': lat_range,
             'markers_transparency': markers_transparency,
             'selected_nodes': selected_nodes,
         }, indent=2)
@@ -97,12 +97,13 @@ def register_callbacks(app, df, curves, system_arch, trace_file, labels, stress_
         Input('curves-color-dropdown', 'value'),
         Input('curves-transparency-slider', 'value'),
         Input('time-range-slider', 'value'),
-        Input('bw-range-slider', 'value'),
-        Input('lat-range-slider', 'value'),
+        # Input('bw-range-slider', 'value'),
+        # Input('lat-range-slider', 'value'),
+        Input('markers-color-dropdown', 'value'),
         Input('markers-transparency-slider', 'value'),
     )
     def update_chart(selected_nodes, curves_color, curves_transparency, time_range, 
-                     bw_range, lat_range, markers_transparency):
+                     markers_color, markers_transparency):
         # built graphs for each node, socket and mc
         updated_graph_rows = []
 
@@ -112,7 +113,9 @@ def register_callbacks(app, df, curves, system_arch, trace_file, labels, stress_
                 html.H5(f'Warning: Data is undersampled to {max_elements:,} elements.', style={"color": "red"}),
             ], style={'padding-bottom': '1rem', 'padding-top': '2rem'}))
 
-        color_bar = utils.get_color_bar(labels, stress_score_config)
+        color_bar = None
+        if markers_color == 'stress_score':        
+            color_bar = utils.get_color_bar(labels, stress_score_config)
 
         bw_per_socket = df.groupby(['node_name', 'socket'])['bw'].mean()
 
@@ -135,10 +138,10 @@ def register_callbacks(app, df, curves, system_arch, trace_file, labels, stress_
 
                 for id_mc in mcs:
                     # Filter the dataframe to only include the selected node, socket and MC
-                    filt_df = utils.filter_df(df, node_name, i_socket, id_mc, time_range, bw_range, lat_range)
+                    filt_df = utils.filter_df(df, node_name, i_socket, id_mc, time_range, bw_range=(), lat_range=())
                     graph_title = f'Memory channel {id_mc}' if len(mcs) > 1 else f'Socket {i_socket}'
-                    fig = utils.get_graph_fig(filt_df, curves, curves_color, curves_transparency, markers_transparency,
-                                        graph_title, labels['bw'], labels['lat'], stress_score_config['colorscale'], color_bar)
+                    fig = utils.get_graph_fig(filt_df, curves, curves_color, curves_transparency, markers_color, markers_transparency,
+                                              graph_title, labels['bw'], labels['lat'], stress_score_config['colorscale'], color_bar)
 
                     bw_socket_balance = filt_df['bw'].mean() * 100 / bw_per_socket.sum()
                     # print(f'Node {node_name}, socket {i_socket}, MC {id_mc}: BW balance: {bw_balance:.2f} ({filt_df["bw"].mean():.2f}, {filt_df["bw"].max():.2f}); std = {filt_df["bw"].std():.2f}')

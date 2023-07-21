@@ -9,8 +9,8 @@ def get_sidebar(df: pd.DataFrame):
     node_names = sorted(df['node_name'].unique())
     # Define marks for sliders
     marks_time = {i: str(round(i, 1)) for i in np.linspace(df['timestamp'].min()/1e9, df['timestamp'].max()/1e9, 5)}
-    marks_bw = {i: str(int(i)) for i in np.linspace(df['bw'].min(), df['bw'].max(), 5)}
-    marks_lat = {i: str(int(i)) for i in np.linspace(df['lat'].min(), df['lat'].max(), 5)}
+    # marks_bw = {i: str(int(i)) for i in np.linspace(df['bw'].min(), df['bw'].max(), 5)}
+    # marks_lat = {i: str(int(i)) for i in np.linspace(df['lat'].min(), df['lat'].max(), 5)}
     marks_opacity = {i: str(i) for i in np.linspace(0, 1, 5)}
 
     sidebar = html.Div([
@@ -53,6 +53,8 @@ def get_sidebar(df: pd.DataFrame):
                     # {'label': 'None', 'value': 'none'},
                 ],
                 value='black',
+                searchable=True,
+                clearable=False,
             ),
             # daq.ColorPicker(
             #     id='curves-color-picker',
@@ -81,22 +83,38 @@ def get_sidebar(df: pd.DataFrame):
                 value=[df['timestamp'].min()/1e9, df['timestamp'].max()/1e9]
             ),
         ], className='sidebar-element'),
+        # dbc.Row([
+        #     html.P("Bandwidth (GB/s):"),
+        #     dcc.RangeSlider(
+        #         id='bw-range-slider',
+        #         min=df['bw'].min(), max=df['bw'].max(), step=1,
+        #         marks=marks_bw,
+        #         value=[df['bw'].min(), df['bw'].max()]
+        #     ),
+        # ], className='sidebar-element'),
+        # dbc.Row([
+        #     html.P("Latency (ns):"),
+        #     dcc.RangeSlider(
+        #         id='lat-range-slider',
+        #         min=df['lat'].min(), max=df['lat'].max(), step=1,
+        #         marks=marks_lat,
+        #         value=[df['lat'].min(), df['lat'].max()]
+        #     ),
+        # ], className='sidebar-element'),
         dbc.Row([
-            html.P("Bandwidth (GB/s):"),
-            dcc.RangeSlider(
-                id='bw-range-slider',
-                min=df['bw'].min(), max=df['bw'].max(), step=1,
-                marks=marks_bw,
-                value=[df['bw'].min(), df['bw'].max()]
-            ),
-        ], className='sidebar-element'),
-        dbc.Row([
-            html.P("Latency (ns):"),
-            dcc.RangeSlider(
-                id='lat-range-slider',
-                min=df['lat'].min(), max=df['lat'].max(), step=1,
-                marks=marks_lat,
-                value=[df['lat'].min(), df['lat'].max()]
+            html.P("Markers Color:"),
+            dcc.Dropdown(
+                id='markers-color-dropdown',
+                options=[
+                    {'label': 'Stress score', 'value': 'stress_score'},
+                    {'label': 'Black', 'value': 'black'},
+                    {'label': 'Red', 'value': 'red'},
+                    {'label': 'Green', 'value': 'green'},
+                    {'label': 'Blue', 'value': 'blue'},
+                ],
+                value='stress_score',
+                searchable=True,
+                clearable=False,
             ),
         ], className='sidebar-element'),
         dbc.Row([
