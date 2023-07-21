@@ -114,6 +114,8 @@ def register_callbacks(app, df, curves, system_arch, trace_file, labels, stress_
 
         color_bar = utils.get_color_bar(labels, stress_score_config)
 
+        bw_per_socket = df.groupby(['node_name', 'socket'])['bw'].mean()
+
         for node_name, sockets in system_arch.items():
             if node_name not in selected_nodes:
                 continue
@@ -138,17 +140,13 @@ def register_callbacks(app, df, curves, system_arch, trace_file, labels, stress_
                     fig = utils.get_graph_fig(filt_df, curves, curves_color, curves_transparency, markers_transparency,
                                         graph_title, labels['bw'], labels['lat'], stress_score_config['colorscale'], color_bar)
 
-                    bw_balance = filt_df['bw'].mean() / filt_df['bw'].max()
-                    lat_balance = filt_df['lat'].mean() / filt_df['lat'].max()
-                    stress_balance = filt_df['stress_score'].mean() / filt_df['stress_score'].max()
+                    bw_socket_balance = filt_df['bw'].mean() * 100 / bw_per_socket.sum()
                     # print(f'Node {node_name}, socket {i_socket}, MC {id_mc}: BW balance: {bw_balance:.2f} ({filt_df["bw"].mean():.2f}, {filt_df["bw"].max():.2f}); std = {filt_df["bw"].std():.2f}')
                     # print(f'Node {node_name}, socket {i_socket}, MC {id_mc}: Lat balance: {lat_balance:.2f} ({filt_df["lat"].mean():.2f}, {filt_df["lat"].max():.2f}); std = {filt_df["lat"].std():.2f}')
                     col = dbc.Col([
                         html.Br(),
                         dcc.Graph(id=f'node-{node_name}-socket-{i_socket}-mc-{id_mc}', figure=fig),
-                        html.H6(f'BW balance: {bw_balance:.2f}', style={'padding-left': '5rem'}),
-                        html.H6(f'Lat. balance: {lat_balance:.2f}', style={'padding-left': '5rem'}),
-                        html.H6(f'Stress balance: {stress_balance:.2f}', style={'padding-left': '5rem'}),
+                        html.H6(f'Socket bandwidth balance: {bw_socket_balance:.0f}%', style={'padding-left': '5rem'}),
                     ], sm=12, md=6)
                     if len(mcs) > 1:
                         # Add graph to MC container if there are multiple MCs
