@@ -123,7 +123,6 @@ def get_summary_platform_row(cpu_freq: float, summary_table_attrs: dict):
                     html.Tr([html.Td('Name'), html.Td(f'TODO')]),
                     html.Tr([html.Td('Number of nodes'), html.Td('TODO')]),
                     html.Tr([html.Td('Sockets per node'), html.Td('TODO')]),
-                    html.Tr([html.Td('Hyper-threading'), html.Td('TODO: ON/OFF')]),
                 ])
             ], **summary_table_attrs),
         ], md=4),
@@ -139,6 +138,7 @@ def get_summary_platform_row(cpu_freq: float, summary_table_attrs: dict):
                     html.Tr([html.Td('Name'), html.Td('TODO')]),
                     html.Tr([html.Td('Number of cores'), html.Td('TODO')]),
                     html.Tr([html.Td('Frequency'), html.Td(f'{cpu_freq} GHz')]),
+                    html.Tr([html.Td('Hyper-threading'), html.Td('TODO: ON/OFF')]),
                 ])
             ], **summary_table_attrs)
         ], md=4),
@@ -172,7 +172,6 @@ def get_summary_memory_row(df: pd.DataFrame, summary_table_attrs: dict):
                 html.Tbody([
                     html.Tr([html.Td('Lead-off latency'), html.Td(f'{df["lat"].min():.1f} ns')]),
                     html.Tr([html.Td('Max. measured bandwidth'), html.Td(f'{df["bw"].max():.1f} GB/s')]),
-                    html.Tr([html.Td('Stream bandwidth'), html.Td('TODO')]),
                 ])
             ], **summary_table_attrs),
         ], md=4),
