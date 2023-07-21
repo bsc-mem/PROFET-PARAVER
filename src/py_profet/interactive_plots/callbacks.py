@@ -136,7 +136,7 @@ def register_callbacks(app, df, curves, system_arch, trace_file, labels, stress_
                 for id_mc in mcs:
                     # Filter the dataframe to only include the selected node, socket and MC
                     filt_df = utils.filter_df(df, node_name, i_socket, id_mc, time_range, bw_range, lat_range)
-                    graph_title = f'MC {id_mc}' if len(mcs) > 1 else f'Socket {i_socket}'
+                    graph_title = f'Memory channel {id_mc}' if len(mcs) > 1 else f'Socket {i_socket}'
                     fig = utils.get_graph_fig(filt_df, curves, curves_color, curves_transparency, markers_transparency,
                                         graph_title, labels['bw'], labels['lat'], stress_score_config['colorscale'], color_bar)
 
