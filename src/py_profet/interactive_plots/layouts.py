@@ -5,6 +5,119 @@ import dash_daq as daq
 import dash_bootstrap_components as dbc
 
 
+def get_summary_platform_row(cpu_freq: float, summary_table_attrs: dict):
+    return dbc.Row([
+        html.H2('Platform', className='summary-section-title'),
+        # Server
+        dbc.Col([
+            dbc.Table([
+                html.Thead([
+                    html.Tr([
+                        html.Th('Server', className='fixed-width-header'),
+                    ])
+                ], className='no-border-thead'),
+                html.Tbody([
+                    html.Tr([html.Td('Name'), html.Td(f'TODO')]),
+                    html.Tr([html.Td('Number of nodes'), html.Td('TODO')]),
+                    html.Tr([html.Td('Sockets per node'), html.Td('TODO')]),
+                ])
+            ], **summary_table_attrs),
+        ], md=4),
+        # CPU
+        dbc.Col([
+            dbc.Table([
+                html.Thead([
+                    html.Tr([
+                        html.Th('CPU', className='fixed-width-header'),
+                    ])
+                ], className='no-border-thead'),
+                html.Tbody([
+                    html.Tr([html.Td('Name'), html.Td('TODO')]),
+                    html.Tr([html.Td('Number of cores'), html.Td('TODO')]),
+                    html.Tr([html.Td('Frequency'), html.Td(f'{cpu_freq:.1f} GHz')]),
+                    html.Tr([html.Td('Hyper-threading'), html.Td('TODO: ON/OFF')]),
+                ])
+            ], **summary_table_attrs)
+        ], md=4),
+        # Memory
+        dbc.Col([
+            dbc.Table([
+                html.Thead([
+                    html.Tr([
+                        html.Th('Memory', className='fixed-width-header'),
+                    ])
+                ], className='no-border-thead'),
+                html.Tbody([
+                    html.Tr([html.Td('Name'), html.Td('TODO')]),
+                    html.Tr([html.Td('Number of channels'), html.Td('TODO')]),
+                    html.Tr([html.Td('Frequency'), html.Td(f'TODO')]),
+                ])
+            ], **summary_table_attrs)
+        ], md=4),
+    ])
+
+def get_summary_memory_row(df: pd.DataFrame, summary_table_attrs: dict):
+    return dbc.Row([
+        html.H2('Memory profile', className='summary-section-title'),
+        dbc.Col([
+            dbc.Table([
+                html.Thead([
+                    html.Tr([
+                        html.Th('Header?', className='fixed-width-header'),
+                    ])
+                ], className='no-border-thead'),
+                html.Tbody([
+                    html.Tr([html.Td('Lead-off latency'), html.Td(f'{df["lat"].min():.1f} ns')]),
+                    html.Tr([html.Td('Max. measured bandwidth'), html.Td(f'{df["bw"].max():.1f} GB/s')]),
+                ])
+            ], **summary_table_attrs),
+        ], md=4),
+    ])
+
+def get_summary_trace_row(df: pd.DataFrame, system_arch: dict, summary_table_attrs: dict):
+    execution_duration_sec = (df['timestamp'].max() - df['timestamp'].min()) / 1e9
+
+    sockets_per_node = [len(sockets) for sockets in system_arch.values()]
+    if len(set(sockets_per_node)) == 1:
+        # each node has the same number of sockets
+        sockets_per_node_str = sockets_per_node[0]
+    else:
+        # show the number of sockets per node individually
+        sockets_per_node_str = ', '.join([str(n) for n in sockets_per_node])
+
+    return dbc.Row([
+        html.H2('Trace', className='summary-section-title'),
+        dbc.Col([
+            dbc.Table([
+                html.Thead([
+                    html.Tr([
+                        html.Th('Header?', className='fixed-width-header'),
+                    ])
+                ], className='no-border-thead'),
+                html.Tbody([
+                    html.Tr([html.Td('Duration'), html.Td(f'{execution_duration_sec:.1f} s')]),
+                    html.Tr([html.Td('Number of nodes'), html.Td(len(system_arch.keys()))]),
+                    html.Tr([html.Td('Node labels'), html.Td(', '.join(system_arch.keys()))]),
+                    html.Tr([html.Td('Sockets per node'), html.Td(sockets_per_node_str)]),
+                    html.Tr([html.Td('Cores'), html.Td('TODO')]),
+                ])
+            ], **summary_table_attrs),
+        ], md=4),
+    ])
+
+def get_summary_tab(df: pd.DataFrame, cpu_freq: float, system_arch: dict):
+    summary_table_attrs = {'bordered': True, 'hover': False, 'responsive': True,
+                           'striped': True, 'className': 'summary-table'}
+
+    return html.Div([
+        # Platform summary
+        get_summary_platform_row(cpu_freq, summary_table_attrs),
+        # Memory profile summary
+        get_summary_memory_row(df, summary_table_attrs),
+        # Trace summary
+        get_summary_trace_row(df, system_arch, summary_table_attrs),
+    ], className='tab-content')
+
 def get_sidebar(df: pd.DataFrame):
     node_names = sorted(df['node_name'].unique())
     # Define marks for sliders
@@ -125,119 +238,6 @@ def get_sidebar(df: pd.DataFrame):
 
     # keep the side bar in a collapsed state, so we can hide it when the charts tab is not selected
     return dbc.Collapse([sidebar], id="sidebar")
-
-def get_summary_platform_row(cpu_freq: float, summary_table_attrs: dict):
-    return dbc.Row([
-        html.H2('Platform', className='summary-section-title'),
-        # Server
-        dbc.Col([
-            dbc.Table([
-                html.Thead([
-                    html.Tr([
-                        html.Th('Server', className='fixed-width-header'),
-                    ])
-                ], className='no-border-thead'),
-                html.Tbody([
-                    html.Tr([html.Td('Name'), html.Td(f'TODO')]),
-                    html.Tr([html.Td('Number of nodes'), html.Td('TODO')]),
-                    html.Tr([html.Td('Sockets per node'), html.Td('TODO')]),
-                ])
-            ], **summary_table_attrs),
-        ], md=4),
-        # CPU
-        dbc.Col([
-            dbc.Table([
-                html.Thead([
-                    html.Tr([
-                        html.Th('CPU', className='fixed-width-header'),
-                    ])
-                ], className='no-border-thead'),
-                html.Tbody([
-                    html.Tr([html.Td('Name'), html.Td('TODO')]),
-                    html.Tr([html.Td('Number of cores'), html.Td('TODO')]),
-                    html.Tr([html.Td('Frequency'), html.Td(f'{cpu_freq} GHz')]),
-                    html.Tr([html.Td('Hyper-threading'), html.Td('TODO: ON/OFF')]),
-                ])
-            ], **summary_table_attrs)
-        ], md=4),
-        # Memory
-        dbc.Col([
-            dbc.Table([
-                html.Thead([
-                    html.Tr([
-                        html.Th('Memory', className='fixed-width-header'),
-                    ])
-                ], className='no-border-thead'),
-                html.Tbody([
-                    html.Tr([html.Td('Name'), html.Td('TODO')]),
-                    html.Tr([html.Td('Number of channels'), html.Td('TODO')]),
-                    html.Tr([html.Td('Frequency'), html.Td(f'TODO')]),
-                ])
-            ], **summary_table_attrs)
-        ], md=4),
-    ])
-
-def get_summary_memory_row(df: pd.DataFrame, summary_table_attrs: dict):
-    return dbc.Row([
-        html.H2('Memory profile', className='summary-section-title'),
-        dbc.Col([
-            dbc.Table([
-                html.Thead([
-                    html.Tr([
-                        html.Th('Header?', className='fixed-width-header'),
-                    ])
-                ], className='no-border-thead'),
-                html.Tbody([
-                    html.Tr([html.Td('Lead-off latency'), html.Td(f'{df["lat"].min():.1f} ns')]),
-                    html.Tr([html.Td('Max. measured bandwidth'), html.Td(f'{df["bw"].max():.1f} GB/s')]),
-                ])
-            ], **summary_table_attrs),
-        ], md=4),
-    ])
-
-def get_summary_trace_row(df: pd.DataFrame, system_arch: dict, summary_table_attrs: dict):
-    execution_duration_sec = (df['timestamp'].max() - df['timestamp'].min()) / 1e9
-
-    sockets_per_node = [len(sockets) for sockets in system_arch.values()]
-    if len(set(sockets_per_node)) == 1:
-        # each node has the same number of sockets
-        sockets_per_node_str = sockets_per_node[0]
-    else:
-        # show the number of sockets per node individually
-        sockets_per_node_str = ', '.join([str(n) for n in sockets_per_node])
-
-    return dbc.Row([
-        html.H2('Trace', className='summary-section-title'),
-        dbc.Col([
-            dbc.Table([
-                html.Thead([
-                    html.Tr([
-                        html.Th('Header?', className='fixed-width-header'),
-                    ])
-                ], className='no-border-thead'),
-                html.Tbody([
-                    html.Tr([html.Td('Duration'), html.Td(f'{execution_duration_sec:.1f} s')]),
-                    html.Tr([html.Td('Number of nodes'), html.Td(len(system_arch.keys()))]),
-                    html.Tr([html.Td('Node labels'), html.Td(', '.join(system_arch.keys()))]),
-                    html.Tr([html.Td('Sockets per node'), html.Td(sockets_per_node_str)]),
-                    html.Tr([html.Td('Cores'), html.Td('TODO')]),
-                ])
-            ], **summary_table_attrs),
-        ], md=4),
-    ])
-
-def get_summary_tab(df: pd.DataFrame, cpu_freq: float, system_arch: dict):
-    summary_table_attrs = {'bordered': True, 'hover': False, 'responsive': True,
-                           'striped': True, 'className': 'summary-table'}
-
-    return html.Div([
-        # Platform summary
-        get_summary_platform_row(cpu_freq, summary_table_attrs),
-        # Memory profile summary
-        get_summary_memory_row(df, summary_table_attrs),
-        # Trace summary
-        get_summary_trace_row(df, system_arch, summary_table_attrs),
-    ], className='tab-content')
 
 def get_charts_tab(system_arch: dict):
     # there is no need to do this processing, but doing it (similarly to how we build the graphs when updated)

@@ -24,7 +24,7 @@ def get_node_names(row_file_path):
                     break
     return node_names
 
-def prv_to_df(trace_file_path, row_file_path, precision, excluded_original, save_feather=False):
+def prv_to_df(trace_file_path, row_file_path, config_json, excluded_original, save_feather=False):
     node_names = get_node_names(row_file_path)
     num_lines = sum(1 for _ in open(trace_file_path))
 
@@ -91,7 +91,7 @@ def prv_to_df(trace_file_path, row_file_path, precision, excluded_original, save
                     # apply precision of the prv file.
                     # if it is negative but different than -1, apply precision as well, as
                     # we stored the calculated metric as a negative number for identifying it as an error or an irregularity.
-                    val = float(val / 10**precision)
+                    val = float(val / 10**config_json['precision'])
                 row[metric_key] = val
 
                 if metric_key == metric_keys[-1]:

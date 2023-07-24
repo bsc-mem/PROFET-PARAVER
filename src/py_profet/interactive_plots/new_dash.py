@@ -11,6 +11,7 @@ from plotly.subplots import make_subplots
 import pandas as pd
 import os
 import argparse
+import json
 from collections import defaultdict
 from dash import Dash
 import dash_bootstrap_components as dbc
@@ -32,16 +33,11 @@ stress_score_config = {
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-tf', '--trace-file', dest='trace_file',
-                        default='', help='Trace file path.')
-    parser.add_argument('--bw-lat-curves-dir', dest='curves_path',
-                        default='', help='Directory of the bandwidth-latency curves.')
+    parser.add_argument(dest='trace_file', default='', help='Trace file path.')
+    parser.add_argument(dest='curves_path', default='', help='Directory of the bandwidth-latency curves.')
+    parser.add_argument(dest='config_file', default=None, help='Configuration JSON file path.')
     parser.add_argument('-e', '--excluded-original', dest='excluded_original',
                         action='store_true', help='If original trace data is excluded from the given trace file.')
-    parser.add_argument('-p', '--precision', dest='precision',
-                        default=None, type=int, help='Decimal precision of the .prv file.')
-    parser.add_argument('--cpufreq', dest='cpu_freq',
-                        default=None, type=float, help='CPU frequency in GHz.')
     parser.add_argument('--pdf', dest='plot_pdf',
                         action='store_true', help='If plot (store) pdf with curves and memory stress.')
     parser.add_argument('--save-feather', dest='save_feather',
@@ -49,9 +45,14 @@ def parse_args():
     
     return parser.parse_args()
 
-def get_dash_app(df, cpu_freq: float, system_arch: dict):
+def get_config(config_file_path: str):
+    with open(config_file_path, 'r') as f:
+        config = json.load(f)
+    return config
+
+def get_dash_app(df, config_json: str, system_arch: dict):
     app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-    app.layout = layouts.get_layout(df, cpu_freq, system_arch)
+    app.layout = layouts.get_layout(df, config_json['cpu_freq'], system_arch)
     return app
 
 def save_pdf(trace_file: str):
@@ -81,6 +82,7 @@ if __name__ == '__main__':
     args = parse_args()
     labels = {'bw': 'Bandwidth (GB/s)', 'lat': 'Latency (ns)',
               'timestamp': 'Timestamp (ns)', 'stress_score': 'Stress score'}
+    config_json = get_config(args.config_file)
 
     # load and process trace
     # trace_file = '../prv_profet_visualizations/traces/petar_workshop/xhpcg.mpich-x86-64_10ms.chop1.profet.prv'
@@ -90,7 +92,7 @@ if __name__ == '__main__':
     # do it for all other cases (e.g. .pdf below)
     row_file_path = args.trace_file.replace('.prv', '.row')
     if args.trace_file.endswith('.prv'):
-        df = utils.prv_to_df(args.trace_file, row_file_path, args.precision, args.excluded_original, args.save_feather)
+        df = utils.prv_to_df(args.trace_file, row_file_path, config_json, args.excluded_original, args.save_feather)
     elif args.trace_file.endswith('.feather'):
         df = pd.read_feather(args.trace_file)
     else:
@@ -113,7 +115,7 @@ if __name__ == '__main__':
         max_elements = None
 
     # load and process curves
-    curves = utils.get_curves(args.curves_path, args.cpu_freq)
+    curves = utils.get_curves(args.curves_path, config_json['cpu_freq'])
     # get color bar update options
     color_bar = utils.get_color_bar(labels, stress_score_config)
 
@@ -121,7 +123,7 @@ if __name__ == '__main__':
     if args.plot_pdf:
         save_pdf(args.trace_file)
 
-    app = get_dash_app(df, args.cpu_freq, system_arch)
+    app = get_dash_app(df, config_json, system_arch)
     register_callbacks(app, df, curves, system_arch, args.trace_file, labels, stress_score_config, max_elements)
     app.run_server(debug=False)
     # app.run_server(debug=True)

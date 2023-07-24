@@ -182,12 +182,18 @@ tuple<float, float, float, float, float> ProfetPyAdapter::computeMemoryMetrics(f
 }
 
 void ProfetPyAdapter::runDashApp(string traceFilePath, float precision, float cpuFreq, bool keepOriginalTraceFile) {
+    // Write dash config JSON file
+    json dashConfig = {
+        {"precision", int(precision)},
+        {"cpu_freq", cpuFreq},
+    };
+    string dashConfigFile = regex_replace(traceFilePath, regex(".prv"), ".dashboard.config.json");
+    ofstream o(dashConfigFile);
+    o << setw(4) << dashConfig << endl;
+
+    // Python call for running dash
     string dashPlotsPath = pyProfetPath + "interactive_plots/new_dash.py";
-    string traceFileFlag = " --trace-file " + traceFilePath;
-    string curvesDirFlag = " --bw-lat-curves-dir " + curvesPath;
-    string precisionFlag = " --precision " + to_string(int(precision));
-    string cpuFreqFlag = " --cpufreq " + to_string(cpuFreq);
-    string pythonCall = "python3 " + dashPlotsPath + traceFileFlag + curvesDirFlag + precisionFlag + cpuFreqFlag;
+    string pythonCall = "python3 " + dashPlotsPath + " "  + traceFilePath + " "  + curvesPath + " " + dashConfigFile;
     if (!keepOriginalTraceFile) {
         pythonCall += " --excluded-original";
     }
@@ -196,8 +202,8 @@ void ProfetPyAdapter::runDashApp(string traceFilePath, float precision, float cp
     string dashScriptFile = regex_replace(traceFilePath, regex(".prv"), ".dashboard.sh");
     // Create and open a file
     ofstream scriptContent(dashScriptFile);
-    string featherTraceFileFlag = " --trace-file " + regex_replace(traceFilePath, regex(".prv"), ".feather");
-    string scriptPyCall = "python3 " + dashPlotsPath + featherTraceFileFlag + curvesDirFlag + precisionFlag + cpuFreqFlag;
+    string featherTraceFile = regex_replace(traceFilePath, regex(".prv"), ".feather");
+    string scriptPyCall = "python3 " + dashPlotsPath + " "  + featherTraceFile + " "  + curvesPath + " " + dashConfigFile;
     if (!keepOriginalTraceFile) {
         scriptPyCall += " --excluded-original";
     }

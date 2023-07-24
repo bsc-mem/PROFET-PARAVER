@@ -24,8 +24,10 @@
 #include <Python.h>
 // #include "curves.h"
 #include "utils.h"
+#include "single_include/nlohmann/json.hpp"
 
 using namespace std;
+using json = nlohmann::json;
 
 
 class ProfetPyAdapter {
