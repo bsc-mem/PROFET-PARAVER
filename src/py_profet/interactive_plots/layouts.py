@@ -3,9 +3,16 @@ import numpy as np
 from dash import Dash, dcc, html, Input, Output
 import dash_daq as daq
 import dash_bootstrap_components as dbc
+import summary_info
+import utils
 
 
-def get_summary_platform_row(cpu_freq: float, summary_table_attrs: dict):
+def get_summary_platform_row(platform: dict, summary_table_attrs: dict):
+    # get rows from platform dict (see summary_info.py)
+    server_rows = utils.get_dash_table_rows(platform['server'])
+    cpu_rows = utils.get_dash_table_rows(platform['cpu'])
+    memory_rows = utils.get_dash_table_rows(platform['memory'])
+
     return dbc.Row([
         html.H2('Platform', className='summary-section-title'),
         # Server
@@ -16,12 +23,8 @@ def get_summary_platform_row(cpu_freq: float, summary_table_attrs: dict):
                         html.Th('Server', className='fixed-width-header'),
                     ])
                 ], className='no-border-thead'),
-                html.Tbody([
-                    html.Tr([html.Td('Name'), html.Td(f'TODO')]),
-                    html.Tr([html.Td('Number of nodes'), html.Td('TODO')]),
-                    html.Tr([html.Td('Sockets per node'), html.Td('TODO')]),
-                ])
-            ], **summary_table_attrs),
+                html.Tbody(server_rows)
+            ], **summary_table_attrs, id='summary-table-server'),
         ], md=4),
         # CPU
         dbc.Col([
@@ -31,13 +34,8 @@ def get_summary_platform_row(cpu_freq: float, summary_table_attrs: dict):
                         html.Th('CPU', className='fixed-width-header'),
                     ])
                 ], className='no-border-thead'),
-                html.Tbody([
-                    html.Tr([html.Td('Name'), html.Td('TODO')]),
-                    html.Tr([html.Td('Number of cores'), html.Td('TODO')]),
-                    html.Tr([html.Td('Frequency'), html.Td(f'{cpu_freq:.1f} GHz')]),
-                    html.Tr([html.Td('Hyper-threading'), html.Td('TODO: ON/OFF')]),
-                ])
-            ], **summary_table_attrs)
+                html.Tbody(cpu_rows)
+            ], **summary_table_attrs, id='summary-table-cpu'),
         ], md=4),
         # Memory
         dbc.Col([
@@ -47,16 +45,15 @@ def get_summary_platform_row(cpu_freq: float, summary_table_attrs: dict):
                         html.Th('Memory', className='fixed-width-header'),
                     ])
                 ], className='no-border-thead'),
-                html.Tbody([
-                    html.Tr([html.Td('Name'), html.Td('TODO')]),
-                    html.Tr([html.Td('Number of channels'), html.Td('TODO')]),
-                    html.Tr([html.Td('Frequency'), html.Td(f'TODO')]),
-                ])
-            ], **summary_table_attrs)
+                html.Tbody(memory_rows)
+            ], **summary_table_attrs, id='summary-table-memory')
         ], md=4),
     ])
 
-def get_summary_memory_row(df: pd.DataFrame, summary_table_attrs: dict):
+def get_summary_memory_row(memory: dict, summary_table_attrs: dict):
+    # get rows from memory dict (see summary_info.py)
+    memory_profile_rows = utils.get_dash_table_rows(memory)
+    
     return dbc.Row([
         html.H2('Memory profile', className='summary-section-title'),
         dbc.Col([
@@ -66,24 +63,14 @@ def get_summary_memory_row(df: pd.DataFrame, summary_table_attrs: dict):
                         html.Th('Header?', className='fixed-width-header'),
                     ])
                 ], className='no-border-thead'),
-                html.Tbody([
-                    html.Tr([html.Td('Lead-off latency'), html.Td(f'{df["lat"].min():.1f} ns')]),
-                    html.Tr([html.Td('Max. measured bandwidth'), html.Td(f'{df["bw"].max():.1f} GB/s')]),
-                ])
-            ], **summary_table_attrs),
+                html.Tbody(memory_profile_rows)
+            ], **summary_table_attrs, id='summary-table-memory-profile'),
         ], md=4),
     ])
 
-def get_summary_trace_row(df: pd.DataFrame, system_arch: dict, summary_table_attrs: dict):
-    execution_duration_sec = (df['timestamp'].max() - df['timestamp'].min()) / 1e9
-
-    sockets_per_node = [len(sockets) for sockets in system_arch.values()]
-    if len(set(sockets_per_node)) == 1:
-        # each node has the same number of sockets
-        sockets_per_node_str = sockets_per_node[0]
-    else:
-        # show the number of sockets per node individually
-        sockets_per_node_str = ', '.join([str(n) for n in sockets_per_node])
+def get_summary_trace_row(trace_info: dict, summary_table_attrs: dict):
+    # get rows from trace_info dict (see summary_info.py)
+    trace_info_rows = utils.get_dash_table_rows(trace_info)
 
     return dbc.Row([
         html.H2('Trace', className='summary-section-title'),
@@ -94,29 +81,24 @@ def get_summary_trace_row(df: pd.DataFrame, system_arch: dict, summary_table_att
                         html.Th('Header?', className='fixed-width-header'),
                     ])
                 ], className='no-border-thead'),
-                html.Tbody([
-                    html.Tr([html.Td('Duration'), html.Td(f'{execution_duration_sec:.1f} s')]),
-                    html.Tr([html.Td('Number of nodes'), html.Td(len(system_arch.keys()))]),
-                    html.Tr([html.Td('Node labels'), html.Td(', '.join(system_arch.keys()))]),
-                    html.Tr([html.Td('Sockets per node'), html.Td(sockets_per_node_str)]),
-                    html.Tr([html.Td('Cores'), html.Td('TODO')]),
-                ])
-            ], **summary_table_attrs),
+                html.Tbody(trace_info_rows)
+            ], **summary_table_attrs, id='summary-table-trace'),
         ], md=4),
     ])
 
-def get_summary_tab(df: pd.DataFrame, cpu_freq: float, system_arch: dict):
+def get_summary_tab(df: pd.DataFrame, config: dict, system_arch: dict):
     summary_table_attrs = {'bordered': True, 'hover': False, 'responsive': True,
                            'striped': True, 'className': 'summary-table'}
+    summary = summary_info.get_summary_info(df, config, system_arch)
 
     return html.Div([
         # Platform summary
-        get_summary_platform_row(cpu_freq, summary_table_attrs),
+        get_summary_platform_row(summary['platform'], summary_table_attrs),
         # Memory profile summary
-        get_summary_memory_row(df, summary_table_attrs),
+        get_summary_memory_row(summary['memory_profile'], summary_table_attrs),
         # Trace summary
-        get_summary_trace_row(df, system_arch, summary_table_attrs),
-    ], className='tab-content')
+        get_summary_trace_row(summary['trace_info'], summary_table_attrs),
+    ], className='tab-content', id='summary-tab-content')
 
 def get_sidebar(df: pd.DataFrame):
     node_names = sorted(df['node_name'].unique())
@@ -249,7 +231,8 @@ def get_charts_tab(system_arch: dict):
             for id_mc in mcs:
                 chart_cols.append(dbc.Col([
                     html.Br(),
-                    dcc.Graph(),
+                    dcc.Graph(id=f'node-{node_name}-socket-{i_socket}-mc-{id_mc}'),
+                    # html.H6(f'Socket bandwidth balance: {bw_socket_balance:.0f}%', style={'padding-left': '5rem'}),
                 ], sm=12, md=6))
         # Add row for each node
         chart_rows.append(dbc.Row(chart_cols))
@@ -261,26 +244,29 @@ def get_charts_tab(system_arch: dict):
         fullscreen=True,
     )
 
-def get_main_content(df: pd.DataFrame, cpu_freq: float, system_arch: dict):
-    system_info_tab = get_summary_tab(df, cpu_freq, system_arch)
+def get_main_content(df: pd.DataFrame, config: dict, system_arch: dict):
+    system_info_tab = get_summary_tab(df, config, system_arch)
     charts_tab = get_charts_tab(system_arch)
+
 
     # Reordering tabs to make them right-aligned
     tabs = dbc.Tabs([
         dbc.Tab(system_info_tab, label="Summary", tab_id="summary-tab"),
         dbc.Tab(charts_tab, label="Charts", tab_id="charts-tab"),
-    ], id="tabs", active_tab="summary-tab")
+    ], id="tabs", active_tab="charts-tab")
 
     return html.Div([
+        html.Button("Export to PDF", id="btn-export"),
+        dcc.Download(id="download-pdf"),
         tabs,
     ], className='tab-content')
 
 # Update the layout function
-def get_layout(df: pd.DataFrame, cpu_freq: float, system_arch: dict):
+def get_layout(df: pd.DataFrame, config: dict, system_arch: dict):
     return dbc.Container([
         dbc.Row([
             dbc.Col([get_sidebar(df)], width=2),
-            dbc.Col([get_main_content(df, cpu_freq, system_arch)], width=10),
+            dbc.Col([get_main_content(df, config, system_arch)], width=10),
         ]),
     ], fluid=True)
 

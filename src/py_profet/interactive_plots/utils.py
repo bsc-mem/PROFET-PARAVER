@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from collections import defaultdict
 import os
+from dash import dcc, html
 from plotly.subplots import make_subplots
 import plotly.express as px
 
@@ -99,6 +100,8 @@ def prv_to_df(trace_file_path, row_file_path, config_json, excluded_original, sa
                     break
 
             df.append(row)
+
+        print('Loading is 100% complete.')
         df = pd.DataFrame(df)
         # perform a forward fill for copying above values of NaN (prvparser is purpously omitting equal consecutive values of a metric)
         df = df.ffill()
@@ -225,3 +228,88 @@ def get_application_memory_dots_fig(df, color, stress_score_scale=None, opacity=
     marker_opts = dict(size=10, opacity=opacity)
     dots_fig.update_traces(marker=marker_opts)
     return dots_fig
+
+def get_dash_table_rows(rows_info: list):
+    # rows_info is a list of dicts with the following keys: label, value
+    return [html.Tr([html.Td(row['label']), html.Td(row['value'])]) for _, row in rows_info.items()]
+
+def extract_graphs(layout_element):
+    """Recursively extract all dcc.Graph objects from a given layout element."""
+    graphs = []
+
+    if isinstance(layout_element, list):
+        for elem in layout_element:
+            graphs.extend(extract_graphs(elem))
+    elif hasattr(layout_element, 'children'):
+        graphs.extend(extract_graphs(layout_element.children))
+    elif isinstance(layout_element, dcc.Graph) and hasattr(layout_element, 'figure'):
+        graphs.append(layout_element.figure)
+
+    return graphs
+
+# def find_component_by_id(layout, component_id):
+#     """Recursively search for a component with the given ID in the layout."""
+    
+#     # Base case: if the component is a dictionary and has an 'id' key
+#     if hasattr(layout, 'id') and layout.id == component_id:
+#         return layout
+
+#     # If the component has 'children', search inside them
+#     if hasattr(layout, 'children'):
+#         children = layout.children
+#         if isinstance(children, (list, tuple)):
+#             for child in children:
+#                 result = find_component_by_id(child, component_id)
+#                 if result:
+#                     return result
+#         else:
+#             return find_component_by_id(children, component_id)
+    
+#     return None
+
+
+# def components_to_html_str(components):
+#     """Convert a list of Dash components to an HTML string."""
+#     html_list = []
+
+#     for component in components:
+#         if not hasattr(component, 'type') or not hasattr(component, 'props'):
+#             continue
+
+#         if component.type == 'Table':
+#             html_list.append(table_to_html_str(component))
+#         elif component.type == 'H1':
+#             html_list.append(f"<h1>{component.props['children']}</h1>")
+#         elif component.type == 'P':
+#             html_list.append(f"<p>{component.props['children']}</p>")
+#         # Add other types as needed...
+
+#     return ''.join(html_list)
+
+# def table_to_html_str(table_component):
+#     """Convert a Dash dbc.Table component into an HTML string."""
+
+#     # Convert Dash components to HTML strings
+#     children_str = ''.join([dash_component_to_html_str(child) for child in table_component.children])
+
+#     return f"<table>{children_str}</table>"
+
+# def dash_component_to_html_str(component):
+#     """Recursive function to convert Dash components to HTML strings."""
+    
+#     # Base case: if component is just a string, return it
+#     if isinstance(component, (str, int, float)):
+#         return str(component)
+
+#     # Convert component type to string tag name
+#     tag = component.__class__.__name__.lower()
+    
+#     children = getattr(component, "children", "")
+    
+#     # If children is a list, recursively convert each child
+#     if isinstance(children, list):
+#         children_str = ''.join([dash_component_to_html_str(child) for child in children])
+#     else:
+#         children_str = dash_component_to_html_str(children)
+
+#     return f"<{tag}>{children_str}</{tag}>"

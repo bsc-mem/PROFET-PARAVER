@@ -220,7 +220,7 @@ void ProfetPyAdapter::runDashApp(string traceFilePath, float precision, float cp
     }
 
     // Generate PDF image and save feather DF by default when running dash from here
-    string pythonCallPDF = pythonCall + " --pdf --save-feather";
+    string pythonCallPDF = pythonCall + " --save-feather";
     // Run dash
     system(pythonCallPDF.c_str());
 }
