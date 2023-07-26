@@ -104,9 +104,6 @@ def get_figures_story(system_arch: dict, selected_nodes: list, figures: list) ->
                 story.append(img)
                 story.append(Spacer(1, 12))  # Optional spacer for better layout
 
-    if len(figures) != i_fig:
-        raise Exception(f"Number of figures ({len(figures)}) does not match the number of figures added to the story ({i_fig}).")
-
     return story
 
 def generate_pdf(df: pd.DataFrame, config: dict, system_arch: dict, selected_nodes: list, figures: list) -> bytes:

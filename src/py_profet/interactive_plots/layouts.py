@@ -112,15 +112,15 @@ def get_sidebar(df: pd.DataFrame):
             html.P("Configuration:"),
             dcc.Upload(
                 id='upload-config',
-                children=dbc.Button("Load", id='upload-config-button', n_clicks=0, className='sidebar-button'),
+                children=dbc.Button("Load", id='upload-config-button', n_clicks=0, className=['sidebar-button', 'corporative-button']),
             ),
             dcc.Download(id='download-config'),
-            dbc.Button("Save", id='save-config', n_clicks=0, className='sidebar-button', style={'margin-top': '1rem'}),
+            dbc.Button("Save", id='save-config', n_clicks=0, className=['sidebar-button', 'corporative-button'], style={'margin-top': '1rem'}),
         ], className='sidebar-element'),
         # dbc.Row([
         #     # html.P("Save Configuration:"),
         #     dcc.Download(id='download-config'),
-        #     dbc.Button("Save", id='save-config', n_clicks=0, className='sidebar-button'),
+        #     dbc.Button("Save", id='save-config', n_clicks=0, className=['sidebar-button', 'corporative-button']),
         # ], className='sidebar-element'),
         dbc.Row([
             html.P("Node selection:"),
@@ -275,17 +275,21 @@ def get_main_content(df: pd.DataFrame, config: dict, system_arch: dict, max_elem
     system_info_tab = get_summary_tab(df, config, system_arch)
     charts_tab = get_charts_tab(system_arch, max_elements)
 
-
-    # Reordering tabs to make them right-aligned
     tabs = dbc.Tabs([
         dbc.Tab(system_info_tab, label="Summary", tab_id="summary-tab"),
         dbc.Tab(charts_tab, label="Charts", tab_id="charts-tab"),
     ], id="tabs", active_tab="charts-tab")
 
     return html.Div([
-        html.Button("Export to PDF", id="btn-export"),
+        html.Div([
+            html.Div([
+                tabs
+            ], style={'flex': '1'}),  # This ensures that the tabs take up the maximum available space
+            html.Div([
+                html.Button("Export to PDF", id="btn-export", className="corporative-button")
+            ])
+        ], className='d-flex'),  # This makes sure they are in line horizontally
         dcc.Download(id="download-pdf"),
-        tabs,
     ], className='tab-content')
 
 # Update the layout function
