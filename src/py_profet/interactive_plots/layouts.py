@@ -221,21 +221,54 @@ def get_sidebar(df: pd.DataFrame):
     # keep the side bar in a collapsed state, so we can hide it when the charts tab is not selected
     return dbc.Collapse([sidebar], id="sidebar")
 
-def get_charts_tab(system_arch: dict):
-    # there is no need to do this processing, but doing it (similarly to how we build the graphs when updated)
-    # makes the loading spinner appear right when the page is loaded, without delay
+def get_charts_tab(system_arch: dict, max_elements: int = None):
     chart_rows = []
+
+    if max_elements is not None:
+        # add warning text
+        chart_rows.append(dbc.Row([
+            html.H5(f'Warning: Data is undersampled to {max_elements:,} elements.', style={"color": "red"}),
+        ], style={'padding-bottom': '1rem', 'padding-top': '2rem'}))
+
     for node_name, sockets in system_arch.items():
-        chart_cols = []
+        # Create a new container for each node
+        node_container = dbc.Container([], id=f'node-{node_name}-container', fluid=True)
+        node_container.children.append(html.H2(f'Node {node_name}', style={'padding-top': '3rem'}))
+        sockets_row = dbc.Row([], id=f'node-{node_name}-row')
+
         for i_socket, mcs in sockets.items():
+            if len(mcs) > 1:
+                # Create a new container for each socket within the node container
+                socket_container = dbc.Container([], id=f'node-{node_name}-socket-{i_socket}-container', fluid=True)
+                socket_container.children.append(html.H3(f'Socket {i_socket}', style={'padding-top': '0rem'}))
+                mcs_row = dbc.Row([])
+
             for id_mc in mcs:
-                chart_cols.append(dbc.Col([
+                col = dbc.Col([
                     html.Br(),
                     dcc.Graph(id=f'node-{node_name}-socket-{i_socket}-mc-{id_mc}'),
-                    # html.H6(f'Socket bandwidth balance: {bw_socket_balance:.0f}%', style={'padding-left': '5rem'}),
-                ], sm=12, md=6, id=f'node-{node_name}-socket-{i_socket}-mc-{id_mc}-col'))
-        # Add row for each node
-        chart_rows.append(dbc.Row(chart_cols, id=f'node-{node_name}-row'))
+                    html.H6(f'Socket bandwidth balance: %',
+                            style={'padding-left': '5rem'},
+                            id=f'node-{node_name}-socket-{i_socket}-mc-{id_mc}-bw-balance'),
+                ], sm=12, md=6, id=f'node-{node_name}-socket-{i_socket}-mc-{id_mc}-col')
+                if len(mcs) > 1:
+                    # Add graph to MC container if there are multiple MCs
+                    mcs_row.children.append(col)
+                else:
+                    # Add the graph to the socket container
+                    sockets_row.children.append(col)
+            
+            if len(mcs) > 1:
+                # Add the completed socket container to the node container's row
+                socket_container.children.append(mcs_row)
+                node_container.children.append(socket_container)
+
+        if len(mcs) == 1:
+            node_container.children.append(sockets_row)
+        # Add the completed node container to the overall layout
+        chart_rows.append(node_container)
+        # # Add row for each node
+        # chart_rows.append(dbc.Row(chart_cols, id=f'node-{node_name}-row'))
 
     return dcc.Loading(
         id="loading",
@@ -244,9 +277,9 @@ def get_charts_tab(system_arch: dict):
         fullscreen=True,
     )
 
-def get_main_content(df: pd.DataFrame, config: dict, system_arch: dict):
+def get_main_content(df: pd.DataFrame, config: dict, system_arch: dict, max_elements: int = None):
     system_info_tab = get_summary_tab(df, config, system_arch)
-    charts_tab = get_charts_tab(system_arch)
+    charts_tab = get_charts_tab(system_arch, max_elements)
 
 
     # Reordering tabs to make them right-aligned
@@ -262,11 +295,11 @@ def get_main_content(df: pd.DataFrame, config: dict, system_arch: dict):
     ], className='tab-content')
 
 # Update the layout function
-def get_layout(df: pd.DataFrame, config: dict, system_arch: dict):
+def get_layout(df: pd.DataFrame, config: dict, system_arch: dict, max_elements: int = None):
     return dbc.Container([
         dbc.Row([
             dbc.Col([get_sidebar(df)], width=2),
-            dbc.Col([get_main_content(df, config, system_arch)], width=10),
+            dbc.Col([get_main_content(df, config, system_arch, max_elements)], width=10),
         ]),
     ], fluid=True)
 

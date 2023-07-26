@@ -50,9 +50,9 @@ def get_config(config_file_path: str):
         config = json.load(f)
     return config
 
-def get_dash_app(df, config_json: dict, system_arch: dict):
+def get_dash_app(df, config_json: dict, system_arch: dict, max_elements: int):
     app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-    app.layout = layouts.get_layout(df, config_json, system_arch)
+    app.layout = layouts.get_layout(df, config_json, system_arch, max_elements)
     return app
 
 def save_pdf(trace_file: str):
@@ -121,7 +121,7 @@ if __name__ == '__main__':
     if args.plot_pdf:
         save_pdf(args.trace_file)
 
-    app = get_dash_app(df, config_json, system_arch)
+    app = get_dash_app(df, config_json, system_arch, max_elements)
     register_callbacks(app, df, curves, config_json, system_arch, args.trace_file, labels, stress_score_config, max_elements)
     # app.run_server(debug=False)
     app.run_server(debug=True)
