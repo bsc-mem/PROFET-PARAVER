@@ -41,7 +41,7 @@ def prv_to_df(trace_file_path, row_file_path, config_json, excluded_original, sa
         rand_lines = sorted(np.random.choice(num_lines, size=undersample_n_lines, replace=False), reverse=True)
 
     df = []
-    metric_keys = ['wr', 'bw', 'max_bw', 'lat', 'min_lat', 'max_lat', 'stress_score']
+    metric_keys = ['wr', 'bw', 'max_bw', 'lat', 'min_lat', 'max_lat', 'stress_score', 'mean_reads', 'mean_writes']
     with open(trace_file_path) as f:
         first_line = True
         # all_lines = f.readlines()
