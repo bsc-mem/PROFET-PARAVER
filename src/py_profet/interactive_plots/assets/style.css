@@ -11,8 +11,8 @@ body {
     background-color: white;
     border-radius: 10px;
     margin-bottom: 1rem;
-    height: calc(100vh - 220px);  /* This can ensure it takes up the full height */
-    overflow-y: auto;  /* In case the sidebar content exceeds the viewport height */
+    /* height: calc(100vh - 220px);  This can ensure it takes up the full height */
+    /* overflow-y: auto;  In case the sidebar content exceeds the viewport height */
 }
 .sidebar-element {
     padding-bottom: 2rem;
