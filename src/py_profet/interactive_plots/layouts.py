@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
-from dash import Dash, dcc, html, Input, Output
-import dash_daq as daq
+from dash import dcc, html
 import dash_bootstrap_components as dbc
 import summary_info
 import utils
@@ -270,12 +269,7 @@ def get_charts_tab(system_arch: dict, max_elements: int = None):
         # # Add row for each node
         # chart_rows.append(dbc.Row(chart_cols, id=f'node-{node_name}-row'))
 
-    return dcc.Loading(
-        id="loading",
-        type="default",  # changes the loading spinner
-        children=[dbc.Container(chart_rows, id='graph-container', fluid=True)],
-        fullscreen=True,
-    )
+    return dbc.Container(chart_rows, id='graph-container', fluid=True)
 
 def get_main_content(df: pd.DataFrame, config: dict, system_arch: dict, max_elements: int = None):
     system_info_tab = get_summary_tab(df, config, system_arch)
@@ -296,11 +290,15 @@ def get_main_content(df: pd.DataFrame, config: dict, system_arch: dict, max_elem
 
 # Update the layout function
 def get_layout(df: pd.DataFrame, config: dict, system_arch: dict, max_elements: int = None):
-    return dbc.Container([
-        dbc.Row([
-            dbc.Col([get_sidebar(df)], width=2),
-            dbc.Col([get_main_content(df, config, system_arch, max_elements)], width=10),
-        ]),
-    ], fluid=True)
-
+    return dcc.Loading(
+        id="loading",
+        type="default",  # changes the loading spinner
+        children=[dbc.Container([
+            dbc.Row([
+                dbc.Col([get_sidebar(df)], width=2),
+                dbc.Col([get_main_content(df, config, system_arch, max_elements)], width=10),
+            ]),
+        ], fluid=True)],
+        fullscreen=True,
+    )
 
