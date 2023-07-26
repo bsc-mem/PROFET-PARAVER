@@ -233,9 +233,9 @@ def get_charts_tab(system_arch: dict):
                     html.Br(),
                     dcc.Graph(id=f'node-{node_name}-socket-{i_socket}-mc-{id_mc}'),
                     # html.H6(f'Socket bandwidth balance: {bw_socket_balance:.0f}%', style={'padding-left': '5rem'}),
-                ], sm=12, md=6))
+                ], sm=12, md=6, id=f'node-{node_name}-socket-{i_socket}-mc-{id_mc}-col'))
         # Add row for each node
-        chart_rows.append(dbc.Row(chart_cols))
+        chart_rows.append(dbc.Row(chart_cols, id=f'node-{node_name}-row'))
 
     return dcc.Loading(
         id="loading",

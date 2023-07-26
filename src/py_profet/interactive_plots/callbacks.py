@@ -202,10 +202,21 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
     #         # updated_figures.append(fig)
 
     #     return updated_figures
+
+    @app.callback(
+        [Output(f'node-{node_name}-row', 'style') for node_name in system_arch.keys()],
+        Input('node-selection-dropdown', 'value'),
+        prevent_initial_call=True,
+    )
+    def show_hide_node(selected_nodes):
+        # TODO the problem with this approach is that this blocked rows will still be processed in update_chart
+        if selected_nodes is None:
+            raise PreventUpdate
+        return [{'display': 'none'} if node_name not in selected_nodes else {} for node_name in system_arch.keys()]
     
     @app.callback(
         [Output(f'node-{node_name}-socket-{i_socket}-mc-{id_mc}', 'figure') for node_name, sockets in system_arch.items() for i_socket, mcs in sockets.items() for id_mc in mcs],
-        Input('node-selection-dropdown', 'value'),
+        State('node-selection-dropdown', 'value'),
         Input('curves-color-dropdown', 'value'),
         Input('curves-transparency-slider', 'value'),
         Input('time-range-slider', 'value'),
@@ -216,45 +227,40 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
     def update_chart(selected_nodes, curves_color, curves_transparency, time_range, 
                      markers_color, markers_transparency, *current_figures):
         if len(callback_context.triggered) > 1:
-            # Handle initial call logic here. This is not triggered by a specific input, just by the page loading.
-            # All inputs are being passed as context
-            figures = []
-
-            # Generate graphs for each node, socket and mc
+            # Reprocess all charts. This can happen in multiple circumstances:
+            # - Initial call (all inputs are passed as context)
+            # - Loading a new config file (all inputs are passed as context)
             color_bar = None
             if markers_color == 'stress_score':        
                 color_bar = utils.get_color_bar(labels, stress_score_config)
 
+            figures = []
             for node_name, sockets in system_arch.items():
                 if node_name not in selected_nodes:
                     continue
                 for i_socket, mcs in sockets.items():
-                    if len(mcs) > 1:
-                        # Create a new container for each socket within the node container
-                        socket_container = dbc.Container([], id=f'node-{node_name}-socket-{i_socket}-container', fluid=True)
-                        socket_container.children.append(html.H3(f'Socket {i_socket}', style={'padding-top': '0rem'}))
                     for id_mc in mcs:
                         # Filter the dataframe to only include the selected node, socket and MC
                         filt_df = utils.filter_df(df, node_name, i_socket, id_mc, time_range, bw_range=(), lat_range=())
                         graph_title = f'Memory channel {id_mc}' if len(mcs) > 1 else f'Socket {i_socket}'
                         fig = utils.get_graph_fig(filt_df, curves, curves_color, curves_transparency, markers_color, markers_transparency,
-                                                graph_title, labels['bw'], labels['lat'], stress_score_config['colorscale'], color_bar)
+                                                  graph_title, labels['bw'], labels['lat'], stress_score_config['colorscale'], color_bar)
                         figures.append(fig)
             return figures
         
-        # Handle callback logic. This is triggered by a specific input.
         input_id = callback_context.triggered[0]['prop_id'].split('.')[0]
 
-        if input_id == 'node-selection-dropdown':
-            pass
-        elif input_id == 'curves-color-dropdown':
+        # Handle callback logic. This is triggered by a single input.
+        # if input_id == 'node-selection-dropdown':
+        #     pass
+        if input_id == 'curves-color-dropdown':
             for fig in current_figures:
-                # do not process the dots figure, which is the last one. The rest (first ones) are curves
+                # process curves figures, which are all but the last one.
                 for curve in fig['data'][:-1]:
                     curve['line']['color'] = curves_color
         elif input_id == 'curves-transparency-slider':
             for fig in current_figures:
-                # do not process the dots figure, which is the last one. The rest (first ones) are curves
+                # process curves figures, which are all but the last one.
                 for curve in fig['data'][:-1]:
                     curve['opacity'] = curves_transparency
         elif input_id == 'time-range-slider':
@@ -268,6 +274,7 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
                     fig['data'][-1]['marker']['color'] = filt_df['stress_score']
         elif input_id == 'markers-color-dropdown':
             for fig in current_figures:
+                # process the dots figure, which is the last one.
                 if markers_color == 'stress_score':
                     mask = (df['timestamp'] >= time_range[0] * 1e9) & (df['timestamp'] < time_range[1] * 1e9)
                     filt_df = df.loc[mask]
@@ -276,6 +283,7 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
                     fig['data'][-1]['marker']['color'] = markers_color
         elif input_id == 'markers-transparency-slider':
             for fig in current_figures:
+                # process the dots figure, which is the last one.
                 fig['data'][-1]['marker']['opacity'] = markers_transparency
         
         return current_figures
