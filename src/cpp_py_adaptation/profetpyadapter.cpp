@@ -83,7 +83,7 @@ string ProfetPyAdapter::getCurvesPath() {
     return _PyUnicode_AsString(curvesPath);
 }
 
- void ProfetPyAdapter::setCurvesBwsLats(string curvesPath, map<int, pair<vector<float>, vector<float>>> &curves, map<int, pair<PyObject*, PyObject*>> &pyCurves) {
+ void ProfetPyAdapter::setCurvesBwsLats(string curvesPath, map<int, pair<vector<double>, vector<double>>> &curves, map<int, pair<PyObject*, PyObject*>> &pyCurves) {
     // Get available read ratios for the given curves
     PyObject* readRatiosFn = getFunctionFromProfetIntegration("get_curves_available_read_ratios");
     // Make sure string arguments are built with .c_str()
@@ -96,7 +96,7 @@ string ProfetPyAdapter::getCurvesPath() {
     for (Py_ssize_t i = 0; i < size; ++i) {
         // Get read ratio
         PyObject* pItem = PyList_GetItem(readRatios, i);
-        float readRatio = PyFloat_AsDouble(pItem);
+        double readRatio = PyFloat_AsDouble(pItem);
         availableReadRatios.push_back(readRatio);
 
         PyObject* curveFn = getFunctionFromProfetIntegration("get_curve");
@@ -116,8 +116,8 @@ string ProfetPyAdapter::getCurvesPath() {
             cerr << "ERROR: bandwidths and latencies lists have different sizes." << endl;
             exit(1);
         }
-        vector<float> bwsVector(bwSize);
-        vector<float> latsVector(latSize);
+        vector<double> bwsVector(bwSize);
+        vector<double> latsVector(latSize);
         PyObject* pyBws = PyList_New(bwSize);
         PyObject* pyLats = PyList_New(latSize);
 
@@ -127,13 +127,13 @@ string ProfetPyAdapter::getCurvesPath() {
 
             PyList_SetItem(pyBws, i, bwItem);
             if (PyFloat_Check(bwItem)) {
-                float bw = PyFloat_AsDouble(bwItem);
+                double bw = PyFloat_AsDouble(bwItem);
                 bwsVector[i] = bw;
             }
 
             PyList_SetItem(pyLats, i, latItem);
             if (PyFloat_Check(latItem)) {
-                float lat = PyFloat_AsDouble(latItem);
+                double lat = PyFloat_AsDouble(latItem);
                 latsVector[i] = lat;
             }
         }
@@ -157,12 +157,12 @@ void ProfetPyAdapter::printSupportedSystems() {
     PyObject_CallObject(printSupportedSystemsFn, pArgs);
 }
 
-tuple<float, float, float, float, float> ProfetPyAdapter::computeMemoryMetrics(float cpuFreqGHz, float writeRatio, float bandwidth, bool displayWarnings) {
+tuple<double, double, double, double, double> ProfetPyAdapter::computeMemoryMetrics(double cpuFreqGHz, double writeRatio, double bandwidth, bool displayWarnings) {
     // Get dictionary with computed memory values
     PyObject* memoryMetricsFn = getFunctionFromProfetIntegration("get_memory_properties_from_bw");
     // Make sure string arguments are built with .c_str()
-    float readRatio = 100 - writeRatio * 100;
-    float closestReadRatio = getClosestValue(availableReadRatios, readRatio);
+    double readRatio = 100 - writeRatio * 100;
+    double closestReadRatio = getClosestValue(availableReadRatios, readRatio);
     PyObject* bws = pyCurves[closestReadRatio].first;
     PyObject* lats = pyCurves[closestReadRatio].second;
     PyObject* pArgs = PyTuple_Pack(6, bws, lats, PyFloat_FromDouble(cpuFreqGHz), PyFloat_FromDouble(writeRatio),
@@ -171,17 +171,17 @@ tuple<float, float, float, float, float> ProfetPyAdapter::computeMemoryMetrics(f
     raisePyErrorIfNull(memDict, "ERROR getting Python dictionary with memory values.");
 
     // Get values of dictionary elements
-    // float returnedBandwidth = getPyDictFloat(memDict, "bandwidth");
-    float maxBandwidth = getPyDictFloat(memDict, "max_bandwidth");
-    float latency = getPyDictFloat(memDict, "latency");
-    float leadOffLatency = getPyDictFloat(memDict, "lead_off_latency");
-    float maxLatency = getPyDictFloat(memDict, "max_latency");
-    float stressScore = getPyDictFloat(memDict, "stress_score");
+    // double returnedBandwidth = getPyDictDouble(memDict, "bandwidth");
+    double maxBandwidth = getPyDictDouble(memDict, "max_bandwidth");
+    double latency = getPyDictDouble(memDict, "latency");
+    double leadOffLatency = getPyDictDouble(memDict, "lead_off_latency");
+    double maxLatency = getPyDictDouble(memDict, "max_latency");
+    double stressScore = getPyDictDouble(memDict, "stress_score");
 
     return {maxBandwidth, latency, leadOffLatency, maxLatency, stressScore};
 }
 
-void ProfetPyAdapter::runDashApp(string traceFilePath, float precision, float cpuFreq, bool keepOriginalTraceFile) {
+void ProfetPyAdapter::runDashApp(string traceFilePath, double precision, double cpuFreq, bool keepOriginalTraceFile) {
     string dashPlotsPath = pyProfetPath + "dash_plots.py";
     string traceFileFlag = " --trace-file " + traceFilePath;
     string curvesDirFlag = " --bw-lat-curves-dir " + curvesPath;
