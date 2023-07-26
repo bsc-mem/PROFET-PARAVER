@@ -68,34 +68,45 @@ def get_summary(df: pd.DataFrame, config: dict, system_arch: dict) -> list:
         get_summary_bullets(summary['trace_info'], bullet_style),
     ]
 
-# def save_graphs_as_images(graphs: list, prefix: str = "graph") -> list:
-#     """Save graphs as PNG images and return the list of filenames."""
-#     filenames = []
-#     for index, data in enumerate(graphs):
-#         filename = f"{prefix}_{index}.png"
-#         pio.write_image(data, filename)
-#         filenames.append(filename)
-#     return filenames
-
-def get_figure_images(figures: list) -> list:
+def get_figures_story(system_arch: dict, selected_nodes: list, figures: list) -> list:
     """Generate a PNG image from a Plotly figure and return it as an in-memory binary stream."""
+    # Pre: assume the system_arch minus the selected_nodes is the same length as the figures
     # inches converted to points (72 points per inch)
-    width_margin = 1.5
+    width_margin = 2
     pdf_width = (8.5 - width_margin) * 72
     # allow 2 images per pdf page
-    height_margin = 3
+    height_margin = 4
     pdf_height = (11 - height_margin) * 72 / 2
     story = []
-    for fig in figures:
-        img_stream = BytesIO()
-        # a scale of 2 doubles the resolution of the image
-        img_bytes = pio.to_image(fig, format="png")
-        img_stream.write(img_bytes)
-        img_stream.seek(0)
+    i_fig = 0
+    # for fig in figures:
+    for node_name, sockets in system_arch.items():
+        if node_name not in selected_nodes:
+            continue
+        # Insert a page break for each node
+        story.append(PageBreak())
+        story.append(Paragraph(f"Node {node_name}", heading1_style))
+        for i_socket, i_mc in sockets.items():
+            if len(i_mc) > 1:
+                story.append(Paragraph(f"Socket {i_socket}", heading2_style))
+            for mc in i_mc:
+                fig = figures[i_fig]
+                i_fig += 1
+                # fig = figures[node_name][socket][mc]
+                # generate a PNG image from the figure
+                img_stream = BytesIO()
+                # a scale of 2 doubles the resolution of the image
+                img_bytes = pio.to_image(fig, format="png")
+                img_stream.write(img_bytes)
+                img_stream.seek(0)
 
-        img = Image(img_stream, width=pdf_width, height=pdf_height)
-        story.append(img)
-        story.append(Spacer(1, 12))  # Optional spacer for better layout
+                img = Image(img_stream, width=pdf_width, height=pdf_height)
+                story.append(img)
+                story.append(Spacer(1, 12))  # Optional spacer for better layout
+
+    if len(figures) != i_fig:
+        raise Exception(f"Number of figures ({len(figures)}) does not match the number of figures added to the story ({i_fig}).")
+
     return story
 
 def generate_pdf(df: pd.DataFrame, config: dict, system_arch: dict, selected_nodes: list, figures: list) -> bytes:
@@ -112,11 +123,8 @@ def generate_pdf(df: pd.DataFrame, config: dict, system_arch: dict, selected_nod
     # Add summary info
     story.extend(get_summary(df, config, system_arch))
 
-    # Insert a page break
-    story.append(PageBreak())
-
     # Add figures
-    story.extend(get_figure_images(figures))
+    story.extend(get_figures_story(system_arch, selected_nodes, figures))
 
     # Build the PDF
     doc.build(story)
