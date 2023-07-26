@@ -1,6 +1,7 @@
 import os
 import json
 import base64
+import numpy as np
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, ListFlowable, ListItem
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -37,8 +38,6 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
         pdf_base64 = base64.b64encode(pdf_string).decode('utf-8')
 
         return dict(content=pdf_base64, filename="my_report.pdf", type="application/pdf", base64=True)
-
-
 
     # we need all the elements as outputs for updating them in case of loading a json file
     # if a json file is not loaded, the callback has still to return the real values
@@ -204,7 +203,7 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
     #     return updated_figures
 
     @app.callback(
-        [Output(f'node-{node_name}-row', 'style') for node_name in system_arch.keys()],
+        [Output(f'node-{node_name}-container', 'style') for node_name in system_arch.keys()],
         Input('node-selection-dropdown', 'value'),
         prevent_initial_call=True,
     )
@@ -216,16 +215,22 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
     
     @app.callback(
         [Output(f'node-{node_name}-socket-{i_socket}-mc-{id_mc}', 'figure') for node_name, sockets in system_arch.items() for i_socket, mcs in sockets.items() for id_mc in mcs],
+        # [Output(f'node-{node_name}-socket-{i_socket}-mc-{id_mc}-bw-balance', 'children') for node_name, sockets in system_arch.items() for i_socket, mcs in sockets.items() for id_mc in mcs],
         State('node-selection-dropdown', 'value'),
         Input('curves-color-dropdown', 'value'),
         Input('curves-transparency-slider', 'value'),
         Input('time-range-slider', 'value'),
         Input('markers-color-dropdown', 'value'),
         Input('markers-transparency-slider', 'value'),
+        # [State(f'node-{node_name}-socket-{i_socket}-mc-{id_mc}-bw-balance', 'children') for node_name, sockets in system_arch.items() for i_socket, mcs in sockets.items() for id_mc in mcs],
         [State(f'node-{node_name}-socket-{i_socket}-mc-{id_mc}', 'figure') for node_name, sockets in system_arch.items() for i_socket, mcs in sockets.items() for id_mc in mcs],
     )
     def update_chart(selected_nodes, curves_color, curves_transparency, time_range, 
                      markers_color, markers_transparency, *current_figures):
+        # bw_balances = states[len(states) // 2:]
+        # print(bw_balances)
+        # current_figures = states[:len(states) // 2]
+
         if len(callback_context.triggered) > 1:
             # Reprocess all charts. This can happen in multiple circumstances:
             # - Initial call (all inputs are passed as context)
@@ -239,20 +244,22 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
                 if node_name not in selected_nodes:
                     continue
                 for i_socket, mcs in sockets.items():
-                    for id_mc in mcs:
+                    df_socket = utils.filter_df(df, node_name, i_socket, time_range=time_range)
+                    for k, id_mc in enumerate(mcs):
                         # Filter the dataframe to only include the selected node, socket and MC
-                        filt_df = utils.filter_df(df, node_name, i_socket, id_mc, time_range, bw_range=(), lat_range=())
+                        filt_df = utils.filter_df(df_socket, i_mc=id_mc)
+                        # bw_socket_balance = filt_df['bw'].mean() * 100 / df_socket['bw'].sum()
+                        # bw_balances[k].replace('%', f'{bw_socket_balance:.0f}%')
                         graph_title = f'Memory channel {id_mc}' if len(mcs) > 1 else f'Socket {i_socket}'
                         fig = utils.get_graph_fig(filt_df, curves, curves_color, curves_transparency, markers_color, markers_transparency,
                                                   graph_title, labels['bw'], labels['lat'], stress_score_config['colorscale'], color_bar)
                         figures.append(fig)
             return figures
+            # return np.append(figures, bw_balances)
         
         input_id = callback_context.triggered[0]['prop_id'].split('.')[0]
 
         # Handle callback logic. This is triggered by a single input.
-        # if input_id == 'node-selection-dropdown':
-        #     pass
         if input_id == 'curves-color-dropdown':
             for fig in current_figures:
                 # process curves figures, which are all but the last one.
@@ -287,3 +294,4 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
                 fig['data'][-1]['marker']['opacity'] = markers_transparency
         
         return current_figures
+        # return np.append(current_figures, bw_balances)
