@@ -77,21 +77,28 @@ def get_summary(df: pd.DataFrame, config: dict, system_arch: dict) -> list:
 #         filenames.append(filename)
 #     return filenames
 
-def get_graphs(graphs: list) -> list:
+def get_figure_images(figures: list) -> list:
     """Generate a PNG image from a Plotly figure and return it as an in-memory binary stream."""
+    # inches converted to points (72 points per inch)
+    width_margin = 1.5
+    pdf_width = (8.5 - width_margin) * 72
+    # allow 2 images per pdf page
+    height_margin = 3
+    pdf_height = (11 - height_margin) * 72 / 2
     story = []
-    for fig in graphs:
+    for fig in figures:
         img_stream = BytesIO()
+        # a scale of 2 doubles the resolution of the image
         img_bytes = pio.to_image(fig, format="png")
         img_stream.write(img_bytes)
         img_stream.seek(0)
 
-        img = Image(img_stream, width=400)  # adjust width as needed
+        img = Image(img_stream, width=pdf_width, height=pdf_height)
         story.append(img)
         story.append(Spacer(1, 12))  # Optional spacer for better layout
     return story
 
-def generate_pdf(df: pd.DataFrame, config: dict, system_arch: dict, graphs: list) -> bytes:
+def generate_pdf(df: pd.DataFrame, config: dict, system_arch: dict, selected_nodes: list, figures: list) -> bytes:
     buffer = BytesIO()
     # Set up the document and styles
     doc = SimpleDocTemplate(buffer, pagesize=letter, title="Report")
@@ -108,8 +115,8 @@ def generate_pdf(df: pd.DataFrame, config: dict, system_arch: dict, graphs: list
     # Insert a page break
     story.append(PageBreak())
 
-    # Add graphs
-    story.extend(get_graphs(graphs))
+    # Add figures
+    story.extend(get_figure_images(figures))
 
     # Build the PDF
     doc.build(story)

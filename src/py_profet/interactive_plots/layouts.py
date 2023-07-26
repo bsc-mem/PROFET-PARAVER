@@ -240,7 +240,7 @@ def get_charts_tab(system_arch: dict, max_elements: int = None):
             if len(mcs) > 1:
                 # Create a new container for each socket within the node container
                 socket_container = dbc.Container([], id=f'node-{node_name}-socket-{i_socket}-container', fluid=True)
-                socket_container.children.append(html.H3(f'Socket {i_socket}', style={'padding-top': '0rem'}))
+                socket_container.children.append(html.H3(f'Socket {i_socket}', style={'padding-top': '2rem'}))
                 socket_rows = dbc.Row([], id=f'node-{node_name}-socket-{i_socket}-row')
 
             for id_mc in mcs:
