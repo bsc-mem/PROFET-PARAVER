@@ -234,14 +234,14 @@ def get_charts_tab(system_arch: dict, max_elements: int = None):
         # Create a new container for each node
         node_container = dbc.Container([], id=f'node-{node_name}-container', fluid=True)
         node_container.children.append(html.H2(f'Node {node_name}', style={'padding-top': '3rem'}))
-        sockets_row = dbc.Row([], id=f'node-{node_name}-row')
+        node_rows = dbc.Row([], id=f'node-{node_name}-row')
 
         for i_socket, mcs in sockets.items():
             if len(mcs) > 1:
                 # Create a new container for each socket within the node container
                 socket_container = dbc.Container([], id=f'node-{node_name}-socket-{i_socket}-container', fluid=True)
                 socket_container.children.append(html.H3(f'Socket {i_socket}', style={'padding-top': '0rem'}))
-                mcs_row = dbc.Row([])
+                socket_rows = dbc.Row([], id=f'node-{node_name}-socket-{i_socket}-row')
 
             for id_mc in mcs:
                 col = dbc.Col([
@@ -253,18 +253,18 @@ def get_charts_tab(system_arch: dict, max_elements: int = None):
                 ], sm=12, md=6, id=f'node-{node_name}-socket-{i_socket}-mc-{id_mc}-col')
                 if len(mcs) > 1:
                     # Add graph to MC container if there are multiple MCs
-                    mcs_row.children.append(col)
+                    socket_rows.children.append(col)
                 else:
                     # Add the graph to the socket container
-                    sockets_row.children.append(col)
+                    node_rows.children.append(col)
             
             if len(mcs) > 1:
                 # Add the completed socket container to the node container's row
-                socket_container.children.append(mcs_row)
+                socket_container.children.append(socket_rows)
                 node_container.children.append(socket_container)
 
         if len(mcs) == 1:
-            node_container.children.append(sockets_row)
+            node_container.children.append(node_rows)
         # Add the completed node container to the overall layout
         chart_rows.append(node_container)
         # # Add row for each node

@@ -25,15 +25,12 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
     @app.callback(
         Output("download-pdf", "data"),
         Input("btn-export", "n_clicks"),
+        [State(f'node-{node_name}-socket-{i_socket}-mc-{id_mc}', 'figure') for node_name, sockets in system_arch.items() for i_socket, mcs in sockets.items() for id_mc in mcs],
         prevent_initial_call=True
     )
-    def export_to_pdf(n):
-        # Extract graphs
-        # print(app.layout)
-        graphs = utils.extract_graphs(app.layout)
-        # print('Graphs size:', len(graphs))
+    def export_to_pdf(n, *current_figures):
         # Generate PDF
-        pdf_string = pdf_gen.generate_pdf(df, config, system_arch, graphs)
+        pdf_string = pdf_gen.generate_pdf(df, config, system_arch, current_figures)
         # Convert to Base64
         pdf_base64 = base64.b64encode(pdf_string).decode('utf-8')
 

@@ -81,7 +81,6 @@ def get_graphs(graphs: list) -> list:
     """Generate a PNG image from a Plotly figure and return it as an in-memory binary stream."""
     story = []
     for fig in graphs:
-        print(type(fig))
         img_stream = BytesIO()
         img_bytes = pio.to_image(fig, format="png")
         img_stream.write(img_bytes)
@@ -103,11 +102,11 @@ def generate_pdf(df: pd.DataFrame, config: dict, system_arch: dict, graphs: list
         Spacer(1, 12),
     ]
 
-    # # Add summary info
-    # story.extend(get_summary(df, config, system_arch))
+    # Add summary info
+    story.extend(get_summary(df, config, system_arch))
 
-    # # Insert a page break
-    # story.append(PageBreak())
+    # Insert a page break
+    story.append(PageBreak())
 
     # Add graphs
     story.extend(get_graphs(graphs))

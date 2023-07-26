@@ -233,19 +233,19 @@ def get_dash_table_rows(rows_info: list):
     # rows_info is a list of dicts with the following keys: label, value
     return [html.Tr([html.Td(row['label']), html.Td(row['value'])]) for _, row in rows_info.items()]
 
-def extract_graphs(layout_element):
-    """Recursively extract all dcc.Graph objects from a given layout element."""
-    graphs = []
+# def extract_graphs(layout_element):
+#     """Recursively extract all dcc.Graph objects from a given layout element."""
+#     graphs = []
 
-    if isinstance(layout_element, list):
-        for elem in layout_element:
-            graphs.extend(extract_graphs(elem))
-    elif hasattr(layout_element, 'children'):
-        graphs.extend(extract_graphs(layout_element.children))
-    elif isinstance(layout_element, dcc.Graph) and hasattr(layout_element, 'figure'):
-        graphs.append(layout_element.figure)
+#     if isinstance(layout_element, list):
+#         for elem in layout_element:
+#             graphs.extend(extract_graphs(elem))
+#     elif hasattr(layout_element, 'children'):
+#         graphs.extend(extract_graphs(layout_element.children))
+#     elif isinstance(layout_element, dcc.Graph) and hasattr(layout_element, 'figure'):
+#         graphs.append(layout_element.figure)
 
-    return graphs
+#     return graphs
 
 # def find_component_by_id(layout, component_id):
 #     """Recursively search for a component with the given ID in the layout."""
