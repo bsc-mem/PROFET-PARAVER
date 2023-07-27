@@ -12,6 +12,27 @@ from dash.exceptions import PreventUpdate
 import utils
 import pdf_gen
 
+def apply_to_hierarchy(func, system_arch):
+    # apply func to each node, socket and mc
+    results = []
+    for node_name, sockets in system_arch.items():
+        for i_socket, mcs in sockets.items():
+            for id_mc in mcs:
+                results.append(func(node_name, i_socket, id_mc))
+    return results
+
+def replace_after_char(s, char, replacement):
+    """ Replaces everything after the first occurence of a character with a replacement string """
+    # Find the position of the character
+    index = s.find(char)
+
+    # If character is not found, return the original string
+    if index == -1:
+        return s
+
+    # Replace everything after the character with the replacement string
+    return s[:index + 1] + replacement
+
 def register_callbacks(app, df, curves, config, system_arch, trace_file, labels, stress_score_config, max_elements=None):
 
     # toggle sidebar, showing it when the charts tab is selected and hidding it otherwise
@@ -26,8 +47,8 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
         Output("download-pdf", "data"),
         Input("btn-export", "n_clicks"),
         State('node-selection-dropdown', 'value'),
-        [State(f'node-{node_name}-socket-{i_socket}-mc-{id_mc}', 'figure') for node_name, sockets in system_arch.items() for i_socket, mcs in sockets.items() for id_mc in mcs],
-        prevent_initial_call=True
+        apply_to_hierarchy(lambda n, s, m: State(f'node-{n}-socket-{s}-mc-{m}', 'figure'), system_arch),
+        prevent_initial_call=True,
     )
     def export_to_pdf(n, selected_nodes, *figures):
         # Generate PDF
@@ -212,7 +233,8 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
         return [{'display': 'none'} if node_name not in selected_nodes else {} for node_name in system_arch.keys()]
     
     @app.callback(
-        [Output(f'node-{node_name}-socket-{i_socket}-mc-{id_mc}', 'figure') for node_name, sockets in system_arch.items() for i_socket, mcs in sockets.items() for id_mc in mcs],
+        apply_to_hierarchy(lambda n, s, m: Output(f'node-{n}-socket-{s}-mc-{m}', 'figure'), system_arch),
+        apply_to_hierarchy(lambda n, s, m: Output(f'node-{n}-socket-{s}-mc-{m}-bw-balance', 'children'), system_arch),
         # [Output(f'node-{node_name}-socket-{i_socket}-mc-{id_mc}-bw-balance', 'children') for node_name, sockets in system_arch.items() for i_socket, mcs in sockets.items() for id_mc in mcs],
         State('node-selection-dropdown', 'value'),
         Input('curves-color-dropdown', 'value'),
@@ -221,13 +243,14 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
         Input('markers-color-dropdown', 'value'),
         Input('markers-transparency-slider', 'value'),
         # [State(f'node-{node_name}-socket-{i_socket}-mc-{id_mc}-bw-balance', 'children') for node_name, sockets in system_arch.items() for i_socket, mcs in sockets.items() for id_mc in mcs],
-        [State(f'node-{node_name}-socket-{i_socket}-mc-{id_mc}', 'figure') for node_name, sockets in system_arch.items() for i_socket, mcs in sockets.items() for id_mc in mcs],
+        apply_to_hierarchy(lambda n, s, m: State(f'node-{n}-socket-{s}-mc-{m}', 'figure'), system_arch),
+        apply_to_hierarchy(lambda n, s, m: State(f'node-{n}-socket-{s}-mc-{m}-bw-balance', 'children'), system_arch),
     )
     def update_chart(selected_nodes, curves_color, curves_transparency, time_range, 
-                     markers_color, markers_transparency, *current_figures):
-        # bw_balances = states[len(states) // 2:]
-        # print(bw_balances)
-        # current_figures = states[:len(states) // 2]
+                     markers_color, markers_transparency, *states):
+        bw_balances = states[len(states) // 2:]
+        current_figures= states[:len(states) // 2]
+        new_bw_balances = []
 
         if len(callback_context.triggered) > 1:
             # Reprocess all charts. This can happen in multiple circumstances:
@@ -241,19 +264,26 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
             for node_name, sockets in system_arch.items():
                 if node_name not in selected_nodes:
                     continue
+                df_node = utils.filter_df(df, node_name, time_range=time_range)
+                bw_per_socket = df_node.groupby('socket')['bw'].mean()
                 for i_socket, mcs in sockets.items():
-                    df_socket = utils.filter_df(df, node_name, i_socket, time_range=time_range)
+                    df_socket = utils.filter_df(df_node, i_socket=i_socket)
+                    if len(mcs) > 1:
+                        bw_per_mc = df_socket.groupby('mc')['bw'].mean()
                     for k, id_mc in enumerate(mcs):
                         # Filter the dataframe to only include the selected node, socket and MC
                         filt_df = utils.filter_df(df_socket, i_mc=id_mc)
-                        # bw_socket_balance = filt_df['bw'].mean() * 100 / df_socket['bw'].sum()
-                        # bw_balances[k].replace('%', f'{bw_socket_balance:.0f}%')
+                        if len(mcs) > 1:
+                            bw_balance = filt_df['bw'].mean() * 100 / bw_per_mc.sum()
+                        else:
+                            bw_balance = filt_df['bw'].mean() * 100 / bw_per_socket.sum()
+                        new_bw_balances.append(replace_after_char(bw_balances[k], ':', f' {bw_balance:.1f}%'))
                         graph_title = f'Memory channel {id_mc}' if len(mcs) > 1 else f'Socket {i_socket}'
                         fig = utils.get_graph_fig(filt_df, curves, curves_color, curves_transparency, markers_color, markers_transparency,
                                                   graph_title, labels['bw'], labels['lat'], stress_score_config['colorscale'], color_bar)
                         figures.append(fig)
-            return figures
-            # return np.append(figures, bw_balances)
+            # return figures
+            return tuple(np.append(figures, new_bw_balances))
         
         input_id = callback_context.triggered[0]['prop_id'].split('.')[0]
 
@@ -277,6 +307,25 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
                 fig['data'][-1]['y'] = filt_df['lat']
                 if markers_color == 'stress_score':
                     fig['data'][-1]['marker']['color'] = filt_df['stress_score']
+
+            # update the bw balance
+            for node_name, sockets in system_arch.items():
+                if node_name not in selected_nodes:
+                    continue
+                df_node = utils.filter_df(df, node_name, time_range=time_range)
+                bw_per_socket = df_node.groupby('socket')['bw'].mean()
+                for i_socket, mcs in sockets.items():
+                    df_socket = utils.filter_df(df_node, i_socket=i_socket)
+                    if len(mcs) > 1:
+                        bw_per_mc = df_socket.groupby('mc')['bw'].mean()
+                    for k, id_mc in enumerate(mcs):
+                        # Filter the dataframe to only include the selected node, socket and MC
+                        filt_df = utils.filter_df(df_socket, i_mc=id_mc)
+                        if len(mcs) > 1:
+                            bw_balance = filt_df['bw'].mean() * 100 / bw_per_mc.sum()
+                        else:
+                            bw_balance = filt_df['bw'].mean() * 100 / bw_per_socket.sum()
+                        new_bw_balances.append(replace_after_char(bw_balances[k], ':', f' {bw_balance:.1f}%'))
         elif input_id == 'markers-color-dropdown':
             for fig in current_figures:
                 # process the dots figure, which is the last one.
@@ -291,5 +340,5 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
                 # process the dots figure, which is the last one.
                 fig['data'][-1]['marker']['opacity'] = markers_transparency
         
-        return current_figures
-        # return np.append(current_figures, bw_balances)
+        # return current_figures
+        return tuple(np.append(current_figures, new_bw_balances))

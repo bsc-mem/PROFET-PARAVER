@@ -236,17 +236,19 @@ def get_charts_tab(system_arch: dict, max_elements: int = None):
         node_rows = dbc.Row([], id=f'node-{node_name}-row')
 
         for i_socket, mcs in sockets.items():
+            bw_balance_str = 'Socket bandwidth balance: %'
             if len(mcs) > 1:
                 # Create a new container for each socket within the node container
                 socket_container = dbc.Container([], id=f'node-{node_name}-socket-{i_socket}-container', fluid=True)
                 socket_container.children.append(html.H3(f'Socket {i_socket}', style={'padding-top': '2rem'}))
                 socket_rows = dbc.Row([], id=f'node-{node_name}-socket-{i_socket}-row')
+                bw_balance_str = 'Memory channel bandwidth balance: '
 
             for id_mc in mcs:
                 col = dbc.Col([
                     html.Br(),
                     dcc.Graph(id=f'node-{node_name}-socket-{i_socket}-mc-{id_mc}'),
-                    html.H6(f'Socket bandwidth balance: %',
+                    html.H6(children=bw_balance_str,
                             style={'padding-left': '5rem'},
                             id=f'node-{node_name}-socket-{i_socket}-mc-{id_mc}-bw-balance'),
                 ], sm=12, md=6, id=f'node-{node_name}-socket-{i_socket}-mc-{id_mc}-col')
