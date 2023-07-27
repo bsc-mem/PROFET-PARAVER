@@ -152,24 +152,26 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
         Input('markers-color-dropdown', 'value'),
         Input('markers-transparency-slider', 'value'),
         apply_to_hierarchy(lambda n, s, m: State(f'node-{n}-socket-{s}-mc-{m}', 'figure'), system_arch),
+        apply_to_hierarchy(lambda n, s, m: State(f'node-{n}-socket-{s}-mc-{m}-store', 'data'), system_arch),
         apply_to_hierarchy(lambda n, s, m: State(f'node-{n}-socket-{s}-mc-{m}-bw-balance', 'children'), system_arch),
     )
     def update_chart(selected_nodes, curves_color, curves_transparency, time_range, 
                      markers_color, markers_transparency, *states):
-        bw_balances = states[len(states) // 2:]
-        current_figures = states[:len(states) // 2]
-        new_bw_balances = []
-        print(curves_color)
+        third = len(states) // 3
+        current_figures = states[:third]
+        figs_metadata = states[third:third*2]
+        bw_balances = states[third*2:]
 
         if len(callback_context.triggered) > 1:
             # Reprocess all charts. This can happen in multiple circumstances:
             # - Initial call (all inputs are passed as context)
             # - Loading a new config file (all inputs are passed as context)
             color_bar = None
-            if markers_color == 'stress_score':        
+            if markers_color == 'stress_score':
                 color_bar = utils.get_color_bar(labels, stress_score_config)
 
             figures = []
+            new_bw_balances = []
             for node_name, sockets in system_arch.items():
                 # if node_name not in selected_nodes:
                 #     figures.append(dash.no_update)
@@ -210,10 +212,12 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
                 for curve in fig['data'][:-1]:
                     curve['opacity'] = curves_transparency
         elif input_id == 'time-range-slider':
-            for fig in current_figures:
+            # update figures
+            for metadata, fig in zip(figs_metadata, current_figures):
                 # process the dots figure, which is the last one.
                 mask = (df['timestamp'] >= time_range[0] * 1e9) & (df['timestamp'] < time_range[1] * 1e9)
-                filt_df = df.loc[mask]
+                filt_df = utils.filter_df(df, metadata['node_name'], metadata['socket'],
+                                          metadata['mc'], time_range=time_range)
                 fig['data'][-1]['x'] = filt_df['bw']
                 fig['data'][-1]['y'] = filt_df['lat']
                 if markers_color == 'stress_score':

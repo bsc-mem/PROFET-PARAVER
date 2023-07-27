@@ -103,8 +103,6 @@ def get_sidebar(df: pd.DataFrame):
     node_names = sorted(df['node_name'].unique())
     # Define marks for sliders
     marks_time = {i: str(round(i, 1)) for i in np.linspace(df['timestamp'].min()/1e9, df['timestamp'].max()/1e9, 5)}
-    # marks_bw = {i: str(int(i)) for i in np.linspace(df['bw'].min(), df['bw'].max(), 5)}
-    # marks_lat = {i: str(int(i)) for i in np.linspace(df['lat'].min(), df['lat'].max(), 5)}
     marks_opacity = {i: str(i) for i in np.linspace(0, 1, 5)}
 
     sidebar = html.Div([
@@ -117,11 +115,6 @@ def get_sidebar(df: pd.DataFrame):
             dcc.Download(id='download-config'),
             dbc.Button("Save", id='save-config', n_clicks=0, className=['sidebar-button', 'corporative-button'], style={'margin-top': '1rem'}),
         ], className='sidebar-element'),
-        # dbc.Row([
-        #     # html.P("Save Configuration:"),
-        #     dcc.Download(id='download-config'),
-        #     dbc.Button("Save", id='save-config', n_clicks=0, className=['sidebar-button', 'corporative-button']),
-        # ], className='sidebar-element'),
         dbc.Row([
             html.P("Node selection:"),
             dcc.Dropdown(
@@ -159,15 +152,6 @@ def get_sidebar(df: pd.DataFrame):
             html.P("Curves Transparency:"),
             dcc.Slider(0, 1, 0.01, value=1, id='curves-transparency-slider', marks=marks_opacity),
         ], className='sidebar-element'),
-        # dbc.Row([
-        #     html.P("Show curves:"),
-        #     daq.ToggleSwitch(
-        #         id='toggle-curves',
-        #         value=True
-        #     ),
-        #     html.Div(id='toggle-curves-output'),
-        #     html.Div(id='toggle-time-output'),
-        # ], className='sidebar-element'),
         dbc.Row([
             html.P("Timestamp (s):"),
             dcc.RangeSlider(
@@ -177,24 +161,6 @@ def get_sidebar(df: pd.DataFrame):
                 value=[df['timestamp'].min()/1e9, df['timestamp'].max()/1e9]
             ),
         ], className='sidebar-element'),
-        # dbc.Row([
-        #     html.P("Bandwidth (GB/s):"),
-        #     dcc.RangeSlider(
-        #         id='bw-range-slider',
-        #         min=df['bw'].min(), max=df['bw'].max(), step=1,
-        #         marks=marks_bw,
-        #         value=[df['bw'].min(), df['bw'].max()]
-        #     ),
-        # ], className='sidebar-element'),
-        # dbc.Row([
-        #     html.P("Latency (ns):"),
-        #     dcc.RangeSlider(
-        #         id='lat-range-slider',
-        #         min=df['lat'].min(), max=df['lat'].max(), step=1,
-        #         marks=marks_lat,
-        #         value=[df['lat'].min(), df['lat'].max()]
-        #     ),
-        # ], className='sidebar-element'),
         dbc.Row([
             html.P("Markers Color:"),
             dcc.Dropdown(
@@ -245,9 +211,15 @@ def get_charts_tab(system_arch: dict, max_elements: int = None):
                 bw_balance_str = 'Memory channel bandwidth balance: '
 
             for id_mc in mcs:
+                metadata = {
+                    'node_name': node_name,
+                    'socket': i_socket,
+                    'mc': id_mc,
+                }
                 col = dbc.Col([
                     html.Br(),
                     dcc.Graph(id=f'node-{node_name}-socket-{i_socket}-mc-{id_mc}'),
+                    dcc.Store(id=f'node-{node_name}-socket-{i_socket}-mc-{id_mc}-store', data=metadata),
                     html.H6(children=bw_balance_str,
                             style={'padding-left': '5rem'},
                             id=f'node-{node_name}-socket-{i_socket}-mc-{id_mc}-bw-balance'),
@@ -268,8 +240,6 @@ def get_charts_tab(system_arch: dict, max_elements: int = None):
             node_container.children.append(node_rows)
         # Add the completed node container to the overall layout
         chart_rows.append(node_container)
-        # # Add row for each node
-        # chart_rows.append(dbc.Row(chart_cols, id=f'node-{node_name}-row'))
 
     return dbc.Container(chart_rows, id='graph-container', fluid=True)
 
