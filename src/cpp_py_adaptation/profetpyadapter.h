@@ -21,12 +21,14 @@
 #include <regex>
 #include <fstream>
 #include <sys/stat.h>
+#include <filesystem>
 #include <Python.h>
 // #include "curves.h"
 #include "utils.h"
 #include "single_include/nlohmann/json.hpp"
 
 using namespace std;
+namespace fs = std::filesystem;
 using json = nlohmann::json;
 
 
