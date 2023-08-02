@@ -79,14 +79,6 @@ STATES_COLOR
 31	{100,216,32}
 
 EVENT_TYPE
-0   110    skx_unc_imc1::UNC_M_CAS_COUNT:RD:cpu=0 ([TBD, masks:DRAM CAS (Column Address Strobe) Commands. -- All DRAM Reads (includes underfills):CPU to program])
-0   111    skx_unc_imc1::UNC_M_CAS_COUNT:WR:cpu=0 ([TBD, masks:DRAM CAS (Column Address Strobe) Commands. -- All DRAM WR_CAS (both Modes):CPU to program])
-0   220    skx_unc_imc2::UNC_M_CAS_COUNT:RD:cpu=0 ([TBD, masks:DRAM CAS (Column Address Strobe) Commands. -- All DRAM Reads (includes underfills):CPU to program])
-0   221    skx_unc_imc2::UNC_M_CAS_COUNT:WR:cpu=0 ([TBD, masks:DRAM CAS (Column Address Strobe) Commands. -- All DRAM WR_CAS (both Modes):CPU to program])
-0   330    skx_unc_imc3::UNC_M_CAS_COUNT:RD:cpu=0 ([TBD, masks:DRAM CAS (Column Address Strobe) Commands. -- All DRAM Reads (includes underfills):CPU to program])
-0   331    skx_unc_imc3::UNC_M_CAS_COUNT:WR:cpu=0 ([TBD, masks:DRAM CAS (Column Address Strobe) Commands. -- All DRAM WR_CAS (both Modes):CPU to program])
-
-EVENT_TYPE
 0   30000000    Sampled functions
 0   30000001    Sampled functions (depth 1)
 VALUES

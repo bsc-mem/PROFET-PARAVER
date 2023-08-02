@@ -12,6 +12,7 @@
 PCFMemoryParserIntel::PCFMemoryParserIntel(string inPCFFilePath, int base_event_type) {
     this->inPCFFilePath = inPCFFilePath;
     this->base_event_type = base_event_type;
+    memoryEventIdentifier = "UNC_M_CAS_COUNT";
 }
 
 map<int, MemoryEvent> PCFMemoryParserIntel::getMemoryEventTypes() {
