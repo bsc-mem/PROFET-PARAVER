@@ -25,6 +25,7 @@ class PCFMemoryParser {
   public:
     string inPCFFilePath;
     int base_event_type;
+    string memoryEventIdentifier;
 
     PCFMemoryParser();
     PCFMemoryParser(string inPCFFilePath, int base_event_type);
@@ -32,7 +33,11 @@ class PCFMemoryParser {
     // Returns a map with the event type as key and memoryEvent as value
     virtual map<int, MemoryEvent> getMemoryEventTypes() = 0;
 
-    void writeOutput(string outPCFFilePath, vector<string> memoryMetricsLabels, int precision);
+    void writeOutput(string outPCFFilePath, vector<string> memoryMetricsLabels,
+                     int precision, bool keepOriginalTraceFile);
+
+  private:
+    void writeEventsOriginalTrace(PCFFileParser<> inPCFFile, PCFFileParser<>& outPCFFile);
 
 };
 
