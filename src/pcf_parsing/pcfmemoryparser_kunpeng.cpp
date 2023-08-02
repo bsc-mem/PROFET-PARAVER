@@ -12,6 +12,7 @@
 PCFMemoryParserKunpeng::PCFMemoryParserKunpeng(string inPCFFilePath, int base_event_type) {
     this->inPCFFilePath = inPCFFilePath;
     this->base_event_type = base_event_type;
+    memoryEventIdentifier = "hisi_sccl";
 }
 
 map<int, MemoryEvent> PCFMemoryParserKunpeng::getMemoryEventTypes() {

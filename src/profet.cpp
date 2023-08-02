@@ -50,9 +50,9 @@ string getProjectPath() {
   return exec_path;
 }
 
-string PROJECT_PATH = getProjectPath();
-int PRECISION = 2; // Decimal precision for memory metrics
-int PROFET_BASE_EVENT_TYPE = 94000000; // Base event type for Profet events in Paraver
+const string PROJECT_PATH = getProjectPath();
+constexpr int PRECISION = 2; // Decimal precision for memory metrics
+constexpr int PROFET_BASE_EVENT_TYPE = 94000000; // Base event type for Profet events in Paraver
 // Order of the metrics in the output trace file, given by the keys in the metrics map with their name label
 vector<pair<string, string>> memoryMetricLabels = {
   {"writeRatio", "Write ratio"},
@@ -675,7 +675,7 @@ int main(int argc, char *argv[]) {
     metricLabels[i] = metric.second;
     i++;
   }
-  pcfMemParser->writeOutput(pcfOutputFile, metricLabels, PRECISION);
+  pcfMemParser->writeOutput(pcfOutputFile, metricLabels, PRECISION, keepOriginalTrace);
 
   // Set progress bar as finished
   updateProgress(1);
