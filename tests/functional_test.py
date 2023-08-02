@@ -93,6 +93,10 @@ class TestOutput(unittest.TestCase):
         with io.open(self.PROCESSED_FILE) as f1:
             correct_file = self.PROCESSED_FILE.replace('out_traces', 'correct_out_traces')
             with io.open(correct_file) as f2:
+                for l1, l2 in zip(f1.readlines(), f2.readlines()):
+                    if l1 != l2:
+                        print(f'Processed Line: {l1}')
+                        print(f'Correct Line: {l2}')
                 self.assertListEqual(list(f1), list(f2))
 
     def test_same_pcf_output(self):
