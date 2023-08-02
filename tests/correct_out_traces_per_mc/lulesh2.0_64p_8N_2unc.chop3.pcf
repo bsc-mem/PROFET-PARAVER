@@ -359,22 +359,6 @@ EVENT_TYPE
 0   42000059    PAPI_TOT_CYC ([Total cycles])
 0   42000107    PAPI_REF_CYC ([Reference cycles])
 0   44226394    L3_LAT_CACHE:MISS ([Core-originated cacheable demand requests to L3, masks:Core-originated cacheable demand requests missed L3])
-0   46096185    snbep_unc_imc3::UNC_M_CAS_COUNT:WR:cpu=8 ([DRAM RD_CAS and WR_CAS Commands., masks:Counts number of DRAM write CAS commands on this channel:CPU to program])
-0   46204141    snbep_unc_imc3::UNC_M_CAS_COUNT:WR:cpu=0 ([DRAM RD_CAS and WR_CAS Commands., masks:Counts number of DRAM write CAS commands on this channel:CPU to program])
-0   46285781    snbep_unc_imc2::UNC_M_CAS_COUNT:RD:cpu=8 ([DRAM RD_CAS and WR_CAS Commands., masks:Counts all DRAM reads on this channel, incl. underfills:CPU to program])
-0   46304356    snbep_unc_imc2::UNC_M_CAS_COUNT:WR:cpu=0 ([DRAM RD_CAS and WR_CAS Commands., masks:Counts number of DRAM write CAS commands on this channel:CPU to program])
-0   46313564    snbep_unc_imc2::UNC_M_CAS_COUNT:WR:cpu=8 ([DRAM RD_CAS and WR_CAS Commands., masks:Counts number of DRAM write CAS commands on this channel:CPU to program])
-0   46431742    snbep_unc_imc1::UNC_M_CAS_COUNT:RD:cpu=8 ([DRAM RD_CAS and WR_CAS Commands., masks:Counts all DRAM reads on this channel, incl. underfills:CPU to program])
-0   46450087    snbep_unc_imc0::UNC_M_CAS_COUNT:WR:cpu=8 ([DRAM RD_CAS and WR_CAS Commands., masks:Counts number of DRAM write CAS commands on this channel:CPU to program])
-0   46766785    snbep_unc_imc0::UNC_M_CAS_COUNT:RD:cpu=8 ([DRAM RD_CAS and WR_CAS Commands., masks:Counts all DRAM reads on this channel, incl. underfills:CPU to program])
-0   46779560    snbep_unc_imc0::UNC_M_CAS_COUNT:WR:cpu=0 ([DRAM RD_CAS and WR_CAS Commands., masks:Counts number of DRAM write CAS commands on this channel:CPU to program])
-0   46802972    snbep_unc_imc3::UNC_M_CAS_COUNT:RD:cpu=8 ([DRAM RD_CAS and WR_CAS Commands., masks:Counts all DRAM reads on this channel, incl. underfills:CPU to program])
-0   46827881    snbep_unc_imc0::UNC_M_CAS_COUNT:RD:cpu=0 ([DRAM RD_CAS and WR_CAS Commands., masks:Counts all DRAM reads on this channel, incl. underfills:CPU to program])
-0   46851620    snbep_unc_imc1::UNC_M_CAS_COUNT:RD:cpu=0 ([DRAM RD_CAS and WR_CAS Commands., masks:Counts all DRAM reads on this channel, incl. underfills:CPU to program])
-0   46868467    snbep_unc_imc1::UNC_M_CAS_COUNT:WR:cpu=8 ([DRAM RD_CAS and WR_CAS Commands., masks:Counts number of DRAM write CAS commands on this channel:CPU to program])
-0   46923928    snbep_unc_imc2::UNC_M_CAS_COUNT:RD:cpu=0 ([DRAM RD_CAS and WR_CAS Commands., masks:Counts all DRAM reads on this channel, incl. underfills:CPU to program])
-0   46998255    snbep_unc_imc1::UNC_M_CAS_COUNT:WR:cpu=0 ([DRAM RD_CAS and WR_CAS Commands., masks:Counts number of DRAM write CAS commands on this channel:CPU to program])
-0   46998355    snbep_unc_imc3::UNC_M_CAS_COUNT:RD:cpu=0 ([DRAM RD_CAS and WR_CAS Commands., masks:Counts all DRAM reads on this channel, incl. underfills:CPU to program])
 
 EVENT_TYPE
 0   50000001    MPI Point-to-point
