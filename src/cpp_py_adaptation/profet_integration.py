@@ -125,7 +125,7 @@ def get_curve(curves_path: str, read_ratio: float):
 
 
 def get_memory_properties_from_bw(bws: list, lats: list, cpu_freq: float, write_ratio: float,
-                                  bandwidth: float, display_warnings: int) -> dict:
+                                  curve_read_ratio: float, bandwidth: float, display_warnings: int) -> dict:
     # bws: list of bandwidths in MB/s
     # lats: list of latencies in CPU cycles
     # write_ratio:
@@ -155,10 +155,8 @@ def get_memory_properties_from_bw(bws: list, lats: list, cpu_freq: float, write_
     # Keep them here for now until we reach a final decision on where this should go.
     # specific_curves_path = f'{memory_system}__{pmu_type}__{cpu_microarch}__{cpu_model}'
     # full_curves_path = os.path.join(project_path, 'py_profet', 'bw_lat_curves', specific_curves_path)
-    # set read ratio as float between 0 and 100
-    read_ratio = 100 - write_ratio * 100
     # get latencies and bandwidths from curve (in CPU cycles and GB/s, respectively)
-    curve_obj = Curve(read_ratio, bws=bws, lats=lats, display_warnings=display_warnings)
+    curve_obj = Curve(curve_read_ratio, bws=bws, lats=lats, display_warnings=display_warnings)
 
     # predicted latency in curve
     pred_lat = curve_obj.get_lat(bandwidth, bw_units='GB/s')
