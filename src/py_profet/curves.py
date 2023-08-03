@@ -78,6 +78,9 @@ def get_closest_read_ratio(read_ratio: float, curves_read_ratios: list, display_
     if abs(closest_curve_read_ratio - read_ratio) > 2 and display_warnings:
         read_ratio_mismatch_warning(read_ratio, closest_curve_read_ratio)
 
+    if read_ratio == 25:
+        print(f"Closest read ratio of {read_ratio}%:", closest_curve_read_ratio)
+
     return closest_curve_read_ratio
 
 def get_bws_lats_old_file(curves_path: str, filename: str):
