@@ -141,6 +141,9 @@ string ProfetPyAdapter::getCurvesPath() {
         curves.insert({readRatio, {bwsVector, latsVector}});
         pyCurves.insert({readRatio, {pyBws, pyLats}});
     }
+
+    // Sort available read ratios
+    sort(availableReadRatios.begin(), availableReadRatios.end());
 }
 
 void ProfetPyAdapter::checkSystemSupported() {
@@ -165,8 +168,8 @@ tuple<double, double, double, double, double> ProfetPyAdapter::computeMemoryMetr
     double closestReadRatio = getClosestValue(availableReadRatios, readRatio);
     PyObject* bws = pyCurves[closestReadRatio].first;
     PyObject* lats = pyCurves[closestReadRatio].second;
-    PyObject* pArgs = PyTuple_Pack(6, bws, lats, PyFloat_FromDouble(cpuFreqGHz), PyFloat_FromDouble(writeRatio),
-                                   PyFloat_FromDouble(bandwidth), PyBool_FromLong(displayWarnings ? 1 : 0));
+    PyObject* pArgs = PyTuple_Pack(7, bws, lats, PyFloat_FromDouble(cpuFreqGHz), PyFloat_FromDouble(writeRatio),
+                                   PyFloat_FromDouble(closestReadRatio), PyFloat_FromDouble(bandwidth), PyBool_FromLong(displayWarnings ? 1 : 0));
     PyObject* memDict = PyObject_CallObject(memoryMetricsFn, pArgs);
     raisePyErrorIfNull(memDict, "ERROR getting Python dictionary with memory values.");
 

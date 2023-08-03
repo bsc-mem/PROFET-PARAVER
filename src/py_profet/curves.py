@@ -166,8 +166,8 @@ class Curve:
         if len(bws) != len(lats):
             raise Exception(f'Number of bandwidths ({len(bws)}) and latencies ({len(lats)}) do not match.')
 
-        # round read ratio to avoid rounding differences
-        self.read_ratio = round(read_ratio, 2)
+        # round read ratio to the closest integer
+        self.read_ratio = int(round(read_ratio, 0))
         self.display_warnings = display_warnings
         if curves_path is not None:
             if display_warnings and (len(bws) != 0 or len(lats) != 0):
