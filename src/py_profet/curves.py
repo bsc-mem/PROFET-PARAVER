@@ -78,10 +78,7 @@ def get_closest_read_ratio(read_ratio: float, curves_read_ratios: list, display_
     if abs(closest_curve_read_ratio - read_ratio) > 2 and display_warnings:
         read_ratio_mismatch_warning(read_ratio, closest_curve_read_ratio)
 
-    if read_ratio == 25:
-        print(f"Closest read ratio of {read_ratio}%:", closest_curve_read_ratio)
-
-    return closest_curve_read_ratio
+    return int(closest_curve_read_ratio)
 
 def get_bws_lats_old_file(curves_path: str, filename: str):
     with open(os.path.join(curves_path, filename)) as f:
@@ -169,7 +166,8 @@ class Curve:
         if len(bws) != len(lats):
             raise Exception(f'Number of bandwidths ({len(bws)}) and latencies ({len(lats)}) do not match.')
 
-        self.read_ratio = read_ratio
+        # round read ratio to avoid rounding differences
+        self.read_ratio = round(read_ratio, 2)
         self.display_warnings = display_warnings
         if curves_path is not None:
             if display_warnings and (len(bws) != 0 or len(lats) != 0):
