@@ -30,8 +30,8 @@ string getPyDictString(PyObject* pyDict, string attribute) {
 
 double getClosestValue(vector<double> values, double target) {
     if (values.empty()) {
-        // Handle the case when the vector is empty
-        return 0.0f;
+        cerr << "Error: cruves read ratios vector is empty" << endl;
+        exit(1);
     }
 
     auto iter_geq = std::lower_bound(
