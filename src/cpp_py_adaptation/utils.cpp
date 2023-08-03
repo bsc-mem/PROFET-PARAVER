@@ -31,21 +31,30 @@ string getPyDictString(PyObject* pyDict, string attribute) {
 double getClosestValue(vector<double> values, double target) {
     if (values.empty()) {
         // Handle the case when the vector is empty
-        return 0.0f; // or any appropriate value
+        return 0.0f;
     }
 
-    double closestValue = values[0]; // Assume the first element is the closest initially
-    double minDifference = abs(target - closestValue);
+    auto iter_geq = std::lower_bound(
+        values.begin(), 
+        values.end(), 
+        target
+    );
 
-    for (size_t i = 1; i < values.size(); ++i) {
-        double difference = abs(target - values[i]);
-        if (difference < minDifference) {
-            closestValue = values[i];
-            minDifference = difference;
-        }
+    if (iter_geq == values.begin()) {
+        return values[0];
     }
 
-    return closestValue;
+    double a = *(iter_geq - 1);
+    double b = *(iter_geq);
+
+    int idx;
+    if (fabs(target - a) < fabs(target - b)) {
+        idx = iter_geq - values.begin() - 1;
+    } else {
+        idx = iter_geq - values.begin();
+    }
+
+    return values[idx];
 }
 
 PyObject* cppVectorToPythonList(vector<double> vec) {
