@@ -111,3 +111,10 @@ def get_application_memory_dots_fig(df, color, stress_score_scale=None, opacity=
     marker_opts = dict(size=10, opacity=opacity)
     dots_fig.update_traces(marker=marker_opts)
     return dots_fig
+
+def get_peak_bandwidth(curves):
+    # Maximum bandwidth of all curves
+    peak_bandwidth = 0
+    for w_ratio in curves:
+        peak_bandwidth = max(peak_bandwidth, max(curves[w_ratio]['bandwidths']))
+    return peak_bandwidth
