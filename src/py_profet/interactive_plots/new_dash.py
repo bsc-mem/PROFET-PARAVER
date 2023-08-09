@@ -19,6 +19,7 @@ from callbacks import register_callbacks
 
 import layouts
 import utils
+import curve_graphs
 
 # define a custom continuous color scale for stress score
 stress_score_config = {
@@ -65,7 +66,7 @@ def save_pdf(trace_file: str):
         raise Exception(f'Unkown trace file extension ({trace_file.split(".")[-1]}) from {trace_file}.')
     store_pdf_file_path = os.path.join(store_pdf_path, pdf_filename)
     default_fig = make_subplots(rows=1, cols=1)
-    default_fig = utils.get_curves_fig(curves, default_fig)
+    default_fig = curve_graphs.get_curves_fig(curves, default_fig)
     # get application plot memory dots with default options
     dots_fig = utils.get_application_memory_dots_fig(df, stress_score_config['colorscale'])
     default_fig.add_trace(dots_fig.data[0])
@@ -115,7 +116,7 @@ if __name__ == '__main__':
         max_elements = None
 
     # load and process curves
-    curves = utils.get_curves(args.curves_path, config_json['cpu_freq'])
+    curves = curve_graphs.get_curves(args.curves_path, config_json['cpu_freq'])
 
     # save a pdf file with a default chart
     if args.plot_pdf:

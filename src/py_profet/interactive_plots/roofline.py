@@ -2,7 +2,7 @@ import numpy as np
 import plotly.graph_objects as go
 
 
-def roofline_plot(peak_bandwidth, peak_performance):
+def plot(peak_bandwidth, peak_performance):
     operational_intensity = np.logspace(0, 4, 400)
     
     mem_bound_performance = operational_intensity * peak_bandwidth
