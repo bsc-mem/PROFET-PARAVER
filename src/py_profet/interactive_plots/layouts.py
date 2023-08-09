@@ -97,9 +97,9 @@ def get_summary_tab(df: pd.DataFrame, config: dict, system_arch: dict):
         get_summary_memory_row(summary['memory_profile'], summary_table_attrs),
         # Trace summary
         get_summary_trace_row(summary['trace_info'], summary_table_attrs),
-    ], className='tab-content', id='summary-tab-content')
+    ], id='summary-tab-content')
 
-def get_sidebar(df: pd.DataFrame):
+def get_curve_graphs_sidebar(df: pd.DataFrame):
     node_names = sorted(df['node_name'].unique())
     # Define marks for sliders
     marks_time = {i: str(round(i, 1)) for i in np.linspace(df['timestamp'].min()/1e9, df['timestamp'].max()/1e9, 5)}
@@ -186,7 +186,7 @@ def get_sidebar(df: pd.DataFrame):
     # keep the side bar in a collapsed state, so we can hide it when the charts tab is not selected
     return dbc.Collapse([sidebar], id="sidebar")
 
-def get_charts_tab(system_arch: dict, max_elements: int = None):
+def get_curve_graphs_tab(system_arch: dict, max_elements: int = None):
     chart_rows = []
 
     if max_elements is not None:
@@ -245,7 +245,7 @@ def get_charts_tab(system_arch: dict, max_elements: int = None):
 
 def get_main_content(df: pd.DataFrame, config: dict, system_arch: dict, max_elements: int = None):
     system_info_tab = get_summary_tab(df, config, system_arch)
-    charts_tab = get_charts_tab(system_arch, max_elements)
+    charts_tab = get_curve_graphs_tab(system_arch, max_elements)
 
     tabs = dbc.Tabs([
         dbc.Tab(system_info_tab, label="Summary", tab_id="summary-tab"),
@@ -253,15 +253,9 @@ def get_main_content(df: pd.DataFrame, config: dict, system_arch: dict, max_elem
     ], id="tabs", active_tab="charts-tab")
 
     return html.Div([
-        html.Div([
-            html.Div([
-                tabs
-            ], style={'flex': '1'}),  # This ensures that the tabs take up the maximum available space
-            html.Div([
-                html.Button("Export to PDF", id="btn-export", className="corporative-button")
-            ])
-        ], className='d-flex'),  # This makes sure they are in line horizontally
+        dbc.Button("Export to PDF", id="btn-pdf-export", className=["corporative-button", "pdf-button"]),
         dcc.Download(id="download-pdf"),
+        tabs,
     ], className='tab-content')
 
 # Update the layout function
@@ -271,7 +265,7 @@ def get_layout(df: pd.DataFrame, config: dict, system_arch: dict, max_elements: 
         type="default",  # changes the loading spinner
         children=[dbc.Container([
             dbc.Row([
-                dbc.Col([get_sidebar(df)], width=2),
+                dbc.Col([get_curve_graphs_sidebar(df)], width=2),
                 dbc.Col([get_main_content(df, config, system_arch, max_elements)], width=10),
             ]),
         ], fluid=True)],

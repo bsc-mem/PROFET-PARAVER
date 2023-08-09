@@ -46,7 +46,7 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
     
     @app.callback(
         Output("download-pdf", "data"),
-        Input("btn-export", "n_clicks"),
+        Input("btn-pdf-export", "n_clicks"),
         State('node-selection-dropdown', 'value'),
         apply_to_hierarchy(lambda n, s, m: State(f'node-{n}-socket-{s}-mc-{m}', 'figure'), system_arch),
         prevent_initial_call=True,
