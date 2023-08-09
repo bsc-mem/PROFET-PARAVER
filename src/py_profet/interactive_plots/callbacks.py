@@ -266,4 +266,9 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
         Input('hidden-div', 'children'),
     )
     def update_roofline_plot(_):
-        return roofline.plot(50, 500)
+        peak_bw_gbs = curve_utils.get_peak_bandwidth(curves)
+        peak_flopss = 909.9 # this is for the epeec cpu (IB checked on the internet)
+        # TODO: creating random data. At some point we will have values for this. Remove this line.
+        df['flops/s'] = np.random.random(size=len(df)) * peak_flopss
+        df['flops/byte'] = df['flops/s'] / df['bw']
+        return roofline.plot(peak_bw_gbs, peak_flopss, x_data=df['flops/byte'], y_data=df['flops/s'])
