@@ -12,6 +12,7 @@ from dash.exceptions import PreventUpdate
 
 import utils
 import pdf_gen
+import roofline
 
 def apply_to_hierarchy(func, system_arch):
     # apply func to each node, socket and mc
@@ -154,9 +155,10 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
         apply_to_hierarchy(lambda n, s, m: State(f'node-{n}-socket-{s}-mc-{m}', 'figure'), system_arch),
         apply_to_hierarchy(lambda n, s, m: State(f'node-{n}-socket-{s}-mc-{m}-store', 'data'), system_arch),
         apply_to_hierarchy(lambda n, s, m: State(f'node-{n}-socket-{s}-mc-{m}-bw-balance', 'children'), system_arch),
+        prevent_initial_call=True,
     )
-    def update_chart(selected_nodes, curves_color, curves_transparency, time_range, 
-                     markers_color, markers_transparency, *states):
+    def update_curve_plot(selected_nodes, curves_color, curves_transparency, time_range, 
+                          markers_color, markers_transparency, *states):
         third = len(states) // 3
         current_figures = states[:third]
         figs_metadata = states[third:third*2]
@@ -258,3 +260,10 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
                 fig['data'][-1]['marker']['opacity'] = markers_transparency
         
         return tuple(np.append(current_figures, new_bw_balances))
+    
+    @app.callback(
+        Output('roofline-graph', 'figure'),
+        Input('hidden-div', 'children'),
+    )
+    def update_roofline_plot(_):
+        return roofline.roofline_plot(50, 500)

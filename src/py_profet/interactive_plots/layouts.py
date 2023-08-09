@@ -243,14 +243,23 @@ def get_curve_graphs_tab(system_arch: dict, max_elements: int = None):
 
     return dbc.Container(chart_rows, id='graph-container', fluid=True)
 
+def get_roofline_tab():
+    return dbc.Container([
+        # Hidden div for trigering roofline callback (TODO: remove this when we have other components that trigger the callback)
+        html.Div(id='hidden-div', children='Initial Value', style={'display': 'none'}),
+        dcc.Graph(id=f'roofline-graph'),
+    ])
+
 def get_main_content(df: pd.DataFrame, config: dict, system_arch: dict, max_elements: int = None):
     system_info_tab = get_summary_tab(df, config, system_arch)
     charts_tab = get_curve_graphs_tab(system_arch, max_elements)
+    roofline_tab = get_roofline_tab()
 
     tabs = dbc.Tabs([
         dbc.Tab(system_info_tab, label="Summary", tab_id="summary-tab"),
         dbc.Tab(charts_tab, label="Charts", tab_id="charts-tab"),
-    ], id="tabs", active_tab="charts-tab")
+        dbc.Tab(roofline_tab, label="Roofline", tab_id="roofline-tab"),
+    ], id="tabs", active_tab="roofline-tab")
 
     return html.Div([
         dbc.Button("Export to PDF", id="btn-pdf-export", className=["corporative-button", "pdf-button"]),
