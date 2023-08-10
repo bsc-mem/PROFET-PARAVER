@@ -252,12 +252,12 @@ def get_roofline_tab():
 
 def get_main_content(df: pd.DataFrame, config: dict, system_arch: dict, max_elements: int = None):
     system_info_tab = get_summary_tab(df, config, system_arch)
-    charts_tab = get_curve_graphs_tab(system_arch, max_elements)
+    curves_tab = get_curve_graphs_tab(system_arch, max_elements)
     roofline_tab = get_roofline_tab()
 
     tabs = dbc.Tabs([
         dbc.Tab(system_info_tab, label="Summary", tab_id="summary-tab"),
-        dbc.Tab(charts_tab, label="Charts", tab_id="charts-tab"),
+        dbc.Tab(curves_tab, label="Curves", tab_id="curves-tab"),
         dbc.Tab(roofline_tab, label="Roofline", tab_id="roofline-tab"),
     ], id="tabs", active_tab="roofline-tab")
 
