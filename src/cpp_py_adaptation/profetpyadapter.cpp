@@ -27,12 +27,15 @@ ProfetPyAdapter::ProfetPyAdapter(string projectPath, string cpuModel, string mem
 
     this->cpuModel = cpuModel;
     this->memorySystem = memorySystem;
+
+    // TODO we should first check if the submodule profet has the curves available. If not, get the path from DB
+    // TODO or viceversa, first check on DB and, if not, then check in profet.
     PyObject* row = getRowFromDB();
     pmuType = getPyDictString(row, "pmu_type");
     cpuMicroarch = getPyDictString(row, "cpu_microarchitecture");
 
-    curvesPath = getCurvesPath();
-    // curves = Curves(curvesPath, displayWarnings);
+    string curvesDBPath = getPyDictString(row, "curves_path");
+    curvesPath = getCurvesPath(curvesDBPath);
     setCurvesBwsLats(curvesPath, curves, pyCurves);
 }
 
@@ -64,23 +67,19 @@ PyObject* ProfetPyAdapter::getRowFromDB() {
     PyObject* rowDbFn = getFunctionFromProfetIntegration("get_row_from_db");
     // Get curves path
     // Make sure string arguments are built with .c_str()
-    PyObject* pArgs = Py_BuildValue("(sss)", pyProfetPath.c_str(), cpuModel.c_str(), memorySystem.c_str());
+    PyObject* pArgs = Py_BuildValue("(sss)", projectPath.c_str(), cpuModel.c_str(), memorySystem.c_str());
     PyObject* row = PyObject_CallObject(rowDbFn, pArgs);
     raisePyErrorIfNull(row, "ERROR getting Python dictionary with memory values.");
 
     return row;
 }
 
-string ProfetPyAdapter::getCurvesPath() {
+string ProfetPyAdapter::getCurvesPath(string dbRowCurvesPath) {
     // Get curves path
-    PyObject* curvesFn = getFunctionFromProfetIntegration("get_curves_path");
-    // Make sure string arguments are built with .c_str()
-    PyObject* pArgs = Py_BuildValue("(sssss)", pyProfetPath.c_str(), cpuModel.c_str(), memorySystem.c_str(), pmuType.c_str(), cpuMicroarch.c_str());
-    PyObject* curvesPath = PyObject_CallObject(curvesFn, pArgs);
-    raisePyErrorIfNull(curvesPath, "ERROR getting Python dictionary with memory values.");
-
-    // Return PyObject as string
-    return _PyUnicode_AsString(curvesPath);
+    fs::path project (projectPath);
+    fs::path curves (dbRowCurvesPath);
+    fs::path full_path = project / curves;
+    return full_path.u8string();
 }
 
  void ProfetPyAdapter::setCurvesBwsLats(string curvesPath, map<int, pair<vector<double>, vector<double>>> &curves, map<int, pair<PyObject*, PyObject*>> &pyCurves) {
@@ -149,14 +148,14 @@ string ProfetPyAdapter::getCurvesPath() {
 void ProfetPyAdapter::checkSystemSupported() {
     PyObject* checkSystemSupportedFn = getFunctionFromProfetIntegration("check_curves_exist");
     // Make sure string arguments are built with .c_str()
-    PyObject* pArgs = Py_BuildValue("(sss)", pyProfetPath.c_str(), cpuModel.c_str(), memorySystem.c_str());
+    PyObject* pArgs = Py_BuildValue("(sss)", projectPath.c_str(), cpuModel.c_str(), memorySystem.c_str());
     PyObject_CallObject(checkSystemSupportedFn, pArgs);
     // raisePyErrorIfNull(curvesPath, "ERROR checking  values.");
 }
 
 void ProfetPyAdapter::printSupportedSystems() {
     PyObject* printSupportedSystemsFn = getFunctionFromProfetIntegration("print_supported_systems");
-    PyObject* pArgs = Py_BuildValue("(s)", pyProfetPath.c_str());
+    PyObject* pArgs = Py_BuildValue("(s)", projectPath.c_str());
     PyObject_CallObject(printSupportedSystemsFn, pArgs);
 }
 

@@ -20,11 +20,13 @@
 #include <limits>
 #include <regex>
 #include <fstream>
+#include <filesystem>
 #include <sys/stat.h>
 #include <Python.h>
 // #include "curves.h"
 #include "utils.h"
 
+namespace fs = std::filesystem;
 using namespace std;
 
 
@@ -57,7 +59,7 @@ class ProfetPyAdapter {
     void loadProfetIntegrationModule();
 
     PyObject* getRowFromDB();
-    string getCurvesPath();
+    string getCurvesPath(string dbRowCurvesPath);
     void setCurvesBwsLats(string curvesPath, map<int, pair<vector<double>, vector<double>>> &curves, map<int, pair<PyObject*, PyObject*>> &pyCurves);
     void checkSystemSupported();
 
