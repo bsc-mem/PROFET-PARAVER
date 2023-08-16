@@ -163,16 +163,19 @@ def get_memory_properties_from_bw(cpu_freq_ghz: float, write_ratio: float,
     # get latencies and bandwidths from curve (in CPU cycles and GB/s, respectively)
     curve_obj = curves.get_curve(curve_read_ratio)
 
-    # predicted latency in curve
-    current_bw_gbs = Bandwidth(bandwidth_gbs, 'GBps')
+    # Predicted latency in curve. Perform conversion from GB/s to MB/s manually for more performance
+    current_bw_gbs = Bandwidth(bandwidth_gbs * 1e3, 'MBps')
+    
     try:
         pred_lat = curve_obj.get_lat(current_bw_gbs)
     except OvershootError as e:
         if display_warnings:
             print(f'UserWarning: {e}')
         pred_lat = None
-    # maximum latency (in CPU cycles) and bandwidth (GB/s) for the given read ratio
-    max_bw_gbs = curve_obj.get_max_bw('GBps')
+
+    # Maximum latency (in CPU cycles) and bandwidth (GB/s) for the given read ratio
+    # Perform conversion from MB/s to GB/s manually for more performance
+    max_bw_gbs = curve_obj.get_max_bw() / 1e3
     max_lat = curve_obj.get_max_lat()
     # lead-off latency
     lead_off_lat = curve_obj.get_lead_off_lat()
