@@ -36,6 +36,12 @@ ProfetPyAdapter::ProfetPyAdapter(string projectPath, string cpuModel, string mem
 
     string curvesDBPath = getPyDictString(row, "curves_path");
     curvesPath = getCurvesPath(curvesDBPath);
+
+    // Set display warnings in Python module
+    setDisplayWarnings(displayWarnings);
+    // Set the curves in the Python module
+    setCurves(projectPath, cpuModel, memorySystem);
+    // Set the curves in C++ maps
     setCurvesBwsLats(curvesPath, curves, pyCurves);
 }
 
@@ -86,7 +92,7 @@ string ProfetPyAdapter::getCurvesPath(string dbRowCurvesPath) {
     // Get available read ratios for the given curves
     PyObject* readRatiosFn = getFunctionFromProfetIntegration("get_curves_available_read_ratios");
     // Make sure string arguments are built with .c_str()
-    PyObject* pArgs = Py_BuildValue("(s)", curvesPath.c_str());
+    PyObject* pArgs = Py_BuildValue("()");
     PyObject* readRatios = PyObject_CallObject(readRatiosFn, pArgs);
     raisePyErrorIfNull(readRatios, "ERROR getting available read ratios.");
 
@@ -100,7 +106,7 @@ string ProfetPyAdapter::getCurvesPath(string dbRowCurvesPath) {
 
         PyObject* curveFn = getFunctionFromProfetIntegration("get_curve");
         // Make sure string arguments are built with .c_str()
-        PyObject* pArgs = Py_BuildValue("(sf)", curvesPath.c_str(), readRatio);
+        PyObject* pArgs = Py_BuildValue("(f)", readRatio);
         PyObject* curve = PyObject_CallObject(curveFn, pArgs);
         raisePyErrorIfNull(curve, "ERROR getting curve.");
 
@@ -159,16 +165,14 @@ void ProfetPyAdapter::printSupportedSystems() {
     PyObject_CallObject(printSupportedSystemsFn, pArgs);
 }
 
-tuple<double, double, double, double, double> ProfetPyAdapter::computeMemoryMetrics(double cpuFreqGHz, double writeRatio, double bandwidth, bool displayWarnings) {
+tuple<double, double, double, double, double> ProfetPyAdapter::computeMemoryMetrics(double cpuFreqGHz, double writeRatio, double bandwidth) {
     // Get dictionary with computed memory values
     PyObject* memoryMetricsFn = getFunctionFromProfetIntegration("get_memory_properties_from_bw");
     // Make sure string arguments are built with .c_str()
     double readRatio = 100 - writeRatio * 100;
     double closestReadRatio = getClosestValue(availableReadRatios, readRatio);
-    PyObject* bws = pyCurves[closestReadRatio].first;
-    PyObject* lats = pyCurves[closestReadRatio].second;
-    PyObject* pArgs = PyTuple_Pack(7, bws, lats, PyFloat_FromDouble(cpuFreqGHz), PyFloat_FromDouble(writeRatio),
-                                   PyFloat_FromDouble(closestReadRatio), PyFloat_FromDouble(bandwidth), PyBool_FromLong(displayWarnings ? 1 : 0));
+    PyObject* pArgs = PyTuple_Pack(4, PyFloat_FromDouble(cpuFreqGHz), PyFloat_FromDouble(writeRatio),
+                                   PyFloat_FromDouble(closestReadRatio), PyFloat_FromDouble(bandwidth));
     PyObject* memDict = PyObject_CallObject(memoryMetricsFn, pArgs);
     raisePyErrorIfNull(memDict, "ERROR getting Python dictionary with memory values.");
 
@@ -226,4 +230,21 @@ PyObject* ProfetPyAdapter::getFunctionFromProfetIntegration(string fnName) {
     PyObject* pyFn = PyObject_GetAttrString(profetIntegrationModule, fnName.c_str());
     raisePyErrorIfNull(pyFn, "ERROR getting \"" + fnName + "\" attribute.");
     return pyFn;
+}
+
+void ProfetPyAdapter::setDisplayWarnings(bool displayWarnings) {
+    // Set display warnings in Python module
+    PyObject* setDisplayWarningsFn = getFunctionFromProfetIntegration("set_display_warnings");
+    // Make sure string arguments are built with .c_str()
+    PyObject* pArgs = Py_BuildValue("(i)", displayWarnings ? 1 : 0);
+    PyObject* status = PyObject_CallObject(setDisplayWarningsFn, pArgs);
+    raisePyErrorIfNull(status, "ERROR setting display_warnings in Python module.");
+}
+
+void ProfetPyAdapter::setCurves(string projectPath, string cpuModel, string memorySystem) {
+    PyObject* setCurvesFn = getFunctionFromProfetIntegration("set_curves");
+    // Make sure string arguments are built with .c_str()
+    PyObject* pArgs = Py_BuildValue("(sss)", projectPath.c_str(), cpuModel.c_str(), memorySystem.c_str());
+    PyObject* status = PyObject_CallObject(setCurvesFn, pArgs);
+    raisePyErrorIfNull(status, "ERROR setting curves in Python module.");
 }

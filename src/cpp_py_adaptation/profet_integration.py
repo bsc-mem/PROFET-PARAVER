@@ -10,17 +10,26 @@ this file. If not, please visit: https://opensource.org/licenses/BSD-3-Clause
 import os
 import sys
 import inspect
-import json
 import pandas as pd
 
+# TODO I guess this should not be necessary when we convert profet to a package
 # Need to add parent folder to path for relative import 
-currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-parentdir = os.path.dirname(currentdir)
-sys.path.insert(0, parentdir)
+current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+src_dir = os.path.dirname(current_dir)
+project_dir = os.path.dirname(src_dir)
+libs_dir = os.path.join(project_dir, 'libs')
+sys.path.insert(0, src_dir)
+# sys.path.insert(0, libs_dir)
+sys.path.insert(0, os.path.join(libs_dir, 'profet/src'))
 
-from py_profet.curves import Curve
+# from py_profet.curves import Curve
+# TODO adapt when profet is a package
+from curves import Curves, OvershootError
+from metrics import Bandwidth, Latency
 
-
+# Curves global variable. Set it with set_curves() function
+curves = None
+display_warnings = True
 
 def check_param_types(params: dict):
     for name, values in params.items():
@@ -100,45 +109,49 @@ def get_curves_path(project_path: str, cpu_model: str, memory_system: str) -> st
     return os.path.join(project_path, row["curves_path"])
 
 
-def get_curves_available_read_ratios(curves_path: str) -> list:
-    if curves_path.endswith('.json'):
-        with open(curves_path, 'r') as f:
-            curves_json = json.load(f)
-            return list(curves_json.keys())
+def set_curves(project_path: str, cpu_model: str, memory_system: str) -> bool:
+    global curves
+    curves_path = get_curves_path(project_path, cpu_model, memory_system)
+
+    curves = Curves(curves_path, display_warnings=display_warnings)
+    return True
+
+
+def set_display_warnings(display_w: int) -> bool:
+    global display_warnings
+    if (display_w == 0):
+        display_warnings = False
     else:
-        if not os.path.isdir(curves_path):
-            raise Exception(f'Path {curves_path} should be a directory or a json file.')
-        read_ratios = [float(f.split('_')[1].replace('.txt', '')) for f in os.listdir(curves_path) if 'bwlat_' in f and f.endswith('.txt')]
-        return read_ratios
+        display_warnings = True
+    return True
+
+
+def get_curves_available_read_ratios() -> list:
+    if curves is None:
+        raise Exception('Curves are not set. Please call set_curves() function first.')
+    return curves.get_read_ratios()
     
 
-def get_curve(curves_path: str, read_ratio: float):
-    return Curve(read_ratio, curves_path)
+def get_curve(read_ratio: float):
+    return curves.get_curve(read_ratio)
 
 
-def get_memory_properties_from_bw(bws: list, lats: list, cpu_freq: float, write_ratio: float,
-                                  curve_read_ratio: float, bandwidth: float, display_warnings: int) -> dict:
-    # bws: list of bandwidths in MB/s
+def get_memory_properties_from_bw(cpu_freq_ghz: float, write_ratio: float,
+                                  curve_read_ratio: float, bandwidth_gbs: float) -> dict:
     # lats: list of latencies in CPU cycles
     # write_ratio:
-    # bandwidth: bandwidth in GB/s
+    # bandwidth_gbs: bandwidth in GB/s
 
     # Validate parameters
     check_param_types({
         # 'Memory system': (memory_system, str),
         'Write ratio': (write_ratio, float),
-        'Bandwidth': (bandwidth, float),
+        'Bandwidth': (bandwidth_gbs, float),
     })
     check_non_negative({
         'Write ratio': write_ratio,
-        'Bandwidth': bandwidth,
+        'Bandwidth': bandwidth_gbs,
     })
-
-    # convert display_warnings to boolean
-    if (display_warnings == 0):
-        display_warnings = False
-    else:
-        display_warnings = True
     
     # print(f'Write ratio: {write_ratio}')
     # print(f'Bandwidth: {round(bandwidth, 2)} GB/s')
@@ -148,17 +161,21 @@ def get_memory_properties_from_bw(bws: list, lats: list, cpu_freq: float, write_
     # specific_curves_path = f'{memory_system}__{pmu_type}__{cpu_microarch}__{cpu_model}'
     # full_curves_path = os.path.join(project_path, 'py_profet', 'bw_lat_curves', specific_curves_path)
     # get latencies and bandwidths from curve (in CPU cycles and GB/s, respectively)
-    curve_obj = Curve(curve_read_ratio, bws=bws, lats=lats, display_warnings=display_warnings)
+    curve_obj = curves.get_curve(curve_read_ratio)
 
     # predicted latency in curve
-    pred_lat = curve_obj.get_lat(bandwidth, bw_units='GB/s')
+    current_bw_gbs = Bandwidth(bandwidth_gbs, 'GBps')
+    try:
+        pred_lat = curve_obj.get_lat(current_bw_gbs)
+    except OvershootError as e:
+        # print(f'WARNING: Overshoot error: {e}')
+        pred_lat = None
     # maximum latency (in CPU cycles) and bandwidth (GB/s) for the given read ratio
-    max_bw = curve_obj.get_max_bw()
+    max_bw_gbs = curve_obj.get_max_bw('GBps')
     max_lat = curve_obj.get_max_lat()
     # lead-off latency
     lead_off_lat = curve_obj.get_lead_off_lat()
-    stress_score = curve_obj.get_stress_score(bandwidth, bw_units='GB/s', lat=pred_lat,
-                                              lead_off_lat=lead_off_lat, max_lat=max_lat)
+    stress_score = curve_obj.get_stress_score(current_bw_gbs, pred_lat, lead_off_lat, max_lat)
     if stress_score is None:
         stress_score = -1
 
@@ -169,11 +186,11 @@ def get_memory_properties_from_bw(bws: list, lats: list, cpu_freq: float, write_
 
     return {
         'write_ratio': write_ratio,
-        'bandwidth': bandwidth,
-        'max_bandwidth': max_bw,
-        'latency': pred_lat if pred_lat == -1 else pred_lat / cpu_freq,
-        'lead_off_latency': lead_off_lat / cpu_freq,
-        'max_latency': max_lat / cpu_freq,
+        'bandwidth': bandwidth_gbs,
+        'max_bandwidth': max_bw_gbs.value,
+        'latency': -1 if pred_lat is None else pred_lat.value / cpu_freq_ghz,
+        'lead_off_latency': lead_off_lat.value / cpu_freq_ghz,
+        'max_latency': max_lat.value / cpu_freq_ghz,
         'stress_score': stress_score,
     }
 

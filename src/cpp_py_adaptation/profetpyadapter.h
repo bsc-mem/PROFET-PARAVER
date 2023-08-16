@@ -65,12 +65,14 @@ class ProfetPyAdapter {
 
     void printSupportedSystems();
 
-    tuple<double, double, double, double, double> computeMemoryMetrics(double cpuFreqGHz, double writeRatio, double bandwidth, bool displayWarnings);
+    tuple<double, double, double, double, double> computeMemoryMetrics(double cpuFreqGHz, double writeRatio, double bandwidth);
 
     void runDashApp(string traceFilePath, double precision, double cpuFreq, bool keepOriginalTraceFile);
 
   private:
     PyObject* getFunctionFromProfetIntegration(string fnName);
+    void setDisplayWarnings(bool displayWarnings);
+    void setCurves(string projectPath, string cpuModel, string memorySystem);
 
 };
 
