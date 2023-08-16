@@ -41,8 +41,7 @@ ProfetPyAdapter::ProfetPyAdapter(string projectPath, string cpuModel, string mem
     setDisplayWarnings(displayWarnings);
     // Set the curves in the Python module
     setCurves(projectPath, cpuModel, memorySystem);
-    // Set the curves in C++ maps
-    setCurvesBwsLats(curvesPath, curves, pyCurves);
+    availableReadRatios = getCurvesReadRatios();
 }
 
 ProfetPyAdapter::~ProfetPyAdapter() {
@@ -86,69 +85,6 @@ string ProfetPyAdapter::getCurvesPath(string dbRowCurvesPath) {
     fs::path curves (dbRowCurvesPath);
     fs::path full_path = project / curves;
     return full_path.u8string();
-}
-
- void ProfetPyAdapter::setCurvesBwsLats(string curvesPath, map<int, pair<vector<double>, vector<double>>> &curves, map<int, pair<PyObject*, PyObject*>> &pyCurves) {
-    // Get available read ratios for the given curves
-    PyObject* readRatiosFn = getFunctionFromProfetIntegration("get_curves_available_read_ratios");
-    // Make sure string arguments are built with .c_str()
-    PyObject* pArgs = Py_BuildValue("()");
-    PyObject* readRatios = PyObject_CallObject(readRatiosFn, pArgs);
-    raisePyErrorIfNull(readRatios, "ERROR getting available read ratios.");
-
-    // Get bandwidths and latencies for each read ratio
-    Py_ssize_t size = PyList_Size(readRatios);
-    for (Py_ssize_t i = 0; i < size; ++i) {
-        // Get read ratio
-        PyObject* pItem = PyList_GetItem(readRatios, i);
-        double readRatio = PyFloat_AsDouble(pItem);
-        availableReadRatios.push_back(readRatio);
-
-        PyObject* curveFn = getFunctionFromProfetIntegration("get_curve");
-        // Make sure string arguments are built with .c_str()
-        PyObject* pArgs = Py_BuildValue("(f)", readRatio);
-        PyObject* curve = PyObject_CallObject(curveFn, pArgs);
-        raisePyErrorIfNull(curve, "ERROR getting curve.");
-
-        // Get bandwidths and latencies
-        PyObject* bws = PyObject_GetAttrString(curve, "bws");
-        PyObject* lats = PyObject_GetAttrString(curve, "lats");
-
-        // Convert the Python lists to C++ vectors
-        Py_ssize_t bwSize = PyList_Size(bws);
-        Py_ssize_t latSize = PyList_Size(lats);
-        if (bwSize != latSize) {
-            cerr << "ERROR: bandwidths and latencies lists have different sizes." << endl;
-            exit(1);
-        }
-        vector<double> bwsVector(bwSize);
-        vector<double> latsVector(latSize);
-        PyObject* pyBws = PyList_New(bwSize);
-        PyObject* pyLats = PyList_New(latSize);
-
-        for (Py_ssize_t i = 0; i < bwSize; ++i) {
-            PyObject* bwItem = PyList_GetItem(bws, i);
-            PyObject* latItem = PyList_GetItem(lats, i);
-
-            PyList_SetItem(pyBws, i, bwItem);
-            if (PyFloat_Check(bwItem)) {
-                double bw = PyFloat_AsDouble(bwItem);
-                bwsVector[i] = bw;
-            }
-
-            PyList_SetItem(pyLats, i, latItem);
-            if (PyFloat_Check(latItem)) {
-                double lat = PyFloat_AsDouble(latItem);
-                latsVector[i] = lat;
-            }
-        }
-
-        curves.insert({readRatio, {bwsVector, latsVector}});
-        pyCurves.insert({readRatio, {pyBws, pyLats}});
-    }
-
-    // Sort available read ratios
-    sort(availableReadRatios.begin(), availableReadRatios.end());
 }
 
 void ProfetPyAdapter::checkSystemSupported() {
@@ -247,4 +183,26 @@ void ProfetPyAdapter::setCurves(string projectPath, string cpuModel, string memo
     PyObject* pArgs = Py_BuildValue("(sss)", projectPath.c_str(), cpuModel.c_str(), memorySystem.c_str());
     PyObject* status = PyObject_CallObject(setCurvesFn, pArgs);
     raisePyErrorIfNull(status, "ERROR setting curves in Python module.");
+}
+
+vector<double> ProfetPyAdapter::getCurvesReadRatios() {
+    // Get available read ratios for the given curves
+    PyObject* readRatiosFn = getFunctionFromProfetIntegration("get_curves_available_read_ratios");
+    // Make sure string arguments are built with .c_str()
+    PyObject* pArgs = Py_BuildValue("()");
+    PyObject* pyReadRatios = PyObject_CallObject(readRatiosFn, pArgs);
+    raisePyErrorIfNull(pyReadRatios, "ERROR getting available read ratios.");
+
+    Py_ssize_t size = PyList_Size(pyReadRatios);
+    vector<double> curvesReadRatios(size);
+    for (Py_ssize_t i = 0; i < size; ++i) {
+        // Get read ratio
+        PyObject* pItem = PyList_GetItem(pyReadRatios, i);
+        double readRatio = PyFloat_AsDouble(pItem);
+        curvesReadRatios[i] = readRatio;
+    }
+
+    // Sort available read ratios
+    sort(curvesReadRatios.begin(), curvesReadRatios.end());
+    return curvesReadRatios;
 }

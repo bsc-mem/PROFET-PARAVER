@@ -38,11 +38,6 @@ class ProfetPyAdapter {
     string cpuMicroarch;
     string memorySystem;
     string curvesPath;
-    // Curves curves;
-    // map with read ratios as keys and pairs of vectors of bandwidths and latencies as values
-    map<int, pair<vector<double>, vector<double>>> curves;
-    // Same as previous curves but bws and lats are python list objects
-    map<int, pair<PyObject*, PyObject*>> pyCurves;
     vector<double> availableReadRatios;
     string projectSrcPath;
     string profetIntegrationPath;
@@ -60,7 +55,6 @@ class ProfetPyAdapter {
 
     PyObject* getRowFromDB();
     string getCurvesPath(string dbRowCurvesPath);
-    void setCurvesBwsLats(string curvesPath, map<int, pair<vector<double>, vector<double>>> &curves, map<int, pair<PyObject*, PyObject*>> &pyCurves);
     void checkSystemSupported();
 
     void printSupportedSystems();
@@ -73,6 +67,7 @@ class ProfetPyAdapter {
     PyObject* getFunctionFromProfetIntegration(string fnName);
     void setDisplayWarnings(bool displayWarnings);
     void setCurves(string projectPath, string cpuModel, string memorySystem);
+    vector<double> getCurvesReadRatios();
 
 };
 
