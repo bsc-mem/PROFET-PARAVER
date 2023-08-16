@@ -1,7 +1,7 @@
 .ipynb_checkpoints
 __pycache__/
-data/
 bin/
+libs/
 .~lock*
 *.aux
 *.bbl
