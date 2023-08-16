@@ -163,7 +163,7 @@ def get_memory_properties_from_bw(cpu_freq_ghz: float, write_ratio: float,
     # get latencies and bandwidths from curve (in CPU cycles and GB/s, respectively)
     curve_obj = curves.get_curve(curve_read_ratio)
 
-    # Predicted latency in curve. Perform conversion from GB/s to MB/s manually for more performance
+    # Predicted latency in curve. Perform conversion from GB/s to MB/s manually for better performance
     current_bw_gbs = Bandwidth(bandwidth_gbs * 1e3, 'MBps')
     
     try:
@@ -174,7 +174,7 @@ def get_memory_properties_from_bw(cpu_freq_ghz: float, write_ratio: float,
         pred_lat = None
 
     # Maximum latency (in CPU cycles) and bandwidth (GB/s) for the given read ratio
-    # Perform conversion from MB/s to GB/s manually for more performance
+    # Perform conversion from MB/s to GB/s manually for better performance
     max_bw_gbs = curve_obj.get_max_bw() / 1e3
     max_lat = curve_obj.get_max_lat()
     # lead-off latency
