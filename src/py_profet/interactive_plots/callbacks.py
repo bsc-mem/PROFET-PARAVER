@@ -2,12 +2,8 @@ import os
 import json
 import base64
 import numpy as np
-from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, ListFlowable, ListItem
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 import dash
-from dash import dcc, html, Input, Output, State, callback_context
-import dash_bootstrap_components as dbc
+from dash import html, Input, Output, State, callback_context
 from dash.exceptions import PreventUpdate
 
 import curve_utils
