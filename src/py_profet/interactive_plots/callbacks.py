@@ -45,7 +45,7 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
         Output("download-pdf", "data"),
         Input("btn-pdf-export", "n_clicks"),
         State('node-selection-dropdown', 'value'),
-        apply_to_hierarchy(lambda n, s, m: State(f'node-{n}-socket-{s}-mc-{m}', 'figure'), system_arch),
+        apply_to_hierarchy(lambda n, s, m: State(f'curves-node-{n}-socket-{s}-mc-{m}', 'figure'), system_arch),
         prevent_initial_call=True,
     )
     def export_to_pdf(n, selected_nodes, *figures):
@@ -129,7 +129,7 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
         return dict(content=config_json, filename=filename)
 
     @app.callback(
-        [Output(f'node-{node_name}-container', 'style') for node_name in system_arch.keys()],
+        [Output(f'curves-node-{node_name}-container', 'style') for node_name in system_arch.keys()],
         Input('node-selection-dropdown', 'value'),
         prevent_initial_call=True,
     )
@@ -140,17 +140,17 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
         return [{'display': 'none'} if node_name not in selected_nodes else {} for node_name in system_arch.keys()]
     
     @app.callback(
-        apply_to_hierarchy(lambda n, s, m: Output(f'node-{n}-socket-{s}-mc-{m}', 'figure'), system_arch),
-        apply_to_hierarchy(lambda n, s, m: Output(f'node-{n}-socket-{s}-mc-{m}-bw-balance', 'children'), system_arch),
+        apply_to_hierarchy(lambda n, s, m: Output(f'curves-node-{n}-socket-{s}-mc-{m}', 'figure'), system_arch),
+        apply_to_hierarchy(lambda n, s, m: Output(f'curves-node-{n}-socket-{s}-mc-{m}-bw-balance', 'children'), system_arch),
         State('node-selection-dropdown', 'value'),
         Input('curves-color-dropdown', 'value'),
         Input('curves-transparency-slider', 'value'),
         Input('time-range-slider', 'value'),
         Input('markers-color-dropdown', 'value'),
         Input('markers-transparency-slider', 'value'),
-        apply_to_hierarchy(lambda n, s, m: State(f'node-{n}-socket-{s}-mc-{m}', 'figure'), system_arch),
-        apply_to_hierarchy(lambda n, s, m: State(f'node-{n}-socket-{s}-mc-{m}-store', 'data'), system_arch),
-        apply_to_hierarchy(lambda n, s, m: State(f'node-{n}-socket-{s}-mc-{m}-bw-balance', 'children'), system_arch),
+        apply_to_hierarchy(lambda n, s, m: State(f'curves-node-{n}-socket-{s}-mc-{m}', 'figure'), system_arch),
+        apply_to_hierarchy(lambda n, s, m: State(f'curves-node-{n}-socket-{s}-mc-{m}-store', 'data'), system_arch),
+        apply_to_hierarchy(lambda n, s, m: State(f'curves-node-{n}-socket-{s}-mc-{m}-bw-balance', 'children'), system_arch),
         prevent_initial_call=True,
     )
     def update_curve_plot(selected_nodes, curves_color, curves_transparency, time_range, 

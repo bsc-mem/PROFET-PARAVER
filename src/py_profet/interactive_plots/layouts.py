@@ -186,7 +186,8 @@ def get_curve_graphs_sidebar(df: pd.DataFrame):
     # keep the side bar in a collapsed state, so we can hide it when the charts tab is not selected
     return dbc.Collapse([sidebar], id="sidebar")
 
-def get_curve_graphs_tab(system_arch: dict, max_elements: int = None):
+def get_graphs_container(system_arch: dict, id_prefix: str, max_elements: int = None):
+    # Create per socket o per MC graphs (e.g. curves or roofline)
     chart_rows = []
 
     if max_elements is not None:
@@ -197,17 +198,17 @@ def get_curve_graphs_tab(system_arch: dict, max_elements: int = None):
 
     for node_name, sockets in system_arch.items():
         # Create a new container for each node
-        node_container = dbc.Container([], id=f'node-{node_name}-container', fluid=True)
+        node_container = dbc.Container([], id=f'{id_prefix}-node-{node_name}-container', fluid=True)
         node_container.children.append(html.H2(f'Node {node_name}', style={'padding-top': '3rem'}))
-        node_rows = dbc.Row([], id=f'node-{node_name}-row')
+        node_rows = dbc.Row([], id=f'{id_prefix}-node-{node_name}-row')
 
         for i_socket, mcs in sockets.items():
             bw_balance_str = 'Socket bandwidth balance: %'
             if len(mcs) > 1:
                 # Create a new container for each socket within the node container
-                socket_container = dbc.Container([], id=f'node-{node_name}-socket-{i_socket}-container', fluid=True)
+                socket_container = dbc.Container([], id=f'{id_prefix}-node-{node_name}-socket-{i_socket}-container', fluid=True)
                 socket_container.children.append(html.H3(f'Socket {i_socket}', style={'padding-top': '2rem'}))
-                socket_rows = dbc.Row([], id=f'node-{node_name}-socket-{i_socket}-row')
+                socket_rows = dbc.Row([], id=f'{id_prefix}-node-{node_name}-socket-{i_socket}-row')
                 bw_balance_str = 'Memory channel bandwidth balance: '
 
             for id_mc in mcs:
@@ -218,12 +219,12 @@ def get_curve_graphs_tab(system_arch: dict, max_elements: int = None):
                 }
                 col = dbc.Col([
                     html.Br(),
-                    dcc.Graph(id=f'node-{node_name}-socket-{i_socket}-mc-{id_mc}'),
-                    dcc.Store(id=f'node-{node_name}-socket-{i_socket}-mc-{id_mc}-store', data=metadata),
+                    dcc.Graph(id=f'{id_prefix}-node-{node_name}-socket-{i_socket}-mc-{id_mc}'),
+                    dcc.Store(id=f'{id_prefix}-node-{node_name}-socket-{i_socket}-mc-{id_mc}-store', data=metadata),
                     html.H6(children=bw_balance_str,
                             style={'padding-left': '5rem'},
-                            id=f'node-{node_name}-socket-{i_socket}-mc-{id_mc}-bw-balance'),
-                ], sm=12, md=6, id=f'node-{node_name}-socket-{i_socket}-mc-{id_mc}-col')
+                            id=f'{id_prefix}-node-{node_name}-socket-{i_socket}-mc-{id_mc}-bw-balance'),
+                ], sm=12, md=6, id=f'{id_prefix}-node-{node_name}-socket-{i_socket}-mc-{id_mc}-col')
                 if len(mcs) > 1:
                     # Add graph to MC container if there are multiple MCs
                     socket_rows.children.append(col)
@@ -241,7 +242,10 @@ def get_curve_graphs_tab(system_arch: dict, max_elements: int = None):
         # Add the completed node container to the overall layout
         chart_rows.append(node_container)
 
-    return dbc.Container(chart_rows, id='graph-container', fluid=True)
+    return dbc.Container(chart_rows, id='{id_prefix}-graph-container', fluid=True)
+
+def get_curve_graphs_tab(system_arch: dict, max_elements: int = None):
+    return get_graphs_container(system_arch, "curves", max_elements)
 
 def get_roofline_tab():
     return dbc.Container([
@@ -249,6 +253,7 @@ def get_roofline_tab():
         html.Div(id='hidden-div', children='Initial Value', style={'display': 'none'}),
         dcc.Graph(id=f'roofline-graph'),
     ])
+
 
 def get_main_content(df: pd.DataFrame, config: dict, system_arch: dict, max_elements: int = None):
     system_info_tab = get_summary_tab(df, config, system_arch)
