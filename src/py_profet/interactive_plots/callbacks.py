@@ -33,13 +33,13 @@ def replace_after_char(s, char, replacement):
 
 def register_callbacks(app, df, curves, config, system_arch, trace_file, labels, stress_score_config, max_elements=None):
 
-    # toggle sidebar, showing it when the charts tab is selected and hidding it otherwise
+    # toggle sidebar, showing it when the curves tab is selected and hidding it otherwise
     @app.callback(
         Output("sidebar", "is_open"),
         Input("tabs", "active_tab"),
     )
     def toggle_sidebar(active_tab):
-        return active_tab == "charts-tab"
+        return active_tab == "curves-tab"
     
     @app.callback(
         Output("download-pdf", "data"),
