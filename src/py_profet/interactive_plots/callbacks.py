@@ -278,7 +278,7 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
                 df_socket = curve_utils.filter_df(df_node, i_socket=i_socket)
                 for _, id_mc in enumerate(mcs):
                     # Filter the dataframe to only include the selected node, socket and MC
-                    filt_df = curve_utils.filter_df(df_socket, i_mc=id_mc)
+                    filt_df = curve_utils.filter_df(df_socket, i_mc=id_mc).copy()
                     # TODO: creating random data. At some point we will have values for this. Remove this line.
                     filt_df['flops/s'] = np.random.random(size=len(filt_df)) * peak_flopss
                     filt_df['flops/byte'] = filt_df['flops/s'] / filt_df['bw']
