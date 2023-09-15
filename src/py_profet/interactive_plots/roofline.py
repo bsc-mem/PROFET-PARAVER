@@ -2,7 +2,7 @@ import numpy as np
 import plotly.graph_objects as go
 
 
-def plot(peak_bw_gbs, peak_flopss, x_data=[], y_data=[]):
+def plot(peak_bw_gbs, peak_flopss, x_data=[], y_data=[], graph_title=''):
     x_data = np.array(x_data)
     y_data = np.array(y_data)
     operational_intensity = np.logspace(0, 4, 400)
@@ -60,7 +60,16 @@ def plot(peak_bw_gbs, peak_flopss, x_data=[], y_data=[]):
 
     # Set labels, title, and layout
     fig.update_layout(
-        title="Roofline Model",
+        title={
+            'text': graph_title,
+            'font': {
+                'size': 24,
+                'color': 'black',
+                'family': 'Arial, sans-serif',
+            },
+            'x':0.5,
+            'xanchor': 'center'
+        },
         xaxis_type="log",
         yaxis_type="log",
         xaxis_title="Operational Intensity (FLOPS/Byte)",

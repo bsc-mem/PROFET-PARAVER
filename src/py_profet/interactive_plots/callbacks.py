@@ -153,8 +153,8 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
         apply_to_hierarchy(lambda n, s, m: State(f'curves-node-{n}-socket-{s}-mc-{m}-bw-balance', 'children'), system_arch),
         prevent_initial_call=True,
     )
-    def update_curve_plot(selected_nodes, curves_color, curves_transparency, time_range, 
-                          markers_color, markers_transparency, *states):
+    def update_curve_graphs(selected_nodes, curves_color, curves_transparency, time_range, 
+                            markers_color, markers_transparency, *states):
         third = len(states) // 3
         current_figures = states[:third]
         figs_metadata = states[third:third*2]
@@ -258,13 +258,32 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
         return tuple(np.append(current_figures, new_bw_balances))
     
     @app.callback(
-        Output('roofline-graph', 'figure'),
+        apply_to_hierarchy(lambda n, s, m: Output(f'mem-roofline-node-{n}-socket-{s}-mc-{m}', 'figure'), system_arch),
         Input('hidden-div', 'children'),
+        # apply_to_hierarchy(lambda n, s, m: State(f'mem-roofline-node-{n}-socket-{s}-mc-{m}', 'figure'), system_arch),
+        # apply_to_hierarchy(lambda n, s, m: State(f'mem-roofline-node-{n}-socket-{s}-mc-{m}-store', 'data'), system_arch),
+        # prevent_initial_call=True,
     )
-    def update_roofline_plot(_):
+    def update_memory_roofline_graphs(_):
         peak_bw_gbs = curve_utils.get_peak_bandwidth(curves)
+        # TODO: we should add peak flopss to the system config or similar
         peak_flopss = 909.9 # this is for the epeec cpu (IB checked on the internet)
-        # TODO: creating random data. At some point we will have values for this. Remove this line.
-        df['flops/s'] = np.random.random(size=len(df)) * peak_flopss
-        df['flops/byte'] = df['flops/s'] / df['bw']
-        return roofline.plot(peak_bw_gbs, peak_flopss, x_data=df['flops/byte'], y_data=df['flops/s'])
+    
+        # TODO: maybe very similar to update_curve_graphs? Create a function that does the common logic
+        figures = []
+        for node_name, sockets in system_arch.items():
+            # TODO: the filtering of the DF should not be in curve_utils
+            df_node = curve_utils.filter_df(df, node_name)
+            for i_socket, mcs in sockets.items():
+                df_socket = curve_utils.filter_df(df_node, i_socket=i_socket)
+                for _, id_mc in enumerate(mcs):
+                    # Filter the dataframe to only include the selected node, socket and MC
+                    filt_df = curve_utils.filter_df(df_socket, i_mc=id_mc)
+                    # TODO: creating random data. At some point we will have values for this. Remove this line.
+                    filt_df['flops/s'] = np.random.random(size=len(filt_df)) * peak_flopss
+                    filt_df['flops/byte'] = filt_df['flops/s'] / filt_df['bw']
+                    graph_title = f'Memory channel {id_mc}' if len(mcs) > 1 else f'Socket {i_socket}'
+                    fig = roofline.plot(peak_bw_gbs, peak_flopss, x_data=filt_df['flops/byte'],
+                                        y_data=filt_df['flops/s'], graph_title=graph_title)
+                    figures.append(fig)
+        return figures
