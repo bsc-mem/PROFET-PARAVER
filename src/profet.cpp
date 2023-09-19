@@ -19,6 +19,15 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
+#include <iostream>
+#include <limits.h> // For PATH_MAX
+
+#ifdef __linux__ // Check for Linux
+#include <unistd.h> // For readlink
+#elif defined(__APPLE__) // Check for macOS
+#include <mach-o/dyld.h> // For _NSGetExecutablePath
+#endif
+
 using namespace std;
 namespace pt = boost::property_tree;
 namespace fs = std::filesystem;
@@ -33,7 +42,7 @@ namespace fs = std::filesystem;
 #include "cpp_py_adaptation/profetpyadapter.h"
 #include "rowfileparser.h"
 
-
+/*
 string getProjectPath() {
   // Returns home path of current project
   char result[PATH_MAX];
@@ -48,6 +57,35 @@ string getProjectPath() {
     exit(1);
   }
   return exec_path;
+}*/
+
+string getProjectPath() {
+    char result[PATH_MAX];
+    string exec_path;
+#ifdef __linux__ // Check for Linux
+    ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
+    if (count != -1) {
+        exec_path = dirname(result);
+        exec_path.replace(exec_path.find("bin"), 3, "");
+    } else {
+        std::cerr << "Unable to locate current execution path." << std::endl;
+        exit(1);
+    }
+#elif defined(__APPLE__) // Check for macOS
+    uint32_t bufsize = sizeof(result);
+    if (_NSGetExecutablePath(result, &bufsize) == 0) {
+        exec_path = dirname(result);
+        exec_path.replace(exec_path.find("bin"), 3, "");
+    } else {
+        std::cerr << "Unable to locate current execution path." << std::endl;
+        exit(1);
+    }
+#else
+    std::cerr << "Unsupported operating system" << std::endl;
+    exit(1);
+#endif
+
+    return exec_path;
 }
 
 const string PROJECT_PATH = getProjectPath();
