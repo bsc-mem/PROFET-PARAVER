@@ -39,7 +39,7 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
         Input("tabs", "active_tab"),
     )
     def toggle_sidebar(active_tab):
-        return active_tab == "curves-tab"
+        return active_tab == "curves-tab" or active_tab == "mem-roofline-tab"
     
     @app.callback(
         Output("download-pdf", "data"),
@@ -135,10 +135,22 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
 
     @app.callback(
         [Output(f'curves-node-{node_name}-container', 'style') for node_name in system_arch.keys()],
+        #[Output(f'mem-roofline-node-{node_name}-container', 'style') for node_name in system_arch.keys()],
         Input('node-selection-dropdown', 'value'),
         prevent_initial_call=True,
     )
     def show_hide_node(selected_nodes):
+        # TODO the problem with this approach is that these blocked rows will still be processed in update_chart
+        if selected_nodes is None:
+            raise PreventUpdate
+        return [{'display': 'none'} if node_name not in selected_nodes else {} for node_name in system_arch.keys()]
+    
+    @app.callback(
+        [Output(f'mem-roofline-node-{node_name}-container', 'style') for node_name in system_arch.keys()],
+        Input('node-selection-dropdown', 'value'),
+        prevent_initial_call=True,
+    )
+    def show_hide_node_roofline(selected_nodes):
         # TODO the problem with this approach is that these blocked rows will still be processed in update_chart
         if selected_nodes is None:
             raise PreventUpdate
@@ -265,6 +277,7 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
     @app.callback(
         apply_to_hierarchy(lambda n, s, m: Output(f'mem-roofline-node-{n}-socket-{s}-mc-{m}', 'figure'), system_arch),
         Input('hidden-div', 'children'),
+        
         # apply_to_hierarchy(lambda n, s, m: State(f'mem-roofline-node-{n}-socket-{s}-mc-{m}-store', 'data'), system_arch),
         # prevent_initial_call=True,
     )

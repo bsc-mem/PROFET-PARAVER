@@ -253,19 +253,6 @@ def get_roofline_tab(system_arch: dict, max_elements: int = None):
     # TODO: the following hidden div is a trick for trigering roofline callback (remove this when we have other components that trigger the callback)
     # container.children.append(html.Div(id='hidden-div', children='Initial Value', style={'display': 'none'}))
     container.children.insert(0, html.Div(id='hidden-div', children='Initial Value', style={'display': 'none'}))
-    
-    #cont2.children.insert(0, html.Div(id='hidden-div-carm', children='Initial Value', style={'display': 'none'}))
-    #return html.Div([
-    #    dbc.Col([
-    #        html.H2('Cache Aware Roofline Model (CARM)', style={'padding-top': '3rem', 'textAlign': 'center'}),
-    #        html.Hr(),
-    #        dbc.Row([cont2]),
-    #        html.H2('Roofline Model', style={'padding-top': '3rem', 'textAlign': 'center'}),
-    #        html.Hr(),
-    #        dbc.Row([container]),
-    #    ]),
-    #], className='tab-content')
-    container.children.insert(0, html.Div(id='hidden-div', children='Initial Value', style={'display': 'none'}))
     return container
     #return dbc.Container([
     #    # Hidden div for trigering roofline callback (TODO: remove this when we have other components that trigger the callback)
