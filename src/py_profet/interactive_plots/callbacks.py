@@ -46,9 +46,14 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
         Input("btn-pdf-export", "n_clicks"),
         State('node-selection-dropdown', 'value'),
         apply_to_hierarchy(lambda n, s, m: State(f'curves-node-{n}-socket-{s}-mc-{m}', 'figure'), system_arch),
+        apply_to_hierarchy(lambda n, s, m: State(f'mem-roofline-node-{n}-socket-{s}-mc-{m}', 'figure'), system_arch),
         prevent_initial_call=True,
     )
     def export_to_pdf(n, selected_nodes, *figures):
+
+        #curves_figures = figures[:len(system_arch)]    
+        #mem_carm_figures = figures[len(system_arch):]  
+
         # Generate PDF
         pdf_string = pdf_gen.generate_pdf(df, config, system_arch, selected_nodes, figures)
         # Convert to Base64
@@ -260,12 +265,14 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
     @app.callback(
         apply_to_hierarchy(lambda n, s, m: Output(f'mem-roofline-node-{n}-socket-{s}-mc-{m}', 'figure'), system_arch),
         Input('hidden-div', 'children'),
-        # apply_to_hierarchy(lambda n, s, m: State(f'mem-roofline-node-{n}-socket-{s}-mc-{m}', 'figure'), system_arch),
         # apply_to_hierarchy(lambda n, s, m: State(f'mem-roofline-node-{n}-socket-{s}-mc-{m}-store', 'data'), system_arch),
         # prevent_initial_call=True,
     )
     def update_memory_roofline_graphs(_):
         peak_bw_gbs = curve_utils.get_peak_bandwidth(curves)
+        
+        #TODO: Read the correct BW
+        cache_bw = curve_utils.get_cache_bandwidth(curves)
         # TODO: we should add peak flopss to the system config or similar
         peak_flopss = 909.9 # this is for the epeec cpu (IB checked on the internet)
     
@@ -283,7 +290,13 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
                     filt_df['flops/s'] = np.random.random(size=len(filt_df)) * peak_flopss
                     filt_df['flops/byte'] = filt_df['flops/s'] / filt_df['bw']
                     graph_title = f'Memory channel {id_mc}' if len(mcs) > 1 else f'Socket {i_socket}'
-                    fig = roofline.plot(peak_bw_gbs, peak_flopss, x_data=filt_df['flops/byte'],
+                    #fig = roofline.plot(peak_bw_gbs, peak_flopss, x_data=filt_df['flops/byte'],
+                    #                    y_data=filt_df['flops/s'], graph_title=graph_title)
+
+                    fig = roofline.plotCARM(peak_bw_gbs, peak_flopss, cache_bw, x_data=filt_df['flops/byte'],
                                         y_data=filt_df['flops/s'], graph_title=graph_title)
+                    
                     figures.append(fig)
+
         return figures
+    

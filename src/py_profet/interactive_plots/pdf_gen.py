@@ -74,36 +74,54 @@ def get_figures_story(system_arch: dict, selected_nodes: list, figures: list) ->
     # inches converted to points (72 points per inch)
     width_margin = 2
     pdf_width = (8.5 - width_margin) * 72
-    # allow 2 images per pdf page
     height_margin = 4
     pdf_height = (11 - height_margin) * 72 / 2
+    
+    # Define styles for headings
+    styles = getSampleStyleSheet()
+    heading1_style = styles['Heading1']
+    heading2_style = styles['Heading2']
+
+    dpi = 150
+    
     story = []
     i_fig = 0
-    # for fig in figures:
-    for node_name, sockets in system_arch.items():
-        if node_name not in selected_nodes:
-            continue
-        # Insert a page break for each node
-        story.append(PageBreak())
-        story.append(Paragraph(f"Node {node_name}", heading1_style))
-        for i_socket, i_mc in sockets.items():
-            if len(i_mc) > 1:
-                story.append(Paragraph(f"Socket {i_socket}", heading2_style))
-            for mc in i_mc:
-                fig = figures[i_fig]
-                i_fig += 1
-                # fig = figures[node_name][socket][mc]
-                # generate a PNG image from the figure
-                img_stream = BytesIO()
-                # a scale of 2 doubles the resolution of the image
-                img_bytes = pio.to_image(fig, format="png")
-                img_stream.write(img_bytes)
-                img_stream.seek(0)
+    figures_per_page = 2  # Number of figures per page
+    story.append(PageBreak())
+    while i_fig < len(figures):
+        # Insert a page break for each new page
+        if i_fig > 0:
+            story.append(PageBreak())
+        
+        for node_name, sockets in system_arch.items():
+            if node_name not in selected_nodes:
+                continue
+            # Add node name as a heading
+            story.append(Paragraph(f"Node {node_name}", heading1_style))
+            
+            for i_socket, i_mc in sockets.items():
+                if len(i_mc) > 1:
+                    story.append(Paragraph(f"Socket {i_socket}", heading2_style))
+                for mc in i_mc:
+                    # Create a list of figures for the current page
+                    page_figures = []
+                    for _ in range(figures_per_page):
+                        if i_fig < len(figures):
+                            fig = figures[i_fig]
+                            i_fig += 1
+                            img_stream = BytesIO()
+                            img_bytes = pio.to_image(fig, format="png",width=pdf_width * dpi / 72, height=pdf_height * dpi / 72)
 
-                img = Image(img_stream, width=pdf_width, height=pdf_height)
-                story.append(img)
-                story.append(Spacer(1, 12))  # Optional spacer for better layout
-
+                            img_stream.write(img_bytes)
+                            img_stream.seek(0)
+                            img = Image(img_stream, width=pdf_width, height=pdf_height)
+                            page_figures.append(img)
+                    
+                    # Add the list of figures to the current page
+                    if page_figures:
+                        story.extend(page_figures)
+                        story.append(Spacer(1, 12))  # Optional spacer for better layout
+    
     return story
 
 def generate_pdf(df: pd.DataFrame, config: dict, system_arch: dict, selected_nodes: list, figures: list) -> bytes:
@@ -122,7 +140,7 @@ def generate_pdf(df: pd.DataFrame, config: dict, system_arch: dict, selected_nod
 
     # Add figures
     story.extend(get_figures_story(system_arch, selected_nodes, figures))
-
+    
     # Build the PDF
     doc.build(story)
     pdf_string = buffer.getvalue()

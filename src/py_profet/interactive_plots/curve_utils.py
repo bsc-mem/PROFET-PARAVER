@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import pandas as pd
 import plotly.express as px
 from plotly.subplots import make_subplots
 
@@ -19,19 +20,23 @@ def get_color_bar(labels, stress_score_config):
 def filter_df(df, node_name=None, i_socket=None, i_mc=None, time_range=(), bw_range=(), lat_range=()):
     mask = [True] * len(df)
     if node_name is not None:
-        mask &= df['node_name'] == node_name
+        mask_node_name = df['node_name'] == node_name
+        mask = [a and b for a, b in zip(mask, mask_node_name)]
     if i_socket is not None:
-        mask &= df['socket'] == int(i_socket)
+        mask_socket = df['socket'] == int(i_socket)
+        mask = [a and b for a, b in zip(mask, mask_socket)]
     if i_mc is not None:
-        mask &= df['mc'] == int(i_mc)
-    # if mc != '-' and mc != 'All':
-    #     mask &= df['mc'] == int(mc)
+        mask_mc = df['mc'] == int(i_mc)
+        mask = [a and b for a, b in zip(mask, mask_mc)]
     if len(time_range):
-        mask &= (df['timestamp'] >= time_range[0]*1e9) & (df['timestamp'] < time_range[1]*1e9)
+        mask_time = (df['timestamp'] >= time_range[0]*1e9) & (df['timestamp'] < time_range[1]*1e9)
+        mask = [a and b for a, b in zip(mask, mask_time)]
     if len(bw_range):
-        mask &= (df['bw'] >= bw_range[0]) & (df['bw'] < bw_range[1])
+        mask_bw = (df['bw'] >= bw_range[0]) & (df['bw'] < bw_range[1])
+        mask = [a and b for a, b in zip(mask, mask_bw)]
     if len(lat_range):
-        mask &= (df['lat'] >= lat_range[0]) & (df['lat'] < lat_range[1])
+        mask_lat = (df['lat'] >= lat_range[0]) & (df['lat'] < lat_range[1])
+        mask = [a and b for a, b in zip(mask, mask_lat)]
     return df[mask]
 
 def get_graph_fig(df, curves, curves_color, curves_transparency, markers_color, markers_transparency,
@@ -118,3 +123,11 @@ def get_peak_bandwidth(curves):
     for w_ratio in curves:
         peak_bandwidth = max(peak_bandwidth, max(curves[w_ratio]['bandwidths']))
     return peak_bandwidth
+
+def get_cache_bandwidth(curves):
+    #TODO: How to get cache bandwidth? Which values should we use?
+    return [
+        max(curves[10]['bandwidths']),
+        max(curves[20]['bandwidths']),
+        max(curves[50]['bandwidths']),
+        ]
