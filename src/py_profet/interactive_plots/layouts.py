@@ -147,11 +147,14 @@ def get_curve_graphs_sidebar(df: pd.DataFrame):
             #     id='curves-color-picker',
             #     value=dict(hex='#000000')
             # ),
-        ], className='sidebar-element'),
+        ], id='curves-color-dropdown-section', className='sidebar-element'),
+        dbc.Row([
+            html.P("Pending roofline specific opts", style={'color': 'grey', 'font-style': 'italic'}),
+        ], id='test-mem-id', className='sidebar-element'),
         dbc.Row([
             html.P("Curves Transparency:"),
             dcc.Slider(0, 1, 0.01, value=1, id='curves-transparency-slider', marks=marks_opacity),
-        ], className='sidebar-element'),
+        ], id='curves-transparency-section', className='sidebar-element'),
         dbc.Row([
             html.P("Timestamp (s):"),
             dcc.RangeSlider(

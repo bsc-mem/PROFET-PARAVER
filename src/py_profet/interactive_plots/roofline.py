@@ -1,6 +1,7 @@
 import numpy as np
 import plotly.graph_objects as go
-
+import plotly.express as px
+import curve_utils
 
 def plot(peak_bw_gbs, peak_flopss, x_data=[], y_data=[], graph_title=''):
     x_data = np.array(x_data)
@@ -83,7 +84,7 @@ def plot(peak_bw_gbs, peak_flopss, x_data=[], y_data=[], graph_title=''):
 
 
 
-def plotCARM(peak_bw_gbs, peak_flopss, cache_bw, x_data=[], y_data=[], graph_title=''):
+def plotCARM(df, peak_bw_gbs, peak_flopss, cache_bw, markers_color, markers_transparency, stress_score_scale, color_bar=None, x_data=[], y_data=[], graph_title=''):
     x_data = np.array(x_data)
     y_data = np.array(y_data)
     operational_intensity = np.logspace(0, 4, 400)
@@ -107,15 +108,28 @@ def plotCARM(peak_bw_gbs, peak_flopss, cache_bw, x_data=[], y_data=[], graph_tit
     x_data = x_data[filter_idxs]
     y_data = y_data[filter_idxs]
 
+    # df['flops/byte'] = np.nan  # Set all values in 'flops/byte' to NaN
+    # df['flops/s'] = np.nan     # Set all values in 'flops/s' to NaN
+    # df['flops/byte'] = x_data
+    # df['flops/s'] = y_data
+
+
+
     # Create figure
     fig = go.Figure()
 
     dash_type = ['dot', 'dash', 'longdash', 'dashdot', 'longdashdot']
 
     # Add data
-    fig.add_trace(go.Scatter(x=x_data, y=y_data, 
-                             mode='markers', marker=dict(color='red'),
-                             name='Data', showlegend=False))
+    dots_fig = curve_utils.get_roofline_markers_dots_fig(df, x_data, y_data, markers_color, stress_score_scale, markers_transparency);
+    fig.add_trace(dots_fig)
+
+
+    
+    #fig.add_trace(dots_fig.data[0])
+
+    if color_bar is not None:
+        fig.update_coloraxes(**color_bar)
     
     # Add roofs
     fig.add_trace(go.Scatter(x=operational_intensity, y=mem_bound_performance, 
@@ -135,6 +149,7 @@ def plotCARM(peak_bw_gbs, peak_flopss, cache_bw, x_data=[], y_data=[], graph_tit
             yref="paper",
         )
     )
+
 
 
     # Annotations for Memory and Compute Roofs
@@ -157,6 +172,15 @@ def plotCARM(peak_bw_gbs, peak_flopss, cache_bw, x_data=[], y_data=[], graph_tit
         font=dict(size=10, color='black'),
         textangle=-memory_angle,
     )
+    
+    color_bar_trace = go.Scatter(x=[None], y=[None], mode='markers', marker=dict(
+        color=df['stress_score'],
+        colorscale=stress_score_scale, colorbar=dict(
+            title='Stress Score',
+        )
+    ), showlegend=False)
+
+    fig.add_trace(color_bar_trace)
 
     
     # x_pos_compute = 7 * peak_flopss / peak_bw_gbs
@@ -191,5 +215,9 @@ def plotCARM(peak_bw_gbs, peak_flopss, cache_bw, x_data=[], y_data=[], graph_tit
         # xgrid=True,
         # ygrid=True
     )
+
+    
+
+
 
     return fig
