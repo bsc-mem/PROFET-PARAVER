@@ -163,7 +163,7 @@ def get_curve_graphs_sidebar(df: pd.DataFrame):
                 marks=marks_time,
                 value=[df['timestamp'].min()/1e9, df['timestamp'].max()/1e9]
             ),
-        ], className='sidebar-element'),
+        ], id='timestamp-section', className='sidebar-element'),
         dbc.Row([
             html.P("Markers Color:"),
             dcc.Dropdown(

@@ -44,10 +44,13 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
     @app.callback(
         Output(f'curves-color-dropdown-section', 'style'),
         Output(f'curves-transparency-section', 'style'),
+        #TODO: REMOVE TO USE TIMESTAMP FILTER
+        Output('timestamp-section', 'style'),
         Input("tabs", "active_tab"),
     )
     def hide_curves_sidebar_options(active_tab):
-        num_outputs = 2
+        #TODO: Change to 2, if timestamp filter is removed
+        num_outputs = 3
         return [{'display': 'none'}]*num_outputs if active_tab == "mem-roofline-tab" else [{}]*num_outputs
     
     @app.callback(
