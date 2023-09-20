@@ -296,7 +296,7 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
         Input('time-range-slider', 'value'),
         Input('markers-color-dropdown', 'value'),
         Input('markers-transparency-slider', 'value'),
-        Input('hidden-div', 'children'),
+        #Input('hidden-div', 'children'),
         apply_to_hierarchy(lambda n, s, m: State(f'mem-roofline-node-{n}-socket-{s}-mc-{m}', 'figure'), system_arch),
         apply_to_hierarchy(lambda n, s, m: State(f'mem-roofline-node-{n}-socket-{s}-mc-{m}-store', 'data'), system_arch),
         prevent_initial_call=True,
@@ -315,10 +315,6 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
 
         if len(callback_context.triggered) > 1:
 
-            color_bar = None
-            if markers_color == 'stress_score':
-                color_bar = curve_utils.get_color_bar(labels, stress_score_config)
-
             # TODO: maybe very similar to update_curve_graphs? Create a function that does the common logic
             figures = []
             for node_name, sockets in system_arch.items():
@@ -334,7 +330,7 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
                         filt_df['flops/s'] = np.random.random(size=len(filt_df)) * peak_flopss
                         filt_df['flops/byte'] = filt_df['flops/s'] / filt_df['bw']
                         graph_title = f'Memory channel {id_mc}' if len(mcs) > 1 else f'Socket {i_socket}'
-                        fig = roofline.plotCARM(filt_df, peak_bw_gbs, peak_flopss, cache_bw, markers_color,markers_transparency, stress_score_config['colorscale'], color_bar, x_data=filt_df['flops/byte'],
+                        fig = roofline.plotCARM(filt_df, peak_bw_gbs, peak_flopss, cache_bw, markers_color,markers_transparency, labels, stress_score_config, x_data=filt_df['flops/byte'],
                                             y_data=filt_df['flops/s'], graph_title=graph_title)
                                                 
                         figures.append(fig)
@@ -345,21 +341,24 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
 
         if input_id == 'markers-color-dropdown':
             for fig in current_figures:
-                # process the dots figure, which is the last one.
+                #process the dots figure, which is the last one.
                 if markers_color == 'stress_score':
                     mask = (df['timestamp'] >= time_range[0] * 1e9) & (df['timestamp'] < time_range[1] * 1e9)
                     filt_df = df.loc[mask]
                     fig['data'][0]['marker']['color'] = filt_df['stress_score']
+                    fig['data'][-1]['visible'] = True
                 else:
                     fig['data'][0]['marker']['color'] = markers_color
+                    fig['data'][-1]['visible'] = False
+            
         elif input_id == 'time-range-slider':
             # update figures
             for metadata, fig in zip(figs_metadata, current_figures):
                 # process the dots figure, which is the last one.
                 mask = (df['timestamp'] >= time_range[0] * 1e9) & (df['timestamp'] < time_range[1] * 1e9)
                 filt_df = curve_utils.filter_df(df, metadata['node_name'], metadata['socket'],time_range=time_range)
-                fig['data'][0]['x'] = filt_df['flops/byte']
-                fig['data'][0]['y'] = filt_df['flops/s']
+                fig['data'][0]['flops/byte'] = filt_df['flops/byte']
+                fig['data'][0]['flops/s'] = filt_df['flops/s']
                 if markers_color == 'stress_score':
                     fig['data'][0]['marker']['color'] = filt_df['stress_score']
         elif input_id == 'markers-transparency-slider':

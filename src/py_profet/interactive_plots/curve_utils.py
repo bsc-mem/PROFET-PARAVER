@@ -120,15 +120,18 @@ def get_application_memory_dots_fig(df, color, stress_score_scale=None, opacity=
 
 def get_roofline_markers_dots_fig(df, x_data, y_data, color, stress_score_scale=None, opacity=0.01):
     if color == 'stress_score':
-        dots_fig = go.Scatter(x=x_data, y=y_data, mode='markers', showlegend=False, marker=dict(size=5, opacity=opacity, color=df['stress_score'], colorscale=stress_score_scale,), 
-                              hovertemplate='<b>Stress score</b>: %{marker.color:.2f}<br><b>Bandwidth</b>: %{customdata[3]:.2f} GB/s<br><b>Latency</b>: %{customdata[4]:.2f} ns<br><b>Timestamp</b>: %{text}<br><b>Node</b>: %{customdata[0]}<br><b>Socket</b>: %{customdata[1]}<br><b>MC</b>: %{customdata[2]}<extra></extra>', customdata=df[['node_name', 'socket', 'mc', 'bw', 'lat', 'stress_score']], text=df['timestamp'])
-        #dots_fig = px.scatter(df, x='flops/byte', y='flops/s', color='stress_score', color_continuous_scale=stress_score_scale)
+        dots_fig = go.Scatter(x=x_data, y=y_data, mode='markers', showlegend=False, marker=dict(
+            size=5,
+            opacity=opacity, 
+            color=df['stress_score'], 
+            colorscale=stress_score_scale['colorscale'],
+            cmin=stress_score_scale['min'],
+            cmax=stress_score_scale['max'],
+            ),
+            hovertemplate='<b>Stress score</b>: %{marker.color:.2f}<br><b>Bandwidth</b>: %{customdata[3]:.2f} GB/s<br><b>Latency</b>: %{customdata[4]:.2f} ns<br><b>Timestamp</b>: %{text}<br><b>Node</b>: %{customdata[0]}<br><b>Socket</b>: %{customdata[1]}<br><b>MC</b>: %{customdata[2]}<extra></extra>', customdata=df[['node_name', 'socket', 'mc', 'bw', 'lat', 'stress_score']], text=df['timestamp'])
     else:
-        dots_fig = go.Scatter(x=x_data, y=y_data, mode='markers', showlegend=False, marker=dict(size=5, opacity=opacity, color=color))
-        #dots_fig = px.scatter(df, x='flops/byte', y='flops/s', color_discrete_sequence=[color])
-
-    #marker_opts = dict(size=10, opacity=opacity)
-    #dots_fig.update_traces(marker=marker_opts)
+        dots_fig = go.Scatter(x=x_data, y=y_data, mode='markers', showlegend=False, marker=dict(size=5, opacity=opacity, color=color), 
+                              hovertemplate='<b>Bandwidth</b>: %{customdata[3]:.2f} GB/s<br><b>Latency</b>: %{customdata[4]:.2f} ns<br><b>Timestamp</b>: %{text}<br><b>Node</b>: %{customdata[0]}<br><b>Socket</b>: %{customdata[1]}<br><b>MC</b>: %{customdata[2]}<extra></extra>', customdata=df[['node_name', 'socket', 'mc', 'bw', 'lat']], text=df['timestamp'] )
 
     return dots_fig
 

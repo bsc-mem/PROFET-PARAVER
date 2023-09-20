@@ -84,7 +84,7 @@ def plot(peak_bw_gbs, peak_flopss, x_data=[], y_data=[], graph_title=''):
 
 
 
-def plotCARM(df, peak_bw_gbs, peak_flopss, cache_bw, markers_color, markers_transparency, stress_score_scale, color_bar=None, x_data=[], y_data=[], graph_title=''):
+def plotCARM(df, peak_bw_gbs, peak_flopss, cache_bw, markers_color, markers_transparency, labels, stress_score_scale, x_data=[], y_data=[], graph_title=''):
     x_data = np.array(x_data)
     y_data = np.array(y_data)
     operational_intensity = np.logspace(0, 4, 400)
@@ -120,6 +120,7 @@ def plotCARM(df, peak_bw_gbs, peak_flopss, cache_bw, markers_color, markers_tran
 
     dash_type = ['dot', 'dash', 'longdash', 'dashdot', 'longdashdot']
 
+
     # Add data
     dots_fig = curve_utils.get_roofline_markers_dots_fig(df, x_data, y_data, markers_color, stress_score_scale, markers_transparency);
     fig.add_trace(dots_fig)
@@ -128,9 +129,6 @@ def plotCARM(df, peak_bw_gbs, peak_flopss, cache_bw, markers_color, markers_tran
     
     #fig.add_trace(dots_fig.data[0])
 
-    if color_bar is not None:
-        fig.update_coloraxes(**color_bar)
-    
     # Add roofs
     fig.add_trace(go.Scatter(x=operational_intensity, y=mem_bound_performance, 
                              mode='lines', line=dict(color='black', width=2),
@@ -173,14 +171,22 @@ def plotCARM(df, peak_bw_gbs, peak_flopss, cache_bw, markers_color, markers_tran
         textangle=-memory_angle,
     )
     
-    color_bar_trace = go.Scatter(x=[None], y=[None], mode='markers', marker=dict(
-        color=df['stress_score'],
-        colorscale=stress_score_scale, colorbar=dict(
-            title='Stress Score',
-        )
-    ), showlegend=False)
+    if markers_color == 'stress_score':
+        color_bar_trace = go.Scatter(x=[None], y=[None], mode='markers', 
+            name='stress_score_trace',
+            marker=dict(
+                color=df['stress_score'],
+                colorscale=stress_score_scale['colorscale'], 
+                colorbar=dict(
+                    title=labels['stress_score'],
+                ),
+                cmax=stress_score_scale['max'],
+                cmin=stress_score_scale['min'],
+            ), 
+            showlegend=False)
 
-    fig.add_trace(color_bar_trace)
+        fig.add_trace(color_bar_trace)
+
 
     
     # x_pos_compute = 7 * peak_flopss / peak_bw_gbs
