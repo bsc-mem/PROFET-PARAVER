@@ -341,7 +341,6 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
 
         if input_id == 'markers-color-dropdown':
             for fig in current_figures:
-                #process the dots figure, which is the last one.
                 if markers_color == 'stress_score':
                     mask = (df['timestamp'] >= time_range[0] * 1e9) & (df['timestamp'] < time_range[1] * 1e9)
                     filt_df = df.loc[mask]
@@ -350,20 +349,33 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
                 else:
                     fig['data'][0]['marker']['color'] = markers_color
                     fig['data'][-1]['visible'] = False
-            
         elif input_id == 'time-range-slider':
-            # update figures
             for metadata, fig in zip(figs_metadata, current_figures):
-                # process the dots figure, which is the last one.
                 mask = (df['timestamp'] >= time_range[0] * 1e9) & (df['timestamp'] < time_range[1] * 1e9)
-                filt_df = curve_utils.filter_df(df, metadata['node_name'], metadata['socket'],time_range=time_range)
-                fig['data'][0]['flops/byte'] = filt_df['flops/byte']
-                fig['data'][0]['flops/s'] = filt_df['flops/s']
+                filt_df = curve_utils.filter_df(df, metadata['node_name'], metadata['socket'], time_range=time_range)
+
+                #TODO: Optimize filter, rn it is recalculating the random data. With real data this could be optimized further.
+
+                filt_df['flops/s'] = np.random.random(size=len(filt_df)) * peak_flopss
+                filt_df['flops/byte'] = filt_df['flops/s'] / filt_df['bw']
+
+                # operational_intensity = np.logspace(0, 4, 400)
+                # mem_bound_performance = operational_intensity * peak_bw_gbs
+                # mem_bound_performance = np.minimum(mem_bound_performance, peak_flopss)
+
+                # filter_x_idxs = np.where(x_data >= 0)[0]
+                # filter_y_idxs = np.where(y_data >= mem_bound_performance[0])[0]
+                # filter_idxs = np.intersect1d(filter_x_idxs, filter_y_idxs)
+                # x_data = x_data[filter_idxs]
+                # y_data = y_data[filter_idxs]
+
+                fig['data'][0]['y'] = filt_df['flops/s']
+                fig['data'][0]['x'] = filt_df['flops/byte']
+
                 if markers_color == 'stress_score':
                     fig['data'][0]['marker']['color'] = filt_df['stress_score']
         elif input_id == 'markers-transparency-slider':
             for fig in current_figures:
-                # process the dots figure, which is the last one.
                 fig['data'][0]['marker']['opacity'] = markers_transparency
 
 
