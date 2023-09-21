@@ -145,7 +145,24 @@ def get_peak_bandwidth(curves):
 def get_cache_bandwidth(curves):
     #TODO: How to get cache bandwidth? Which values should we use?
     return [
-        max(curves[10]['bandwidths']),
-        max(curves[20]['bandwidths']),
-        max(curves[50]['bandwidths']),
-        ]
+        {
+            'level': 'L1',
+            'value': 1286.4,
+            'unit': '1.28 TB/s'
+        },
+        {
+            'level': 'L2',
+            'value': 864,
+            'unit': '864 GB/s'
+        },
+        {
+            'level': 'L3',
+            'value': 536.8,
+            'unit': '536.8 GB/s'
+        },
+        {
+            'level': 'DRAM',
+            'value': 115.5,
+            'unit': '115.5 GB/s'
+        },
+    ]

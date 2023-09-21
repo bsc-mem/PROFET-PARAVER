@@ -305,7 +305,6 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
         prevent_initial_call=True,
     )
     def update_memory_roofline_graphs(selected_nodes, time_range, markers_color, markers_transparency, *states):
-        peak_bw_gbs = curve_utils.get_peak_bandwidth(curves)
         
         halves = len(states) // 2
         current_figures = states[:halves]
@@ -313,8 +312,13 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
 
         #TODO: Read the correct BW
         cache_bw = curve_utils.get_cache_bandwidth(curves)
+
+
+        #peak_bw_gbs = curve_utils.get_peak_bandwidth(curves)
+        peak_bw_gbs = max([cache_bw[i]['value'] for i in range(len(cache_bw))])
+
         # TODO: we should add peak flopss to the system config or similar
-        peak_flopss = 909.9 # this is for the epeec cpu (IB checked on the internet)
+        peak_flopss = 34400#909.9 # this is for the epeec cpu (IB checked on the internet)
 
         if len(callback_context.triggered) > 1:
 
