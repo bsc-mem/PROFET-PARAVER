@@ -203,7 +203,7 @@ def plotCARM(df, peak_bw_gbs, peak_flopss, cache_bw, markers_color, markers_tran
         x=0.5,
         xref='paper',
         # Set y to be above the top y value (remember y is in log scale)
-        y=np.log10(peak_flopss * 1.2),
+        y=np.log10(peak_flopss * 1.25),
         text=f"<b>Compute roof ({(0.001*peak_flopss):.1f} TFLOPS/s)</b>",
         showarrow=False,
         font=dict(size=12, color='black'),

@@ -128,10 +128,11 @@ def get_roofline_markers_dots_fig(df, x_data, y_data, color, stress_score_scale=
             cmin=stress_score_scale['min'],
             cmax=stress_score_scale['max'],
             ),
-            hovertemplate='<b>Stress score</b>: %{marker.color:.2f}<br><b>Bandwidth</b>: %{customdata[3]:.2f} GB/s<br><b>Latency</b>: %{customdata[4]:.2f} ns<br><b>Timestamp</b>: %{text}<br><b>Node</b>: %{customdata[0]}<br><b>Socket</b>: %{customdata[1]}<br><b>MC</b>: %{customdata[2]}<extra></extra>', customdata=df[['node_name', 'socket', 'mc', 'bw', 'lat', 'stress_score']], text=df['timestamp'])
+            #add x and y values to the hover template
+            hovertemplate='<b>Stress score</b>: %{marker.color:.2f}<br><b>Operational Intensity</b>: %{x:.2f} (FLOPS/Byte)<br><b>Performance</b>: %{y:.2f} (GFLOPS/s)<br><b>Bandwidth</b>: %{customdata[3]:.2f} GB/s<br><b>Latency</b>: %{customdata[4]:.2f} ns<br><b>Timestamp</b>: %{text}<br><b>Node</b>: %{customdata[0]}<br><b>Socket</b>: %{customdata[1]}<br><b>MC</b>: %{customdata[2]}<extra></extra>', customdata=df[['node_name', 'socket', 'mc', 'bw', 'lat', 'stress_score']], text=df['timestamp'])
     else:
         dots_fig = go.Scatter(x=x_data, y=y_data, mode='markers', showlegend=False, marker=dict(size=5, opacity=opacity, color=color), 
-                              hovertemplate='<b>Bandwidth</b>: %{customdata[3]:.2f} GB/s<br><b>Latency</b>: %{customdata[4]:.2f} ns<br><b>Timestamp</b>: %{text}<br><b>Node</b>: %{customdata[0]}<br><b>Socket</b>: %{customdata[1]}<br><b>MC</b>: %{customdata[2]}<extra></extra>', customdata=df[['node_name', 'socket', 'mc', 'bw', 'lat']], text=df['timestamp'] )
+                              hovertemplate='<b>Operational Intensity</b>: %{x:.2f} (FLOPS/Byte)<br><b>Performance</b>: %{y:.2f} (GFLOPS/s)<br><b>Bandwidth</b>: %{customdata[3]:.2f} GB/s<br><b>Latency</b>: %{customdata[4]:.2f} ns<br><b>Timestamp</b>: %{text}<br><b>Node</b>: %{customdata[0]}<br><b>Socket</b>: %{customdata[1]}<br><b>MC</b>: %{customdata[2]}<extra></extra>', customdata=df[['node_name', 'socket', 'mc', 'bw', 'lat']], text=df['timestamp'] )
 
     return dots_fig
 

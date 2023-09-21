@@ -45,12 +45,11 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
         Output(f'curves-color-dropdown-section', 'style'),
         Output(f'curves-transparency-section', 'style'),
         #TODO: REMOVE TO USE TIMESTAMP FILTER
-        Output('timestamp-section', 'style'),
+        #Output('timestamp-section', 'style'),
         Input("tabs", "active_tab"),
     )
     def hide_curves_sidebar_options(active_tab):
-        #TODO: Change to 2, if timestamp filter is removed
-        num_outputs = 3
+        num_outputs = 2
         return [{'display': 'none'}]*num_outputs if active_tab == "mem-roofline-tab" else [{}]*num_outputs
     
     @app.callback(
@@ -352,9 +351,11 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
                     mask = (df['timestamp'] >= time_range[0] * 1e9) & (df['timestamp'] < time_range[1] * 1e9)
                     filt_df = df.loc[mask]
                     fig['data'][0]['marker']['color'] = filt_df['stress_score']
+                    fig['data'][0]['hovertemplate'] = '<b>Stress score</b>: %{marker.color:.2f}<br><b>Operational Intensity</b>: %{x:.2f} (FLOPS/Byte)<br><b>Performance</b>: %{y:.2f} (GFLOPS/s)<br><b>Bandwidth</b>: %{customdata[3]:.2f} GB/s<br><b>Latency</b>: %{customdata[4]:.2f} ns<br><b>Timestamp</b>: %{text}<br><b>Node</b>: %{customdata[0]}<br><b>Socket</b>: %{customdata[1]}<br><b>MC</b>: %{customdata[2]}<extra></extra>'
                     fig['data'][-1]['visible'] = True
                 else:
                     fig['data'][0]['marker']['color'] = markers_color
+                    fig['data'][0]['hovertemplate'] = '<b>Operational Intensity</b>: %{x:.2f} (FLOPS/Byte)<br><b>Performance</b>: %{y:.2f} (GFLOPS/s)<br><b>Bandwidth</b>: %{customdata[3]:.2f} GB/s<br><b>Latency</b>: %{customdata[4]:.2f} ns<br><b>Timestamp</b>: %{text}<br><b>Node</b>: %{customdata[0]}<br><b>Socket</b>: %{customdata[1]}<br><b>MC</b>: %{customdata[2]}<extra></extra>'
                     fig['data'][-1]['visible'] = False
         elif input_id == 'time-range-slider':
             for metadata, fig in zip(figs_metadata, current_figures):
@@ -366,9 +367,12 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
                 filt_df['flops/s'] = np.random.random(size=len(filt_df)) * peak_flopss
                 filt_df['flops/byte'] = filt_df['flops/s'] / filt_df['bw']
 
-                # operational_intensity = np.logspace(0, 4, 400)
+                # operational_intensity = np.logspace(0, 7, 1000)
                 # mem_bound_performance = operational_intensity * peak_bw_gbs
                 # mem_bound_performance = np.minimum(mem_bound_performance, peak_flopss)
+
+                # x_data = filt_df['flops/byte']
+                # y_data = filt_df['flops/s']
 
                 # filter_x_idxs = np.where(x_data >= 0)[0]
                 # filter_y_idxs = np.where(y_data >= mem_bound_performance[0])[0]
