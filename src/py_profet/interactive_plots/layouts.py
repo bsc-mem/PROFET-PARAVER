@@ -105,6 +105,8 @@ def get_curve_graphs_sidebar(df: pd.DataFrame):
     marks_time = {i: str(round(i, 1)) for i in np.linspace(df['timestamp'].min()/1e9, df['timestamp'].max()/1e9, 5)}
     marks_opacity = {i: str(i) for i in np.linspace(0, 1, 5)}
 
+    marks_time_sampling = {i: f'{i} s' for i in np.arange(0, 2.25, 0.25)}
+
     sidebar = html.Div([
         dbc.Row([
             html.P("Configuration:"),
@@ -126,7 +128,7 @@ def get_curve_graphs_sidebar(df: pd.DataFrame):
                 clearable=True,
                 multi=True,
             ),
-        ], className='sidebar-element'),
+        ], id='node-selection-section', className='sidebar-element'),
         dbc.Row([
             html.P("Curves Color:"),
             dcc.Dropdown(
@@ -147,11 +149,14 @@ def get_curve_graphs_sidebar(df: pd.DataFrame):
             #     id='curves-color-picker',
             #     value=dict(hex='#000000')
             # ),
-        ], className='sidebar-element'),
+        ], id='curves-color-dropdown-section', className='sidebar-element'),
+        dbc.Row([
+            html.P("Pending roofline specific opts", style={'color': 'grey', 'font-style': 'italic'}),
+        ], id='test-mem-id', className='sidebar-element'),
         dbc.Row([
             html.P("Curves Transparency:"),
             dcc.Slider(0, 1, 0.01, value=1, id='curves-transparency-slider', marks=marks_opacity),
-        ], className='sidebar-element'),
+        ], id='curves-transparency-section', className='sidebar-element'),
         dbc.Row([
             html.P("Timestamp (s):"),
             dcc.RangeSlider(
@@ -160,7 +165,18 @@ def get_curve_graphs_sidebar(df: pd.DataFrame):
                 marks=marks_time,
                 value=[df['timestamp'].min()/1e9, df['timestamp'].max()/1e9]
             ),
-        ], className='sidebar-element'),
+        ], id='timestamp-section', className='sidebar-element'),
+        dbc.Row([
+            html.P("Sampling (s):"),
+            dcc.RangeSlider(
+                id='sampling-range-slider',
+                min=0.05,
+                max=2,
+                step=0.05,
+                marks=marks_time_sampling,
+                value=[1],
+            ),
+        ], id='sampling-section', className='sidebar-element'),
         dbc.Row([
             html.P("Markers Color:"),
             dcc.Dropdown(
@@ -176,15 +192,16 @@ def get_curve_graphs_sidebar(df: pd.DataFrame):
                 searchable=True,
                 clearable=False,
             ),
-        ], className='sidebar-element'),
+        ], id='marker-color-section', className='sidebar-element'),
         dbc.Row([
             html.P("Markers Transparency:"),
             dcc.Slider(0, 1, 0.01, value=0.1, id='markers-transparency-slider', marks=marks_opacity),
-        ], className='sidebar-element'),
+        ], id='marker-transparency-section', className='sidebar-element'),
     ], className='sidebar')
 
     # keep the side bar in a collapsed state, so we can hide it when the charts tab is not selected
     return dbc.Collapse([sidebar], id="sidebar")
+
 
 def get_graphs_container(system_arch: dict, id_prefix: str, max_elements: int = None):
     # Create per socket o per MC graphs (e.g. curves or roofline)

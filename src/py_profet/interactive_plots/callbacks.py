@@ -40,7 +40,43 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
         Input("tabs", "active_tab"),
     )
     def toggle_sidebar(active_tab):
-        return active_tab == "curves-tab"
+        return active_tab != "summary-tab"
+    
+    @app.callback(
+        Output(f'curves-color-dropdown-section', 'style'),
+        Output(f'curves-transparency-section', 'style'),
+        Input("tabs", "active_tab"),
+    )
+    def hide_curves_sidebar_options(active_tab):
+        num_outputs = 2
+        return [{'display': 'none'}]*num_outputs if active_tab == "mem-roofline-tab" or active_tab == "app-overview-tab" else [{}]*num_outputs
+    
+    @app.callback(
+        Output(f'test-mem-id', 'style'),
+        Input("tabs", "active_tab"),
+    )
+    def hide_memory_sidebar_options(active_tab):
+        return {'display': 'none'} if active_tab == "curves-tab" or active_tab == "app-overview-tab" else {}
+    
+    @app.callback(
+        Output(f'sampling-section', 'style'),
+        Input("tabs", "active_tab"),
+    )
+    def hide_only_overview_sidebar_options(active_tab):
+        return {'display': 'none'} if active_tab == "curves-tab" or active_tab == "mem-roofline-tab" else {}
+    
+
+    @app.callback(
+        Output(f'marker-color-section', 'style'),
+        Output(f'marker-transparency-section', 'style'),
+        Output(f'timestamp-section', 'style'),
+        Output(f'node-selection-section', 'style'),
+        Input("tabs", "active_tab"),
+    )
+    def hide_overview_sidebar_options(active_tab):
+        num_outputs = 4
+        return [{'display': 'none'}]*num_outputs if active_tab == "app-overview-tab" else [{}]*num_outputs
+    
     
     @app.callback(
         Output("download-pdf", "data"),
@@ -292,20 +328,22 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
 
     @app.callback(
         Output('overview-chart', 'figure'),
-       Input('overview-hidden-div', 'children')
+        Input('sampling-range-slider', 'value'),
+        Input('overview-hidden-div', 'children'),
+        #prevent_initial_call=True,
     )
-    def update_overview_graph(n_intervals):
+    def update_overview_graph(sample_range, _):
 
-        df_copy = df.copy()
+        print('update_overview_graph')
+        print(sample_range[0])
         
-        df_copy['timestamp'] = df_copy['timestamp'] // 10**9
-
-        result_df = df_copy.groupby('timestamp', as_index=False).apply(lambda x: x.loc[x['stress_score'].idxmax()]).reset_index(drop=True)
-
-        fig = overview.plot(df=result_df, graph_title='Overview')
-
+        if sample_range != 0:
+            df_copy = df.copy()
+            df_copy['timestamp'] = df_copy['timestamp'] // (sample_range[0] * 10**9)
+            result_df = df_copy.groupby('timestamp', as_index=False).apply(lambda x: x.loc[x['stress_score'].idxmax()]).reset_index(drop=True)
+            return overview.plot(df=result_df, division=sample_range[0])
+        else:
+            return overview.plot(df=df, division=sample_range[0])
         
-
-        return fig
 
         
