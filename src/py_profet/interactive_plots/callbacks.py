@@ -8,6 +8,7 @@ from dash.exceptions import PreventUpdate
 
 import curve_utils
 import roofline
+import overview
 import pdf_gen
 
 def apply_to_hierarchy(func, system_arch):
@@ -287,3 +288,24 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
                                         y_data=filt_df['flops/s'], graph_title=graph_title)
                     figures.append(fig)
         return figures
+    
+
+    @app.callback(
+        Output('overview-chart', 'figure'),
+       Input('overview-hidden-div', 'children')
+    )
+    def update_overview_graph(n_intervals):
+
+        df_copy = df.copy()
+        
+        df_copy['timestamp'] = df_copy['timestamp'] // 10**9
+
+        result_df = df_copy.groupby('timestamp', as_index=False).apply(lambda x: x.loc[x['stress_score'].idxmax()]).reset_index(drop=True)
+
+        fig = overview.plot(df=result_df, graph_title='Overview')
+
+        
+
+        return fig
+
+        
