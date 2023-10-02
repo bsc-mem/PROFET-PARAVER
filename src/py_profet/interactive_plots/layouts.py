@@ -105,7 +105,7 @@ def get_curve_graphs_sidebar(df: pd.DataFrame):
     marks_time = {i: str(round(i, 1)) for i in np.linspace(df['timestamp'].min()/1e9, df['timestamp'].max()/1e9, 5)}
     marks_opacity = {i: str(i) for i in np.linspace(0, 1, 5)}
 
-    marks_time_sampling = {i: f'{i} s' for i in np.arange(0, 2.25, 0.25)}
+    marks_time_sampling = {i: f'{i}' for i in np.arange(0, 2.25, 0.25)}
 
     sidebar = html.Div([
         dbc.Row([
