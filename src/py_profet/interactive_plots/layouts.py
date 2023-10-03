@@ -182,7 +182,7 @@ def get_curve_graphs_sidebar(df: pd.DataFrame):
         ], className='sidebar-element'),
         dbc.Row([
             html.P("Markers Transparency:"),
-            dcc.Slider(0, 1, 0.01, value=0.1, id='markers-transparency-slider', marks=marks_opacity),
+            dcc.Slider(0, 1, 0.01, value=1, id='markers-transparency-slider', marks=marks_opacity),
         ], className='sidebar-element'),
     ], className='sidebar')
 

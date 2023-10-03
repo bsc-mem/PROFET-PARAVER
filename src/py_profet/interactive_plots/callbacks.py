@@ -332,13 +332,8 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
                     for _, id_mc in enumerate(mcs):
                         # Filter the dataframe to only include the selected node, socket and MC
                         filt_df = curve_utils.filter_df(df_socket, i_mc=id_mc)#.copy()
-                        # TODO: creating random data. At some point we will have values for this. Remove this line.
-                        filt_df['flops/s'] = np.random.random(size=len(filt_df)) * peak_flopss
-                        filt_df['flops/byte'] = filt_df['flops/s'] / filt_df['bw']
                         graph_title = f'Memory channel {id_mc}' if len(mcs) > 1 else f'Socket {i_socket}'
-                        fig = roofline.plotCARM(filt_df, peak_bw_gbs, peak_flopss, cache_bw, markers_color,markers_transparency, labels, stress_score_config, x_data=filt_df['flops/byte'],
-                                            y_data=filt_df['flops/s'], graph_title=graph_title)
-                                                
+                        fig = roofline.plotCARM(filt_df, peak_bw_gbs, peak_flopss, cache_bw, markers_color,markers_transparency, labels, stress_score_config, graph_title=graph_title)
                         figures.append(fig)
 
             return figures
