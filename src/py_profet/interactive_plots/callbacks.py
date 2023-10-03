@@ -317,7 +317,8 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
         peak_bw_gbs = max([cache_bw[i]['value'] for i in range(len(cache_bw))])
 
         # TODO: we should add peak flopss to the system config or similar
-        peak_flopss = 34400#909.9 # this is for the epeec cpu (IB checked on the internet)
+        peak_flopss = 34400   #909.9 # this is for the epeec cpu (IB checked on the internet)
+
 
         if len(callback_context.triggered) > 1:
 

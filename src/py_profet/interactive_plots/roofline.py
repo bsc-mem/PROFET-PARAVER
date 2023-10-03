@@ -121,13 +121,13 @@ def plotCARM(df, peak_bw_gbs, peak_flopss, cache_bw, markers_color, markers_tran
 
     proximity_memory = 1 - (df['flops/byte'] / mem_bound_performance[df.index])
 
-    weight_compute = 0.6 
-    weight_memory = 0.4  
+    weight_compute = 0.7 
+    weight_memory = 0.3  
 
     df['stress_score'] = (weight_compute * stress_score_compute + weight_memory * proximity_memory)
 
-    #decay_factor = 1.5  
-    #df['stress_score'] = 1 - np.exp(-decay_factor * df['stress_score'])
+    decay_factor = 1.2
+    df['stress_score'] = 1 - np.exp(-decay_factor * df['stress_score'])
   
     x_data = np.array(df['flops/byte'])
     y_data = np.array(df['flops/s'])
@@ -135,14 +135,15 @@ def plotCARM(df, peak_bw_gbs, peak_flopss, cache_bw, markers_color, markers_tran
     matching_dict = next((item for item in cache_bw if item['value'] == peak_bw_gbs), None)
 
     cache_bound_performance = []
-    
-    for i in range(len(cache_bw)):
-       cache_bound_performance.append(operational_intensity * cache_bw[i]['value'])
-       cache_bound_performance[i] = np.minimum(cache_bound_performance[i], peak_flopss)
+        #cache_bound_performance = np.minimum(np.outer(operational_intensity, cache_bw), peak_flopss)
 
-       if matching_dict is not None and cache_bw[i]['value'] == matching_dict['value']:
-           cache_bound_performance[i] = cache_bound_performance[i][~np.isin(cache_bound_performance[i], peak_flopss)]
-           continue  
+    for i in range(len(cache_bw)):
+        cache_bound_performance.append(operational_intensity * cache_bw[i]['value'])
+        cache_bound_performance[i] = np.minimum(cache_bound_performance[i], peak_flopss)
+
+        if matching_dict is not None and cache_bw[i]['value'] == matching_dict['value']:
+            cache_bound_performance[i] = cache_bound_performance[i][~np.isin(cache_bound_performance[i], peak_flopss)]
+            continue  
         #cache_bound_performance[i] = cache_bound_performance[i][~np.isin(cache_bound_performance[i], mem_bound_performance)]
     
 
