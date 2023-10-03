@@ -82,43 +82,67 @@ def plot(peak_bw_gbs, peak_flopss, x_data=[], y_data=[], graph_title=''):
 
     return fig
 
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
+
+def softplus(x):
+    return np.log(1 + np.exp(x))
 
 def plotCARM(df, peak_bw_gbs, peak_flopss, cache_bw, markers_color, markers_transparency, labels, stress_score_scale, graph_title=''):
     
-    operational_intensity = np.linspace(0, 100000, 10000)
+    operational_intensity = np.linspace(0, 100000, 100000)
     mem_perf = operational_intensity * peak_bw_gbs
     mem_bound_performance = np.minimum(mem_perf, peak_flopss)
     
     num_rows = len(df)
     df['flops/s'] = np.random.uniform(0, peak_flopss, num_rows)
-    #TODO: This *40 multiplier is arbitrary, but allowed for data to be positioned to the left of the graph. This should be revised.
-    df['flops/byte'] = df['flops/s'] / (df['bw'] * 40)
+    df['flops/byte'] = df['flops/s'] / (df['bw'] * 40) #TODO: This *40 multiplier is arbitrary, but allowed for data to be positioned to the left of the graph. This should be revised.
 
-    
+    '''
+    #Only compute roof stress score
     distance_compute = peak_flopss - df['flops/s']
     normalized_distance_compute = distance_compute / peak_flopss
-
     stress_score_compute = np.clip(1-normalized_distance_compute, 0, 1)
-
     df['stress_score'] = stress_score_compute
-    
-    
-    x_data = df['flops/byte']
-    y_data = df['flops/s']
-    x_data = np.array(x_data)
-    y_data = np.array(y_data)
+    '''
+
+    '''
+    # An attempt at stress score using euclidean distance
+    proximity_x = df['flops/s'] / mem_bound_performance[df.index]
+    proximity_y = df['flops/byte'] / mem_bound_performance[df.index]
+
+    df['proximity'] = np.sqrt(proximity_x**2 + proximity_y**2)
+    df['stress_score'] = sigmoid(df['proximity'])
+    '''
+
+    distance_compute = peak_flopss - df['flops/s']
+    normalized_distance_compute = distance_compute / peak_flopss
+    stress_score_compute = np.clip(1 - normalized_distance_compute, 0, 1)
+
+    proximity_memory = 1 - (df['flops/byte'] / mem_bound_performance[df.index])
+
+    weight_compute = 0.6 
+    weight_memory = 0.4  
+
+    df['stress_score'] = (weight_compute * stress_score_compute + weight_memory * proximity_memory)
+
+    #decay_factor = 1.5  
+    #df['stress_score'] = 1 - np.exp(-decay_factor * df['stress_score'])
+  
+    x_data = np.array(df['flops/byte'])
+    y_data = np.array(df['flops/s'])
     
     matching_dict = next((item for item in cache_bw if item['value'] == peak_bw_gbs), None)
 
     cache_bound_performance = []
     
     for i in range(len(cache_bw)):
-        cache_bound_performance.append(operational_intensity * cache_bw[i]['value'])
-        cache_bound_performance[i] = np.minimum(cache_bound_performance[i], peak_flopss)
+       cache_bound_performance.append(operational_intensity * cache_bw[i]['value'])
+       cache_bound_performance[i] = np.minimum(cache_bound_performance[i], peak_flopss)
 
-        if matching_dict is not None and cache_bw[i]['value'] == matching_dict['value']:
-            cache_bound_performance[i] = cache_bound_performance[i][~np.isin(cache_bound_performance[i], peak_flopss)]
-            continue  
+       if matching_dict is not None and cache_bw[i]['value'] == matching_dict['value']:
+           cache_bound_performance[i] = cache_bound_performance[i][~np.isin(cache_bound_performance[i], peak_flopss)]
+           continue  
         #cache_bound_performance[i] = cache_bound_performance[i][~np.isin(cache_bound_performance[i], mem_bound_performance)]
     
 
@@ -129,8 +153,6 @@ def plotCARM(df, peak_bw_gbs, peak_flopss, cache_bw, markers_color, markers_tran
     # x_data = x_data[filter_idxs]
     # y_data = y_data[filter_idxs]
     
-
-
     # Create figure
     fig = go.Figure()
 
