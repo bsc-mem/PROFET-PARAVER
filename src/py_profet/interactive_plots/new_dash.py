@@ -16,7 +16,7 @@ from collections import defaultdict
 from dash import Dash
 import dash_bootstrap_components as dbc
 from callbacks import register_callbacks
-
+import numpy as np
 import layouts
 import utils
 import curve_utils
@@ -109,10 +109,11 @@ if __name__ == '__main__':
     # allow a maximum of elements to display. Randomly undersample if there are more elements than the limit
     max_elements = 10000
     if len(df) > max_elements:
-        # TODO make each socket have the same number of elements
-        df = df.sample(max_elements)
+        df = df.sort_values(by='bw')
+        k = len(df) // max_elements
+        indices_to_select = np.arange(0, len(df), k)
+        df = df.iloc[indices_to_select]
     else:
-        # if not undersampled, set max_elements to None
         max_elements = None
 
     # load and process curves
@@ -124,5 +125,5 @@ if __name__ == '__main__':
 
     app = get_dash_app(df, config_json, system_arch, max_elements)
     register_callbacks(app, df, curves, config_json, system_arch, args.trace_file, labels, stress_score_config, max_elements)
-    app.run_server(debug=False)
+    app.run_server(debug=True)
     # app.run_server(debug=True)
