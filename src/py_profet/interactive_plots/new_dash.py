@@ -107,12 +107,34 @@ if __name__ == '__main__':
     # print(dict(system_arch))
     
     # allow a maximum of elements to display. Randomly undersample if there are more elements than the limit
+    '''
+    # Ordering by timestamp after undersampling
     max_elements = 10000
     if len(df) > max_elements:
-        df = df.sort_values(by='bw')
+        df = df.sort_values(by='stress_score')
         k = len(df) // max_elements
         indices_to_select = np.arange(0, len(df), k)
-        df = df.iloc[indices_to_select]
+
+        sampled_df = df.iloc[indices_to_select].copy()
+        sampled_df = sampled_df.append(df.nsmallest(3, 'stress_score'))
+        sampled_df = sampled_df.append(df.nlargest(3, 'stress_score'))
+        df = sampled_df
+        df = df.sort_values(by='timestamp')
+    else:
+        max_elements = None
+    '''
+
+    # Undersampling based on stress_score
+    max_elements = 10000
+    if len(df) > max_elements:
+        stress_scores = df['stress_score'].sort_values()
+        k = len(stress_scores) // max_elements
+        indices_to_select = np.arange(0, len(stress_scores), k)
+        df = df.loc[stress_scores[indices_to_select].index]
+        
+        # Append the first 3 rows and the last 3 rows based on 'stress_score'
+        df = df.append(df.nsmallest(3, 'stress_score'))
+        df = df.append(df.nlargest(3, 'stress_score'))
     else:
         max_elements = None
 
@@ -125,5 +147,5 @@ if __name__ == '__main__':
 
     app = get_dash_app(df, config_json, system_arch, max_elements)
     register_callbacks(app, df, curves, config_json, system_arch, args.trace_file, labels, stress_score_config, max_elements)
-    app.run_server(debug=True)
-    # app.run_server(debug=True)
+    app.run_server(debug=False)
+    #app.run_server(debug=True)
