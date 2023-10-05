@@ -91,9 +91,10 @@ def softplus(x):
 
 def plotCARM(df, peak_bw_gbs, peak_flopss, cache_bw, markers_color, markers_transparency, labels, stress_score_scale, graph_title=''):
 
+    #Creating random data for flops/s
     num_rows = len(df)
     df['flops/s'] = np.random.uniform(0, peak_flopss, num_rows)
-    df['flops/byte'] = df['flops/s'] / (df['bw'] * 40) #TODO: This *40 multiplier is arbitrary, but allowed for data to be positioned to the left of the graph. This should be revised.
+    df['flops/byte'] = df['flops/s'] / (df['bw'] * 40) #TODO: This *40 multiplier is arbitrary, but allowed for random data data to be positioned to the left of the graph. This should be revised.
 
     filtered_values = df['flops/byte'][np.isfinite(df['flops/byte'])]
 
@@ -122,20 +123,27 @@ def plotCARM(df, peak_bw_gbs, peak_flopss, cache_bw, markers_color, markers_tran
     df['stress_score'] = sigmoid(df['proximity'])
     '''
 
+    # Calculate the deviation of 'flops/s' from the peak value
     distance_compute = peak_flopss - df['flops/s']
+
+    #Normalize the distance
     normalized_distance_compute = distance_compute / peak_flopss
     stress_score_compute = np.clip(1 - normalized_distance_compute, 0, 1)
 
+    # Calculate proximity to memory-bound performance
     operational_intensity = np.linspace(0, max_x_value, max_x_value)
     mem_perf = operational_intensity * peak_bw_gbs
     mem_bound_performance = np.minimum(mem_perf, peak_flopss)
     proximity_memory = 1 - (df['flops/byte'] / mem_bound_performance[df.index])
 
+    # Define weights for the contributions of compute and memory
     weight_compute = 0.7 
     weight_memory = 0.3  
 
+    # Combine compute and memory factors to calculate the final 'stress_score'
     df['stress_score'] = (weight_compute * stress_score_compute + weight_memory * proximity_memory)
 
+    # Apply a decay function to 'stress_score' for smoothing, if desired
     decay_factor = 1
     df['stress_score'] = 1 - np.exp(-decay_factor * df['stress_score'])
 
@@ -154,8 +162,10 @@ def plotCARM(df, peak_bw_gbs, peak_flopss, cache_bw, markers_color, markers_tran
                                             'Operational Intensity: %{x} (FLOPS/Byte)<br>' +
                                             'Performance: %{y} (GFLOPS/s)<br>'))
     
+    #Defining different dash types for each cache level
     dash_type = ['dot', 'dash', 'longdash', 'dashdot', 'longdashdot']
 
+    #Adding cache BW roofs
     for i in range(len(cache_bw)):
         cache_elbow = peak_flopss/cache_bw[i]['value']
         level= cache_bw[i]['level']
@@ -166,14 +176,20 @@ def plotCARM(df, peak_bw_gbs, peak_flopss, cache_bw, markers_color, markers_tran
                                           'Performance: %{y} (GFLOPS/s)<br>',
                                 name=f'{cache_bw[i]["level"]} ({cache_bw[i]["unit"]})', showlegend=True))
 
+    #Makes legend responsive so that it doesn't overlap with the chart when window is resized.
     fig.update_layout(
         legend=dict(
             orientation="h",
-            y=1.18,
+            y=1,
             yref="paper",
+            yanchor="bottom",
+            x=0.5,
+            xref="paper",
+            xanchor="center",
         )
     )
 
+    #Adding color bar
     if markers_color == 'stress_score':
         color_bar_trace = go.Scatter(x=[None], y=[None], mode='markers', 
             name='stress_score_trace',
@@ -190,6 +206,7 @@ def plotCARM(df, peak_bw_gbs, peak_flopss, cache_bw, markers_color, markers_tran
 
         fig.add_trace(color_bar_trace)
 
+    # Annotations for Memory and Compute Roofs
     fig.add_annotation(
         x=3*(np.log10(peak_flopss/peak_bw_gbs + max_x_value)/4),
         y=np.log10(peak_flopss * 1.25),
@@ -198,7 +215,7 @@ def plotCARM(df, peak_bw_gbs, peak_flopss, cache_bw, markers_color, markers_tran
         font=dict(size=12, color='black'),
     )
 
- 
+    # Angle calculation for the memory roof annotation
     angle = math.atan2(np.log10(peak_flopss), np.log10(peak_flopss/peak_bw_gbs)) * 180 / math.pi
 
     fig.add_annotation(
