@@ -20,12 +20,11 @@
 #include <boost/property_tree/json_parser.hpp>
 
 #include <iostream>
-#include <limits.h> // For PATH_MAX
-
-#ifdef __linux__ // Check for Linux
-#include <unistd.h> // For readlink
-#elif defined(__APPLE__) // Check for macOS
-#include <mach-o/dyld.h> // For _NSGetExecutablePath
+#include <limits.h>       
+#ifdef __linux__          
+#include <unistd.h>       
+#elif defined(__APPLE__)  
+#include <mach-o/dyld.h>  
 #endif
 
 using namespace std;
@@ -41,23 +40,6 @@ namespace fs = std::filesystem;
 #include "memory_records/nodememoryrecords.h"
 #include "cpp_py_adaptation/profetpyadapter.h"
 #include "rowfileparser.h"
-
-/*
-string getProjectPath() {
-  // Returns home path of current project
-  char result[PATH_MAX];
-  ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
-  string exec_path;
-  if (count != -1) {
-      exec_path = dirname(result);
-      exec_path.replace(exec_path.find("bin"), 3, "");
-  }
-  else {
-    cerr << "Unable to locate current execution path." << endl;
-    exit(1);
-  }
-  return exec_path;
-}*/
 
 string getProjectPath() {
     char result[PATH_MAX];
@@ -76,6 +58,21 @@ string getProjectPath() {
     if (_NSGetExecutablePath(result, &bufsize) == 0) {
         exec_path = dirname(result);
         exec_path.replace(exec_path.find("bin"), 3, "");
+    } else {
+        std::cerr << "Unable to locate current execution path." << std::endl;
+        exit(1);
+    }
+#elif defined(_WIN32) || defined(_WIN64) 
+    char buffer[MAX_PATH];
+    if (GetModuleFileName(NULL, buffer, MAX_PATH) != 0) {
+        exec_path = buffer;
+        size_t pos = exec_path.find_last_of("\\");
+        if (pos != string::npos) {
+            exec_path = exec_path.substr(0, pos);
+        } else {
+            std::cerr << "Unable to locate current execution path." << std::endl;
+            exit(1);
+        }
     } else {
         std::cerr << "Unable to locate current execution path." << std::endl;
         exit(1);
