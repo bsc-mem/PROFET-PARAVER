@@ -19,26 +19,23 @@ def get_color_bar(labels, stress_score_config):
     }
 
 def filter_df(df, node_name=None, i_socket=None, i_mc=None, time_range=(), bw_range=(), lat_range=()):
-    mask = [True] * len(df)
+    mask = np.ones(len(df), dtype=bool)
     if node_name is not None:
-        mask_node_name = df['node_name'] == node_name
-        mask = [a and b for a, b in zip(mask, mask_node_name)]
+        mask &= df['node_name'] == node_name
     if i_socket is not None:
-        mask_socket = df['socket'] == int(i_socket)
-        mask = [a and b for a, b in zip(mask, mask_socket)]
+        mask &= df['socket'] == int(i_socket)
     if i_mc is not None:
-        mask_mc = df['mc'] == int(i_mc)
-        mask = [a and b for a, b in zip(mask, mask_mc)]
+        mask &= df['mc'] == int(i_mc)
     if len(time_range):
-        mask_time = (df['timestamp'] >= time_range[0]*1e9) & (df['timestamp'] < time_range[1]*1e9)
-        mask = [a and b for a, b in zip(mask, mask_time)]
+        mask &= (df['timestamp'] >= time_range[0]*1e9) & (df['timestamp'] < time_range[1]*1e9)
     if len(bw_range):
-        mask_bw = (df['bw'] >= bw_range[0]) & (df['bw'] < bw_range[1])
-        mask = [a and b for a, b in zip(mask, mask_bw)]
+        mask &= (df['bw'] >= bw_range[0]) & (df['bw'] < bw_range[1])
     if len(lat_range):
-        mask_lat = (df['lat'] >= lat_range[0]) & (df['lat'] < lat_range[1])
-        mask = [a and b for a, b in zip(mask, mask_lat)]
+        mask &= (df['lat'] >= lat_range[0]) & (df['lat'] < lat_range[1])
     return df[mask]
+
+
+
 
 def get_graph_fig(df, curves, curves_color, curves_transparency, markers_color, markers_transparency,
                   graph_title, x_title, y_title, stress_score_scale=None, color_bar=None):
@@ -120,6 +117,7 @@ def get_application_memory_dots_fig(df, color, stress_score_scale=None, opacity=
 
 def get_roofline_markers_dots_fig(df, x_data, y_data, color, stress_score_scale=None, opacity=0.01):
     if color == 'stress_score':
+
         dots_fig = go.Scatter(x=x_data, y=y_data, mode='markers', showlegend=False, marker=dict(
             size=5,
             opacity=opacity, 
@@ -130,7 +128,7 @@ def get_roofline_markers_dots_fig(df, x_data, y_data, color, stress_score_scale=
             ),
             xaxis='x', 
             yaxis='y',
-            #add x and y values to the hover template
+            name='Data',
             hovertemplate='<b>Stress score</b>: %{marker.color:.2f}<br><b>Operational Intensity</b>: %{x:.2f} (FLOPS/Byte)<br><b>Performance</b>: %{y:.2f} (GFLOPS/s)<br><b>Bandwidth</b>: %{customdata[3]:.2f} GB/s<br><b>Latency</b>: %{customdata[4]:.2f} ns<br><b>Timestamp</b>: %{text}<br><b>Node</b>: %{customdata[0]}<br><b>Socket</b>: %{customdata[1]}<br><b>MC</b>: %{customdata[2]}<extra></extra>', customdata=df[['node_name', 'socket', 'mc', 'bw', 'lat', 'stress_score']], text=df['timestamp'])
     else:
         dots_fig = go.Scatter(x=x_data, y=y_data, mode='markers', showlegend=False, marker=dict(size=5, opacity=opacity, color=color), 

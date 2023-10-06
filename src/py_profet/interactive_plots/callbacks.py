@@ -69,9 +69,6 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
     )
     def export_to_pdf(n, selected_nodes, *figures):
 
-        #curves_figures = figures[:len(system_arch)]    
-        #mem_carm_figures = figures[len(system_arch):]  
-
         # Generate PDF
         pdf_string = pdf_gen.generate_pdf(df, config, system_arch, selected_nodes, figures)
         # Convert to Base64
@@ -335,6 +332,7 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
                         filt_df = curve_utils.filter_df(df_socket, i_mc=id_mc)#.copy()
                         graph_title = f'Memory channel {id_mc}' if len(mcs) > 1 else f'Socket {i_socket}'
                         fig = roofline.plotCARM(filt_df, peak_bw_gbs, peak_flopss, cache_bw, markers_color,markers_transparency, labels, stress_score_config, graph_title=graph_title)
+                        #fig = roofline.plot(peak_bw_gbs, peak_flopss)
                         figures.append(fig)
 
             return figures
@@ -358,26 +356,7 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
                 mask = (df['timestamp'] >= time_range[0] * 1e9) & (df['timestamp'] < time_range[1] * 1e9)
                 filt_df = curve_utils.filter_df(df, metadata['node_name'], metadata['socket'], time_range=time_range)
 
-                #TODO: Optimize filter, rn it is recalculating the random data. With real data this could be optimized further.
-
-                filt_df['flops/s'] = np.random.random(size=len(filt_df)) * peak_flopss
-                filt_df['flops/byte'] = filt_df['flops/s'] / filt_df['bw']
-
-                # operational_intensity = np.logspace(0, 7, 1000)
-                # mem_bound_performance = operational_intensity * peak_bw_gbs
-                # mem_bound_performance = np.minimum(mem_bound_performance, peak_flopss)
-
-                # x_data = filt_df['flops/byte']
-                # y_data = filt_df['flops/s']
-
-                # filter_x_idxs = np.where(x_data >= 0)[0]
-                # filter_y_idxs = np.where(y_data >= mem_bound_performance[0])[0]
-                # filter_idxs = np.intersect1d(filter_x_idxs, filter_y_idxs)
-                # x_data = x_data[filter_idxs]
-                # y_data = y_data[filter_idxs]
-
-                fig['data'][0]['y'] = filt_df['flops/s']
-                fig['data'][0]['x'] = filt_df['flops/byte']
+                #TODO: Pending real data for this implementation
 
                 if markers_color == 'stress_score':
                     fig['data'][0]['marker']['color'] = filt_df['stress_score']

@@ -144,15 +144,14 @@ def plotCARM(df, peak_bw_gbs, peak_flopss, cache_bw, markers_color, markers_tran
     df['stress_score'] = (weight_compute * stress_score_compute + weight_memory * proximity_memory)
 
     # Apply a decay function to 'stress_score' for smoothing, if desired
-    decay_factor = 1
-    df['stress_score'] = 1 - np.exp(-decay_factor * df['stress_score'])
+    #decay_factor = 1
+    #df['stress_score'] = 1 - np.exp(-decay_factor * df['stress_score'])
 
     x_data = np.array(df['flops/byte'])
     y_data = np.array(df['flops/s'])
 
     dots_fig = curve_utils.get_roofline_markers_dots_fig(df, x_data, y_data, markers_color, stress_score_scale, markers_transparency);
     fig.add_trace(dots_fig)
-
     
     fig.add_trace(go.Scatter(x=[0, peak_flopss/peak_bw_gbs, max_x_value], y=[0, peak_flopss, peak_flopss], mode='lines', line=dict(color='black', width=2),
                              name=f'Roofline',
@@ -161,6 +160,7 @@ def plotCARM(df, peak_bw_gbs, peak_flopss, cache_bw, markers_color, markers_tran
                              hovertemplate=f'<b>Roofline</b><br>' +
                                             'Operational Intensity: %{x} (FLOPS/Byte)<br>' +
                                             'Performance: %{y} (GFLOPS/s)<br>'))
+
     
     #Defining different dash types for each cache level
     dash_type = ['dot', 'dash', 'longdash', 'dashdot', 'longdashdot']
@@ -175,6 +175,7 @@ def plotCARM(df, peak_bw_gbs, peak_flopss, cache_bw, markers_color, markers_tran
                                           'Operational Intensity: %{x} (FLOPS/Byte)<br>' +
                                           'Performance: %{y} (GFLOPS/s)<br>',
                                 name=f'{cache_bw[i]["level"]} ({cache_bw[i]["unit"]})', showlegend=True))
+
 
     #Makes legend responsive so that it doesn't overlap with the chart when window is resized.
     fig.update_layout(
@@ -194,7 +195,6 @@ def plotCARM(df, peak_bw_gbs, peak_flopss, cache_bw, markers_color, markers_tran
         color_bar_trace = go.Scatter(x=[None], y=[None], mode='markers', 
             name='stress_score_trace',
             marker=dict(
-                color=df['stress_score'],
                 colorscale=stress_score_scale['colorscale'], 
                 colorbar=dict(
                     title=labels['stress_score'],
