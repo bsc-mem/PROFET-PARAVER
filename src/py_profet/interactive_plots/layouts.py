@@ -147,11 +147,14 @@ def get_curve_graphs_sidebar(df: pd.DataFrame):
             #     id='curves-color-picker',
             #     value=dict(hex='#000000')
             # ),
-        ], className='sidebar-element'),
+        ], id='curves-color-dropdown-section', className='sidebar-element'),
+        dbc.Row([
+            html.P("Pending roofline specific opts", style={'color': 'grey', 'font-style': 'italic'}),
+        ], id='test-mem-id', className='sidebar-element'),
         dbc.Row([
             html.P("Curves Transparency:"),
             dcc.Slider(0, 1, 0.01, value=1, id='curves-transparency-slider', marks=marks_opacity),
-        ], className='sidebar-element'),
+        ], id='curves-transparency-section', className='sidebar-element'),
         dbc.Row([
             html.P("Timestamp (s):"),
             dcc.RangeSlider(
@@ -160,7 +163,7 @@ def get_curve_graphs_sidebar(df: pd.DataFrame):
                 marks=marks_time,
                 value=[df['timestamp'].min()/1e9, df['timestamp'].max()/1e9]
             ),
-        ], className='sidebar-element'),
+        ], id='timestamp-section', className='sidebar-element'),
         dbc.Row([
             html.P("Markers Color:"),
             dcc.Dropdown(
@@ -179,7 +182,7 @@ def get_curve_graphs_sidebar(df: pd.DataFrame):
         ], className='sidebar-element'),
         dbc.Row([
             html.P("Markers Transparency:"),
-            dcc.Slider(0, 1, 0.01, value=0.1, id='markers-transparency-slider', marks=marks_opacity),
+            dcc.Slider(0, 1, 0.01, value=1, id='markers-transparency-slider', marks=marks_opacity),
         ], className='sidebar-element'),
     ], className='sidebar')
 
@@ -254,11 +257,11 @@ def get_roofline_tab(system_arch: dict, max_elements: int = None):
     # container.children.append(html.Div(id='hidden-div', children='Initial Value', style={'display': 'none'}))
     container.children.insert(0, html.Div(id='hidden-div', children='Initial Value', style={'display': 'none'}))
     return container
-    # return dbc.Container([
-    #     # Hidden div for trigering roofline callback (TODO: remove this when we have other components that trigger the callback)
-    #     html.Div(id='hidden-div', children='Initial Value', style={'display': 'none'}),
-    #     dcc.Graph(id=f'roofline-graph'),
-    # ])
+    #return dbc.Container([
+    #    # Hidden div for trigering roofline callback (TODO: remove this when we have other components that trigger the callback)
+    #    html.Div(id='hidden-div', children='Initial Value', style={'display': 'none'}),
+    #    #dcc.Graph(id=f'roofline-graph'),
+    #])
 
 
 def get_main_content(df: pd.DataFrame, config: dict, system_arch: dict, max_elements: int = None):
