@@ -6,6 +6,7 @@ import dash
 from dash import html, Input, Output, State, callback_context
 from dash.exceptions import PreventUpdate
 
+import utils
 import curve_utils
 import roofline
 import pdf_gen
@@ -204,15 +205,15 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
                 #     figures.append(dash.no_update)
                 #     new_bw_balances.append(dash.no_update)
                 #     continue
-                df_node = curve_utils.filter_df(df, node_name, time_range=time_range)
+                df_node = utils.filter_df(df, node_name, time_range=time_range)
                 bw_per_socket = df_node.groupby('socket')['bw'].mean()
                 for i_socket, mcs in sockets.items():
-                    df_socket = curve_utils.filter_df(df_node, i_socket=i_socket)
+                    df_socket = utils.filter_df(df_node, i_socket=i_socket)
                     if len(mcs) > 1:
                         bw_per_mc = df_socket.groupby('mc')['bw'].mean()
                     for k, id_mc in enumerate(mcs):
                         # Filter the dataframe to only include the selected node, socket and MC
-                        filt_df = curve_utils.filter_df(df_socket, i_mc=id_mc)
+                        filt_df = utils.filter_df(df_socket, i_mc=id_mc)
                         if len(mcs) > 1:
                             bw_balance = filt_df['bw'].mean() * 100 / bw_per_mc.sum()
                         else:
@@ -246,7 +247,7 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
             for metadata, fig in zip(figs_metadata, current_figures):
                 # process the dots figure, which is the last one.
                 mask = (df['timestamp'] >= time_range[0] * 1e9) & (df['timestamp'] < time_range[1] * 1e9)
-                filt_df = curve_utils.filter_df(df, metadata['node_name'], metadata['socket'],
+                filt_df = utils.filter_df(df, metadata['node_name'], metadata['socket'],
                                           metadata['mc'], time_range=time_range)
                 fig['data'][-1]['x'] = filt_df['bw']
                 fig['data'][-1]['y'] = filt_df['lat']
@@ -259,15 +260,15 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
                 # if node_name not in selected_nodes:
                 #     new_bw_balances.append(dash.no_update)
                 #     continue
-                df_node = curve_utils.filter_df(df, node_name, time_range=time_range)
+                df_node = utils.filter_df(df, node_name, time_range=time_range)
                 bw_per_socket = df_node.groupby('socket')['bw'].mean()
                 for i_socket, mcs in sockets.items():
-                    df_socket = curve_utils.filter_df(df_node, i_socket=i_socket)
+                    df_socket = utils.filter_df(df_node, i_socket=i_socket)
                     if len(mcs) > 1:
                         bw_per_mc = df_socket.groupby('mc')['bw'].mean()
                     for k, id_mc in enumerate(mcs):
                         # Filter the dataframe to only include the selected node, socket and MC
-                        filt_df = curve_utils.filter_df(df_socket, i_mc=id_mc)
+                        filt_df = utils.filter_df(df_socket, i_mc=id_mc)
                         if len(mcs) > 1:
                             bw_balance = filt_df['bw'].mean() * 100 / bw_per_mc.sum()
                         else:
@@ -323,13 +324,13 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
             figures = []
             for node_name, sockets in system_arch.items():
                 # TODO: the filtering of the DF should not be in curve_utils
-                df_node = curve_utils.filter_df(df, node_name, time_range=time_range)
+                df_node = utils.filter_df(df, node_name, time_range=time_range)
 
                 for i_socket, mcs in sockets.items():
-                    df_socket = curve_utils.filter_df(df_node, i_socket=i_socket)
+                    df_socket = utils.filter_df(df_node, i_socket=i_socket)
                     for _, id_mc in enumerate(mcs):
                         # Filter the dataframe to only include the selected node, socket and MC
-                        filt_df = curve_utils.filter_df(df_socket, i_mc=id_mc)#.copy()
+                        filt_df = utils.filter_df(df_socket, i_mc=id_mc)#.copy()
                         graph_title = f'Memory channel {id_mc}' if len(mcs) > 1 else f'Socket {i_socket}'
                         fig = roofline.plotCARM(filt_df, peak_bw_gbs, peak_flopss, cache_bw, markers_color,markers_transparency, labels, stress_score_config, graph_title=graph_title)
                         #fig = roofline.plot(peak_bw_gbs, peak_flopss)
@@ -354,7 +355,7 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
         elif input_id == 'time-range-slider':
             for metadata, fig in zip(figs_metadata, current_figures):
                 mask = (df['timestamp'] >= time_range[0] * 1e9) & (df['timestamp'] < time_range[1] * 1e9)
-                filt_df = curve_utils.filter_df(df, metadata['node_name'], metadata['socket'], time_range=time_range)
+                filt_df = utils.filter_df(df, metadata['node_name'], metadata['socket'], time_range=time_range)
 
                 #TODO: Pending real data for this implementation
 

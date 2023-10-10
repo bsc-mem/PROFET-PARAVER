@@ -118,6 +118,22 @@ def prv_to_df(trace_file_path, row_file_path, config_json, excluded_original, sa
 
         return df
 
+def filter_df(df, node_name=None, i_socket=None, i_mc=None, time_range=(), bw_range=(), lat_range=()):
+    mask = np.ones(len(df), dtype=bool)
+    if node_name is not None:
+        mask &= df['node_name'] == node_name
+    if i_socket is not None:
+        mask &= df['socket'] == int(i_socket)
+    if i_mc is not None:
+        mask &= df['mc'] == int(i_mc)
+    if len(time_range):
+        mask &= (df['timestamp'] >= time_range[0]*1e9) & (df['timestamp'] < time_range[1]*1e9)
+    if len(bw_range):
+        mask &= (df['bw'] >= bw_range[0]) & (df['bw'] < bw_range[1])
+    if len(lat_range):
+        mask &= (df['lat'] >= lat_range[0]) & (df['lat'] < lat_range[1])
+    return df[mask]
+
 def get_dash_table_rows(rows_info: list):
     # rows_info is a list of dicts with the following keys: label, value
     return [html.Tr([html.Td(row['label']), html.Td(row['value'])]) for _, row in rows_info.items()]
