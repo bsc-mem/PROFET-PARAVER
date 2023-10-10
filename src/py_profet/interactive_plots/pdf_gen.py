@@ -107,13 +107,12 @@ def get_figures_story(system_arch: dict, selected_nodes: list, figures: list) ->
                     # generate a PNG image from the figure
                     img_stream = BytesIO()
 
-                    #TODO: Pending to fix the color of the markers
-                    # For some reason, when the color comes from the stress score, it's a list that is visible in the UI but cannot be exported to the PDF file.
-                    # This is a workaround to fix that issue.
+                    #TODO: Why is there values that are none? There are random None values in the middle? (Normally 1 or 2 ocurrances)
+                    #Probably due to how the stress score is calculated?
                     if 'color' in fig['data'][0]['marker']:
                         if isinstance(fig['data'][0]['marker']['color'], list):
-                            fig['data'][0]['marker']['color'] = 'black'
-
+                            fig['data'][0]['marker']['color'] = [0 if item is None else item for item in fig['data'][0]['marker']['color']]
+                        
                     # a scale of 2 doubles the resolution of the image
                     img_bytes = pio.to_image(fig, format="png",width=pdf_width * dpi / 72, height=pdf_height * dpi / 72)
                     img_stream.write(img_bytes)

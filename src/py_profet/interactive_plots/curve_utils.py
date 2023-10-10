@@ -117,14 +117,16 @@ def get_application_memory_dots_fig(df, color, stress_score_scale=None, opacity=
 
 def get_roofline_markers_dots_fig(df, x_data, y_data, color, stress_score_scale=None, opacity=0.01):
     if color == 'stress_score':
-
         dots_fig = go.Scatter(x=x_data, y=y_data, mode='markers', showlegend=False, marker=dict(
-            size=5,
-            opacity=opacity, 
-            color=df['stress_score'], 
-            colorscale=stress_score_scale['colorscale'],
-            cmin=stress_score_scale['min'],
-            cmax=stress_score_scale['max'],
+                size=5,
+                opacity=opacity, 
+                color=df['stress_score'], 
+                colorscale=stress_score_scale['colorscale'],
+                colorbar=dict(
+                    title='Stress score',
+                ),
+                cmin=stress_score_scale['min'],
+                cmax=stress_score_scale['max'],
             ),
             xaxis='x', 
             yaxis='y',
