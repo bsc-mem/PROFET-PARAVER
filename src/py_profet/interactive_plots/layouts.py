@@ -300,9 +300,9 @@ def get_main_content(df: pd.DataFrame, config: dict, system_arch: dict, max_elem
 
     tabs = dbc.Tabs([
         dbc.Tab(system_info_tab, label="Summary", tab_id="summary-tab"),
-        dbc.Tab(overview_tab, label="Application Overview", tab_id="app-overview-tab"),
+        dbc.Tab(overview_tab, label="Stress Overview", tab_id="app-overview-tab"),
         dbc.Tab(curves_tab, label="Curves", tab_id="curves-tab"),
-        dbc.Tab(roofline_tab, label="Memory Roofline", tab_id="mem-roofline-tab"),
+        dbc.Tab(roofline_tab, label="Roofline", tab_id="mem-roofline-tab"),
     ], id="tabs", active_tab="app-overview-tab")
 
     return html.Div([
