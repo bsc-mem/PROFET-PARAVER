@@ -124,17 +124,31 @@ if __name__ == '__main__':
         max_elements = None
     '''
 
-    # Undersampling based on stress_score
     max_elements = 10000
+    # TODO make each socket have the same number of elements
     if len(df) > max_elements:
-        stress_scores = df['stress_score'].sort_values()
-        k = len(stress_scores) // max_elements
-        indices_to_select = np.arange(0, len(stress_scores), k)
-        df = df.loc[stress_scores[indices_to_select].index]
-        
-        # Append the first 3 rows and the last 3 rows based on 'stress_score'
-        df = df.append(df.nsmallest(3, 'stress_score'))
-        df = df.append(df.nlargest(3, 'stress_score'))
+        total_sockets = 0
+        for node_name, sockets in system_arch.items():
+            total_sockets += len(sockets)
+        data_points = max_elements // total_sockets
+
+        sampled_data = pd.DataFrame()
+
+        for node_name, sockets in system_arch.items():
+            for socket in sockets:
+                node_socket_data = df[(df['node_name'] == node_name) & (df['socket'] == socket)]
+
+                if len(node_socket_data) >= data_points:
+                    stress_scores = node_socket_data['stress_score'].sort_values()
+                    k = len(stress_scores) // data_points
+                    indices_to_select = np.arange(0, len(stress_scores), k)
+                    sampled_node_socket_data = node_socket_data.iloc[indices_to_select]
+                else:
+                    sampled_node_socket_data = node_socket_data
+
+                sampled_data = sampled_data._append(sampled_node_socket_data)
+
+        df = sampled_data
     else:
         max_elements = None
 
