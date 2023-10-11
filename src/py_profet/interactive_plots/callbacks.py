@@ -7,6 +7,7 @@ from dash import html, Input, Output, State, callback_context
 from dash.exceptions import PreventUpdate
 
 import curve_utils
+import utils
 import roofline
 import overview
 import pdf_gen
@@ -83,6 +84,7 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
         Input("btn-pdf-export", "n_clicks"),
         State('node-selection-dropdown', 'value'),
         apply_to_hierarchy(lambda n, s, m: State(f'curves-node-{n}-socket-{s}-mc-{m}', 'figure'), system_arch),
+        apply_to_hierarchy(lambda n, s, m: State(f'mem-roofline-node-{n}-socket-{s}-mc-{m}', 'figure'), system_arch),
         prevent_initial_call=True,
     )
     def export_to_pdf(n, selected_nodes, *figures):
@@ -379,10 +381,6 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
         # prevent_initial_call=True,
     )
     def update_overview_graph(sample_range, _):
-
-        print('update_overview_graph')
-        print(sample_range[0])
-
         if sample_range != 0:
             df_copy = df.copy()
             df_copy['timestamp'] = df_copy['timestamp'] // (sample_range[0] * 10 ** 9)
