@@ -72,39 +72,57 @@ def get_figures_story(system_arch: dict, selected_nodes: list, figures: list) ->
     """Generate a PNG image from a Plotly figure and return it as an in-memory binary stream."""
     # Pre: assume the system_arch minus the selected_nodes is the same length as the figures
     # inches converted to points (72 points per inch)
+
     width_margin = 2
     pdf_width = (8.5 - width_margin) * 72
     # allow 2 images per pdf page
     height_margin = 4
     pdf_height = (11 - height_margin) * 72 / 2
+
+    dpi = 150
+
     story = []
     i_fig = 0
-    # for fig in figures:
-    for node_name, sockets in system_arch.items():
-        if node_name not in selected_nodes:
-            continue
-        # Insert a page break for each node
-        story.append(PageBreak())
-        story.append(Paragraph(f"Node {node_name}", heading1_style))
-        for i_socket, i_mc in sockets.items():
-            if len(i_mc) > 1:
-                story.append(Paragraph(f"Socket {i_socket}", heading2_style))
-            for mc in i_mc:
-                fig = figures[i_fig]
-                i_fig += 1
-                # fig = figures[node_name][socket][mc]
-                # generate a PNG image from the figure
-                img_stream = BytesIO()
-                # a scale of 2 doubles the resolution of the image
-                img_bytes = pio.to_image(fig, format="png")
-                img_stream.write(img_bytes)
-                img_stream.seek(0)
+    story.append(PageBreak())
+    while i_fig < len(figures):
+        # Insert a page break for each new page
+        if i_fig > 0:
+            story.append(PageBreak())
+        
+        for node_name, sockets in system_arch.items():
+            if node_name not in selected_nodes:
+                continue
+            # Insert a page break for each node
+            story.append(PageBreak())
+            story.append(Paragraph(f"Node {node_name}", heading1_style))
 
-                img = Image(img_stream, width=pdf_width, height=pdf_height)
-                story.append(img)
-                story.append(Spacer(1, 12))  # Optional spacer for better layout
+            for i_socket, i_mc in sockets.items():
+                if len(i_mc) > 1:
+                    story.append(Paragraph(f"Socket {i_socket}", heading2_style))
+            
+                for mc in i_mc:
+                    fig = figures[i_fig]
+                    i_fig += 1
+                    # fig = figures[node_name][socket][mc]
+                    # generate a PNG image from the figure
+                    img_stream = BytesIO()
+
+                    #TODO: Why is there values that are none? There are random None values in the middle? (Normally 1 or 2 ocurrances)
+                    #Probably due to how the stress score is calculated?
+                    if 'color' in fig['data'][0]['marker']:
+                        if isinstance(fig['data'][0]['marker']['color'], list):
+                            fig['data'][0]['marker']['color'] = [0 if item is None else item for item in fig['data'][0]['marker']['color']]
+                        
+                    # a scale of 2 doubles the resolution of the image
+                    img_bytes = pio.to_image(fig, format="png",width=pdf_width * dpi / 72, height=pdf_height * dpi / 72)
+                    img_stream.write(img_bytes)
+                    img_stream.seek(0)
+                    img = Image(img_stream, width=pdf_width, height=pdf_height)
+                    story.append(img)
+                    story.append(Spacer(1, 12))  # Optional spacer for better layout
 
     return story
+
 
 def generate_pdf(df: pd.DataFrame, config: dict, system_arch: dict, selected_nodes: list, figures: list) -> bytes:
     buffer = BytesIO()
@@ -119,6 +137,9 @@ def generate_pdf(df: pd.DataFrame, config: dict, system_arch: dict, selected_nod
 
     # Add summary info
     story.extend(get_summary(df, config, system_arch))
+
+    curves_figures = figures[:len(system_arch)*2]
+    mem_carm_figures = figures[len(system_arch)*2:]
 
     # Add figures
     story.extend(get_figures_story(system_arch, selected_nodes, figures))

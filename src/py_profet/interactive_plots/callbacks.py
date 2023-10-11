@@ -7,7 +7,9 @@ from dash import html, Input, Output, State, callback_context
 from dash.exceptions import PreventUpdate
 
 import curve_utils
+import utils
 import roofline
+import overview
 import pdf_gen
 
 def apply_to_hierarchy(func, system_arch):
@@ -39,13 +41,50 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
         Input("tabs", "active_tab"),
     )
     def toggle_sidebar(active_tab):
-        return active_tab == "curves-tab"
+        return active_tab != "summary-tab"
+
+    @app.callback(
+        Output(f'curves-color-dropdown-section', 'style'),
+        Output(f'curves-transparency-section', 'style'),
+        Input("tabs", "active_tab"),
+    )
+    def hide_curves_sidebar_options(active_tab):
+        num_outputs = 2
+        return [{'display': 'none'}]*num_outputs if active_tab == "mem-roofline-tab" or active_tab == "app-overview-tab" else [{}]*num_outputs
+
+    @app.callback(
+        Output(f'test-mem-id', 'style'),
+        Input("tabs", "active_tab"),
+    )
+    def hide_memory_sidebar_options(active_tab):
+        return {'display': 'none'} if active_tab == "curves-tab" or active_tab == "app-overview-tab" else {}
+
+    @app.callback(
+        Output(f'sampling-section', 'style'),
+        Input("tabs", "active_tab"),
+    )
+    def hide_only_overview_sidebar_options(active_tab):
+        return {'display': 'none'} if active_tab == "curves-tab" or active_tab == "mem-roofline-tab" else {}
+
+
+    @app.callback(
+        Output(f'marker-color-section', 'style'),
+        Output(f'marker-transparency-section', 'style'),
+        Output(f'timestamp-section', 'style'),
+        Output(f'node-selection-section', 'style'),
+        Input("tabs", "active_tab"),
+    )
+    def hide_overview_sidebar_options(active_tab):
+        num_outputs = 4
+        return [{'display': 'none'}]*num_outputs if active_tab == "app-overview-tab" else [{}]*num_outputs
+
     
     @app.callback(
         Output("download-pdf", "data"),
         Input("btn-pdf-export", "n_clicks"),
         State('node-selection-dropdown', 'value'),
         apply_to_hierarchy(lambda n, s, m: State(f'curves-node-{n}-socket-{s}-mc-{m}', 'figure'), system_arch),
+        apply_to_hierarchy(lambda n, s, m: State(f'mem-roofline-node-{n}-socket-{s}-mc-{m}', 'figure'), system_arch),
         prevent_initial_call=True,
     )
     def export_to_pdf(n, selected_nodes, *figures):
@@ -259,31 +298,95 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
     
     @app.callback(
         apply_to_hierarchy(lambda n, s, m: Output(f'mem-roofline-node-{n}-socket-{s}-mc-{m}', 'figure'), system_arch),
-        Input('hidden-div', 'children'),
-        # apply_to_hierarchy(lambda n, s, m: State(f'mem-roofline-node-{n}-socket-{s}-mc-{m}', 'figure'), system_arch),
-        # apply_to_hierarchy(lambda n, s, m: State(f'mem-roofline-node-{n}-socket-{s}-mc-{m}-store', 'data'), system_arch),
+        State('node-selection-dropdown', 'value'),
+        Input('time-range-slider', 'value'),
+        Input('markers-color-dropdown', 'value'),
+        Input('markers-transparency-slider', 'value'),
+        #Input('hidden-div', 'children'),
+        apply_to_hierarchy(lambda n, s, m: State(f'mem-roofline-node-{n}-socket-{s}-mc-{m}', 'figure'), system_arch),
+        apply_to_hierarchy(lambda n, s, m: State(f'mem-roofline-node-{n}-socket-{s}-mc-{m}-store', 'data'), system_arch),
+        prevent_initial_call=True,
+    )
+    def update_memory_roofline_graphs(selected_nodes, time_range, markers_color, markers_transparency, *states):
+
+        halves = len(states) // 2
+        current_figures = states[:halves]
+        figs_metadata = states[halves+1:]
+
+        #TODO: Read the correct BW
+        cache_bw = curve_utils.get_cache_bandwidth(curves)
+
+
+        #peak_bw_gbs = curve_utils.get_peak_bandwidth(curves)
+        peak_bw_gbs = max([cache_bw[i]['value'] for i in range(len(cache_bw))])
+
+        # TODO: we should add peak flopss to the system config or similar
+        peak_flopss = 11150000#34400   #909.9 # this is for the epeec cpu (IB checked on the internet)
+
+
+        if len(callback_context.triggered) > 1:
+
+            # TODO: maybe very similar to update_curve_graphs? Create a function that does the common logic
+            figures = []
+            for node_name, sockets in system_arch.items():
+                # TODO: the filtering of the DF should not be in curve_utils
+                df_node = utils.filter_df(df, node_name, time_range=time_range)
+
+                for i_socket, mcs in sockets.items():
+                    df_socket = utils.filter_df(df_node, i_socket=i_socket)
+                    for _, id_mc in enumerate(mcs):
+                        # Filter the dataframe to only include the selected node, socket and MC
+                        filt_df = utils.filter_df(df_socket, i_mc=id_mc)#.copy()
+                        graph_title = f'Memory channel {id_mc}' if len(mcs) > 1 else f'Socket {i_socket}'
+                        fig = roofline.plotCARM(filt_df, peak_bw_gbs, peak_flopss, cache_bw, markers_color,markers_transparency, labels, stress_score_config, graph_title=graph_title)
+                        #fig = roofline.plot(peak_bw_gbs, peak_flopss)
+                        figures.append(fig)
+
+            return figures
+
+        input_id = callback_context.triggered[0]['prop_id'].split('.')[0]
+
+        if input_id == 'markers-color-dropdown':
+            for fig in current_figures:
+                if markers_color == 'stress_score':
+                    mask = (df['timestamp'] >= time_range[0] * 1e9) & (df['timestamp'] < time_range[1] * 1e9)
+                    filt_df = df.loc[mask]
+                    fig['data'][0]['marker']['color'] = filt_df['stress_score']
+                    fig['data'][0]['hovertemplate'] = '<b>Stress score</b>: %{marker.color:.2f}<br><b>Operational Intensity</b>: %{x:.2f} (FLOPS/Byte)<br><b>Performance</b>: %{y:.2f} (GFLOPS/s)<br><b>Bandwidth</b>: %{customdata[3]:.2f} GB/s<br><b>Latency</b>: %{customdata[4]:.2f} ns<br><b>Timestamp</b>: %{text}<br><b>Node</b>: %{customdata[0]}<br><b>Socket</b>: %{customdata[1]}<br><b>MC</b>: %{customdata[2]}<extra></extra>'
+                    fig['data'][-1]['visible'] = True
+                else:
+                    fig['data'][0]['marker']['color'] = markers_color
+                    fig['data'][0]['hovertemplate'] = '<b>Operational Intensity</b>: %{x:.2f} (FLOPS/Byte)<br><b>Performance</b>: %{y:.2f} (GFLOPS/s)<br><b>Bandwidth</b>: %{customdata[3]:.2f} GB/s<br><b>Latency</b>: %{customdata[4]:.2f} ns<br><b>Timestamp</b>: %{text}<br><b>Node</b>: %{customdata[0]}<br><b>Socket</b>: %{customdata[1]}<br><b>MC</b>: %{customdata[2]}<extra></extra>'
+                    fig['data'][-1]['visible'] = False
+        elif input_id == 'time-range-slider':
+            for metadata, fig in zip(figs_metadata, current_figures):
+                mask = (df['timestamp'] >= time_range[0] * 1e9) & (df['timestamp'] < time_range[1] * 1e9)
+                filt_df = utils.filter_df(df, metadata['node_name'], metadata['socket'], time_range=time_range)
+
+                #TODO: Pending real data for this implementation
+
+                if markers_color == 'stress_score':
+                    fig['data'][0]['marker']['color'] = filt_df['stress_score']
+        elif input_id == 'markers-transparency-slider':
+            for fig in current_figures:
+                fig['data'][0]['marker']['opacity'] = markers_transparency
+
+
+        return current_figures
+
+    @app.callback(
+        Output('overview-chart', 'figure'),
+        Input('sampling-range-slider', 'value'),
+        Input('overview-hidden-div', 'children'),
         # prevent_initial_call=True,
     )
-    def update_memory_roofline_graphs(_):
-        peak_bw_gbs = curve_utils.get_peak_bandwidth(curves)
-        # TODO: we should add peak flopss to the system config or similar
-        peak_flopss = 909.9 # this is for the epeec cpu (IB checked on the internet)
-    
-        # TODO: maybe very similar to update_curve_graphs? Create a function that does the common logic
-        figures = []
-        for node_name, sockets in system_arch.items():
-            # TODO: the filtering of the DF should not be in curve_utils
-            df_node = curve_utils.filter_df(df, node_name)
-            for i_socket, mcs in sockets.items():
-                df_socket = curve_utils.filter_df(df_node, i_socket=i_socket)
-                for _, id_mc in enumerate(mcs):
-                    # Filter the dataframe to only include the selected node, socket and MC
-                    filt_df = curve_utils.filter_df(df_socket, i_mc=id_mc).copy()
-                    # TODO: creating random data. At some point we will have values for this. Remove this line.
-                    filt_df['flops/s'] = np.random.random(size=len(filt_df)) * peak_flopss
-                    filt_df['flops/byte'] = filt_df['flops/s'] / filt_df['bw']
-                    graph_title = f'Memory channel {id_mc}' if len(mcs) > 1 else f'Socket {i_socket}'
-                    fig = roofline.plot(peak_bw_gbs, peak_flopss, x_data=filt_df['flops/byte'],
-                                        y_data=filt_df['flops/s'], graph_title=graph_title)
-                    figures.append(fig)
-        return figures
+    def update_overview_graph(sample_range, _):
+        if sample_range != 0:
+            df_copy = df.copy()
+            df_copy['timestamp'] = df_copy['timestamp'] // (sample_range[0] * 10 ** 9)
+            result_df = df_copy.groupby('timestamp', as_index=False).apply(
+                lambda x: x.loc[x['stress_score'].idxmax()]).reset_index(drop=True)
+            return overview.plot(df=result_df, division=sample_range[0])
+        else:
+            return overview.plot(df=df, division=sample_range[0])
+

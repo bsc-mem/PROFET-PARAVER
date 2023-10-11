@@ -1,6 +1,8 @@
 import os
 import numpy as np
+import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 def get_color_bar(labels, stress_score_config):
@@ -17,15 +19,13 @@ def get_color_bar(labels, stress_score_config):
     }
 
 def filter_df(df, node_name=None, i_socket=None, i_mc=None, time_range=(), bw_range=(), lat_range=()):
-    mask = [True] * len(df)
+    mask = np.ones(len(df), dtype=bool)
     if node_name is not None:
         mask &= df['node_name'] == node_name
     if i_socket is not None:
         mask &= df['socket'] == int(i_socket)
     if i_mc is not None:
         mask &= df['mc'] == int(i_mc)
-    # if mc != '-' and mc != 'All':
-    #     mask &= df['mc'] == int(mc)
     if len(time_range):
         mask &= (df['timestamp'] >= time_range[0]*1e9) & (df['timestamp'] < time_range[1]*1e9)
     if len(bw_range):
@@ -33,6 +33,9 @@ def filter_df(df, node_name=None, i_socket=None, i_mc=None, time_range=(), bw_ra
     if len(lat_range):
         mask &= (df['lat'] >= lat_range[0]) & (df['lat'] < lat_range[1])
     return df[mask]
+
+
+
 
 def get_graph_fig(df, curves, curves_color, curves_transparency, markers_color, markers_transparency,
                   graph_title, x_title, y_title, stress_score_scale=None, color_bar=None):
@@ -112,9 +115,59 @@ def get_application_memory_dots_fig(df, color, stress_score_scale=None, opacity=
     dots_fig.update_traces(marker=marker_opts)
     return dots_fig
 
+def get_roofline_markers_dots_fig(df, x_data, y_data, color, stress_score_scale=None, opacity=0.01):
+    if color == 'stress_score':
+        dots_fig = go.Scatter(x=x_data, y=y_data, mode='markers', showlegend=False, marker=dict(
+                size=5,
+                opacity=opacity, 
+                color=df['stress_score'], 
+                colorscale=stress_score_scale['colorscale'],
+                colorbar=dict(
+                    title='Stress score',
+                ),
+                cmin=stress_score_scale['min'],
+                cmax=stress_score_scale['max'],
+            ),
+            xaxis='x', 
+            yaxis='y',
+            name='Data',
+            hovertemplate='<b>Stress score</b>: %{marker.color:.2f}<br><b>Operational Intensity</b>: %{x:.2f} (FLOPS/Byte)<br><b>Performance</b>: %{y:.2f} (GFLOPS/s)<br><b>Bandwidth</b>: %{customdata[3]:.2f} GB/s<br><b>Latency</b>: %{customdata[4]:.2f} ns<br><b>Timestamp</b>: %{text}<br><b>Node</b>: %{customdata[0]}<br><b>Socket</b>: %{customdata[1]}<br><b>MC</b>: %{customdata[2]}<extra></extra>', customdata=df[['node_name', 'socket', 'mc', 'bw', 'lat', 'stress_score']], text=df['timestamp'])
+    else:
+        dots_fig = go.Scatter(x=x_data, y=y_data, mode='markers', showlegend=False, marker=dict(size=5, opacity=opacity, color=color), 
+                            xaxis='x', 
+                            yaxis='y',
+                              hovertemplate='<b>Operational Intensity</b>: %{x:.2f} (FLOPS/Byte)<br><b>Performance</b>: %{y:.2f} (GFLOPS/s)<br><b>Bandwidth</b>: %{customdata[3]:.2f} GB/s<br><b>Latency</b>: %{customdata[4]:.2f} ns<br><b>Timestamp</b>: %{text}<br><b>Node</b>: %{customdata[0]}<br><b>Socket</b>: %{customdata[1]}<br><b>MC</b>: %{customdata[2]}<extra></extra>', customdata=df[['node_name', 'socket', 'mc', 'bw', 'lat']], text=df['timestamp'] )
+
+    return dots_fig
+
 def get_peak_bandwidth(curves):
     # Maximum bandwidth of all curves
     peak_bandwidth = 0
     for w_ratio in curves:
         peak_bandwidth = max(peak_bandwidth, max(curves[w_ratio]['bandwidths']))
     return peak_bandwidth
+
+def get_cache_bandwidth(curves):
+    #TODO: How to get cache bandwidth? Which values should we use?
+    return [
+        {
+            'level': 'L1',
+            'value': 1286.4,
+            'unit': '1.28 TB/s'
+        },
+        {
+            'level': 'L2',
+            'value': 864,
+            'unit': '864 GB/s'
+        },
+        {
+            'level': 'L3',
+            'value': 536.8,
+            'unit': '536.8 GB/s'
+        },
+        {
+            'level': 'DRAM',
+            'value': 115.5,
+            'unit': '115.5 GB/s'
+        },
+    ]
