@@ -132,7 +132,7 @@ if __name__ == '__main__':
             total_sockets += len(sockets)
         data_points = max_elements // total_sockets
 
-        sampled_data = pd.DataFrame()
+        sampled_node_socket_indices = []
 
         for node_name, sockets in system_arch.items():
             for socket in sockets:
@@ -142,15 +142,14 @@ if __name__ == '__main__':
                     stress_scores = node_socket_data['stress_score'].sort_values()
                     k = len(stress_scores) // data_points
                     indices_to_select = np.arange(0, len(stress_scores), k)
-                    sampled_node_socket_data = node_socket_data.iloc[indices_to_select]
+                    sampled_node_socket_indices.extend(node_socket_data.iloc[indices_to_select].index)
                 else:
-                    sampled_node_socket_data = node_socket_data
+                    sampled_node_socket_indices.extend(node_socket_data.index)
 
-                sampled_data = sampled_data._append(sampled_node_socket_data)
-
-        df = sampled_data
+        df = df.loc[sampled_node_socket_indices]
     else:
         max_elements = None
+
 
     # load and process curves
     curves = curve_utils.get_curves(args.curves_path, config_json['cpu_freq'])
