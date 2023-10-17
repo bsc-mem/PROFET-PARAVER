@@ -151,9 +151,6 @@ def get_curve_graphs_sidebar(df: pd.DataFrame):
             # ),
         ], id='curves-color-dropdown-section', className='sidebar-element'),
         dbc.Row([
-            html.P("Pending roofline specific opts", style={'color': 'grey', 'font-style': 'italic'}),
-        ], id='test-mem-id', className='sidebar-element'),
-        dbc.Row([
             html.P("Curves Transparency:"),
             dcc.Slider(0, 1, 0.01, value=1, id='curves-transparency-slider', marks=marks_opacity),
         ], id='curves-transparency-section', className='sidebar-element'),
@@ -276,33 +273,18 @@ def get_overview_container(system_arch: dict, id_prefix: str, max_elements: int 
 def get_curve_graphs_tab(system_arch: dict, max_elements: int = None):
     return get_graphs_container(system_arch, "curves", max_elements)
 
-def get_roofline_tab(system_arch: dict, max_elements: int = None):
-    
-    container = get_graphs_container(system_arch, "mem-roofline", max_elements)
-
-    container.children.insert(0, html.Div(id='hidden-div', children='Initial Value', style={'display': 'none'}))
-    return container
-    #return dbc.Container([
-    #    # Hidden div for trigering roofline callback (TODO: remove this when we have other components that trigger the callback)
-    #    html.Div(id='hidden-div', children='Initial Value', style={'display': 'none'}),
-    #    #dcc.Graph(id=f'roofline-graph'),
-    #])
-
-
 def get_overview_tab(system_arch: dict, max_elements: int = None):
     return get_overview_container(system_arch, "overview", max_elements)
 
 def get_main_content(df: pd.DataFrame, config: dict, system_arch: dict, max_elements: int = None):
     system_info_tab = get_summary_tab(df, config, system_arch)
     curves_tab = get_curve_graphs_tab(system_arch, max_elements)
-    roofline_tab = get_roofline_tab(system_arch, max_elements)
     overview_tab = get_overview_tab(system_arch, max_elements)
 
     tabs = dbc.Tabs([
         dbc.Tab(system_info_tab, label="Summary", tab_id="summary-tab"),
         dbc.Tab(overview_tab, label="Stress Overview", tab_id="app-overview-tab"),
         dbc.Tab(curves_tab, label="Curves", tab_id="curves-tab"),
-        dbc.Tab(roofline_tab, label="Roofline", tab_id="mem-roofline-tab"),
     ], id="tabs", active_tab="summary-tab")
 
     return html.Div([
