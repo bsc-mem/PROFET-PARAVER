@@ -16,7 +16,7 @@ from collections import defaultdict
 from dash import Dash
 import dash_bootstrap_components as dbc
 from callbacks import register_callbacks
-
+import numpy as np
 import layouts
 import utils
 import curve_utils
@@ -107,13 +107,49 @@ if __name__ == '__main__':
     # print(dict(system_arch))
     
     # allow a maximum of elements to display. Randomly undersample if there are more elements than the limit
+    '''
+    # Ordering by timestamp after undersampling
     max_elements = 10000
     if len(df) > max_elements:
-        # TODO make each socket have the same number of elements
-        df = df.sample(max_elements)
+        df = df.sort_values(by='stress_score')
+        k = len(df) // max_elements
+        indices_to_select = np.arange(0, len(df), k)
+
+        sampled_df = df.iloc[indices_to_select].copy()
+        sampled_df = sampled_df.append(df.nsmallest(3, 'stress_score'))
+        sampled_df = sampled_df.append(df.nlargest(3, 'stress_score'))
+        df = sampled_df
+        df = df.sort_values(by='timestamp')
     else:
-        # if not undersampled, set max_elements to None
         max_elements = None
+    '''
+
+    max_elements = 10000
+    # TODO make each socket have the same number of elements
+    if len(df) > max_elements:
+        total_sockets = 0
+        for node_name, sockets in system_arch.items():
+            total_sockets += len(sockets)
+        data_points = max_elements // total_sockets
+
+        sampled_node_socket_indices = []
+
+        for node_name, sockets in system_arch.items():
+            for socket in sockets:
+                node_socket_data = df[(df['node_name'] == node_name) & (df['socket'] == socket)]
+
+                if len(node_socket_data) >= data_points:
+                    stress_scores = node_socket_data['stress_score'].sort_values()
+                    k = len(stress_scores) // data_points
+                    indices_to_select = np.arange(0, len(stress_scores), k)
+                    sampled_node_socket_indices.extend(node_socket_data.iloc[indices_to_select].index)
+                else:
+                    sampled_node_socket_indices.extend(node_socket_data.index)
+
+        df = df.loc[sampled_node_socket_indices]
+    else:
+        max_elements = None
+
 
     # load and process curves
     curves = curve_utils.get_curves(args.curves_path, config_json['cpu_freq'])
