@@ -44,6 +44,9 @@ def parse_args():
     parser.add_argument('--save-feather', dest='save_feather',
                         action='store_true', help='Save processed .prv data to a .feather file.')
     
+    parser.add_argument('-expert', '--expert', dest='expert',
+                        action='store_true', help='If expert mode is enabled.')
+    
     return parser.parse_args()
 
 def get_config(config_file_path: str):
@@ -51,9 +54,9 @@ def get_config(config_file_path: str):
         config = json.load(f)
     return config
 
-def get_dash_app(df, config_json: dict, system_arch: dict, max_elements: int):
+def get_dash_app(df, config_json: dict, system_arch: dict, max_elements: int, expert: bool):
     app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-    app.layout = layouts.get_layout(df, config_json, system_arch, max_elements)
+    app.layout = layouts.get_layout(df, config_json, system_arch, max_elements, expert)
     return app
 
 def save_pdf(trace_file: str):
@@ -158,7 +161,8 @@ if __name__ == '__main__':
     if args.plot_pdf:
         save_pdf(args.trace_file)
 
-    app = get_dash_app(df, config_json, system_arch, max_elements)
-    register_callbacks(app, df, curves, config_json, system_arch, args.trace_file, labels, stress_score_config, max_elements)
+    #TODO: If the expert argument changes change it here.
+    app = get_dash_app(df, config_json, system_arch, max_elements, args.expert)
+    register_callbacks(app, df, curves, config_json, system_arch, args.trace_file, labels, stress_score_config, max_elements, args.expert)
     app.run_server(debug=False)
     #app.run_server(debug=True)

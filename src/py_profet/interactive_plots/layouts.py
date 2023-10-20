@@ -264,10 +264,21 @@ def get_graphs_container(system_arch: dict, id_prefix: str, max_elements: int = 
 
 def get_overview_container(system_arch: dict, id_prefix: str, max_elements: int = None):
     container = dbc.Container([], id=f'app-overview-container', fluid=True)
-    chart = dcc.Graph(id='overview-chart')
+
+    #TODO: Should we add bw balance to the graphs?
+    bw_balance_str = 'Should we add bw balance?: '
+
+    col = dbc.Col([
+        html.Br(),
+        dcc.Graph(id='overview-chart'),
+        html.H6(children=bw_balance_str,
+                style={'padding-left': '5rem'},
+                id='overview-chart-bw-balance'),
+    ])
+    
     hidden_div = html.Div(id='overview-hidden-div', style={'display': 'none'})
 
-    container.children.append(chart)
+    container.children.append(col)
     container.children.append(hidden_div)
 
     return container
@@ -292,18 +303,22 @@ def get_roofline_tab(system_arch: dict, max_elements: int = None):
 def get_overview_tab(system_arch: dict, max_elements: int = None):
     return get_overview_container(system_arch, "overview", max_elements)
 
-def get_main_content(df: pd.DataFrame, config: dict, system_arch: dict, max_elements: int = None):
+def get_main_content(df: pd.DataFrame, config: dict, system_arch: dict, max_elements: int = None, expert: bool = False):
     system_info_tab = get_summary_tab(df, config, system_arch)
     curves_tab = get_curve_graphs_tab(system_arch, max_elements)
     roofline_tab = get_roofline_tab(system_arch, max_elements)
     overview_tab = get_overview_tab(system_arch, max_elements)
 
-    tabs = dbc.Tabs([
+    t = [
         dbc.Tab(system_info_tab, label="Summary", tab_id="summary-tab"),
-        dbc.Tab(overview_tab, label="Stress Overview", tab_id="app-overview-tab"),
-        dbc.Tab(curves_tab, label="Curves", tab_id="curves-tab"),
-        dbc.Tab(roofline_tab, label="Roofline", tab_id="mem-roofline-tab"),
-    ], id="tabs", active_tab="summary-tab")
+        dbc.Tab(overview_tab, label="Application Overview", tab_id="app-overview-tab"),
+    ]# + [dbc.Tab(curves_tab, label="Curves", tab_id="curves-tab")] if expert else []
+
+    if expert:
+        t.append(dbc.Tab(curves_tab, label="Curves", tab_id="curves-tab"))
+        t.append(dbc.Tab(roofline_tab, label="Roofline", tab_id="mem-roofline-tab"))
+
+    tabs = dbc.Tabs(t, id="tabs", active_tab="summary-tab")
 
     return html.Div([
         dbc.Button("Export to PDF", id="btn-pdf-export", className=["corporative-button", "pdf-button"]),
@@ -312,14 +327,14 @@ def get_main_content(df: pd.DataFrame, config: dict, system_arch: dict, max_elem
     ], className='tab-content')
 
 # Update the layout function
-def get_layout(df: pd.DataFrame, config: dict, system_arch: dict, max_elements: int = None):
+def get_layout(df: pd.DataFrame, config: dict, system_arch: dict, max_elements: int = None, expert: bool = False):
     return dcc.Loading(
         id="loading",
         type="default",  # changes the loading spinner
         children=[dbc.Container([
             dbc.Row([
                 dbc.Col([get_curve_graphs_sidebar(df)], width=2),
-                dbc.Col([get_main_content(df, config, system_arch, max_elements)], width=10),
+                dbc.Col([get_main_content(df, config, system_arch, max_elements, expert)], width=10),
             ]),
         ], fluid=True)],
         fullscreen=True,
