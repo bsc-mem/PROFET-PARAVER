@@ -1,4 +1,6 @@
 import os
+import sys
+import traceback
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -41,31 +43,51 @@ def get_graph_fig(df, curves, curves_color, curves_transparency, markers_color, 
                   graph_title, x_title, y_title, stress_score_scale=None, color_bar=None):
     fig = make_subplots(rows=1, cols=1)
     # if curves_color != "none":
-    fig = get_curves_fig(curves, fig, curves_color, curves_transparency)
 
-    # plot application bw-lat dots
-    dots_fig = get_application_memory_dots_fig(df, markers_color, stress_score_scale, markers_transparency)
-    fig.add_trace(dots_fig.data[0])
+    try:
 
-    fig.update_xaxes(title=x_title)
-    fig.update_yaxes(title=y_title)
-    if color_bar is not None:
-        fig.update_coloraxes(**color_bar)
+        fig = get_curves_fig(curves, fig, curves_color, curves_transparency)
 
-    # update the layout with a title
-    fig.update_layout(
-        title={
-            'text': graph_title,
-            'font': {
-                'size': 24,
-                'color': 'black',
-                'family': 'Arial, sans-serif',
-            },
-            'x':0.5,
-            'xanchor': 'center'
-        }
-    )
-    return fig
+        # plot application bw-lat dots
+        dots_fig = get_application_memory_dots_fig(df, markers_color, stress_score_scale, markers_transparency)
+        fig.add_trace(dots_fig.data[0])
+
+        fig.update_xaxes(title=x_title)
+        fig.update_yaxes(title=y_title)
+        if color_bar is not None:
+            fig.update_coloraxes(**color_bar)
+
+        # update the layout with a title
+        fig.update_layout(
+            title={
+                'text': graph_title,
+                'font': {
+                    'size': 24,
+                    'color': 'black',
+                    'family': 'Arial, sans-serif',
+                },
+                'x':0.5,
+                'xanchor': 'center',
+            }
+        )        
+        return fig
+    except Exception as e:
+        fig.add_annotation(
+                text="Something went wrong<br><sup>Please reload the page</sup>",
+                xref="paper",
+                yref="paper",
+                x=0.5,
+                y=0.5,
+                showarrow=False,
+                font=dict(
+                    size=30,
+                    color="black",
+                    family="Arial, sans-serif",
+                ),
+            )
+        return fig
+
+
 
 def get_curves(curves_path, cpu_freq):
     curves = {}
@@ -94,7 +116,7 @@ def get_curves(curves_path, cpu_freq):
     return curves
 
 def get_curves_fig(curves, fig, color='black', transparency=1):
-    for i, w_ratio in enumerate(range(0, 51, 10)):
+    for i, w_ratio in enumerate(range(0, 50, 10)):
         curve_fig = px.line(x=curves[w_ratio]['bandwidths'], y=curves[w_ratio]['latencies'], color_discrete_sequence=[color])
         curve_opacity_step = transparency / len(range(0, 51, 10))
         curve_transparency = transparency - curve_opacity_step * i

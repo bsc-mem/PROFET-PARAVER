@@ -83,7 +83,7 @@ def get_figures_story(system_arch: dict, selected_nodes: list, figures: list) ->
 
     story = []
     i_fig = 0
-    story.append(PageBreak())
+    #story.append(PageBreak())
     while i_fig < len(figures):
         # Insert a page break for each new page
         if i_fig > 0:
@@ -109,9 +109,11 @@ def get_figures_story(system_arch: dict, selected_nodes: list, figures: list) ->
 
                     #TODO: Why is there values that are none? There are random None values in the middle? (Normally 1 or 2 ocurrances)
                     #Probably due to how the stress score is calculated?
-                    if 'color' in fig['data'][0]['marker']:
-                        if isinstance(fig['data'][0]['marker']['color'], list):
-                            fig['data'][0]['marker']['color'] = [0 if item is None else item for item in fig['data'][0]['marker']['color']]
+                    if 'data' in fig:
+                        if 'marker' in fig['data'][0]:
+                            if 'color' in fig['data'][0]['marker']:
+                                if isinstance(fig['data'][0]['marker']['color'], list):
+                                    fig['data'][0]['marker']['color'] = [0 if item is None else item for item in fig['data'][0]['marker']['color']]
                         
                     # a scale of 2 doubles the resolution of the image
                     img_bytes = pio.to_image(fig, format="png",width=pdf_width * dpi / 72, height=pdf_height * dpi / 72)
@@ -123,8 +125,41 @@ def get_figures_story(system_arch: dict, selected_nodes: list, figures: list) ->
 
     return story
 
+def get_overview_story(figures: list) -> list:
+    width_margin = 2
+    pdf_width = (8.5 - width_margin) * 72
+    # allow 2 images per pdf page
+    height_margin = 4
+    pdf_height = (11 - height_margin) * 72 / 2
 
-def generate_pdf(df: pd.DataFrame, config: dict, system_arch: dict, selected_nodes: list, figures: list) -> bytes:
+    dpi = 150
+
+    story = []
+    i_fig = 0
+    story.append(PageBreak())
+
+    story.append(Paragraph("Application Overview", heading1_style))
+    while i_fig < len(figures):
+        # Insert a page break for each new page
+        if i_fig > 0:
+            story.append(PageBreak())
+        
+        fig = figures[i_fig]
+        i_fig += 1
+        # fig = figures[node_name][socket][mc]
+        # generate a PNG image from the figure
+        img_stream = BytesIO()
+        img_bytes = pio.to_image(fig, format="png",width=pdf_width * dpi / 72, height=pdf_height * dpi / 72)
+        img_stream.write(img_bytes)
+        img_stream.seek(0)
+        img = Image(img_stream, width=pdf_width, height=pdf_height)
+        story.append(img)
+        story.append(Spacer(1, 12))  # Optional spacer for better layout
+
+    return story
+
+
+def generate_pdf(df: pd.DataFrame, config: dict, system_arch: dict, selected_nodes: list, figures: list, expert: bool) -> bytes:
     buffer = BytesIO()
     # Set up the document and styles
     doc = SimpleDocTemplate(buffer, pagesize=letter, title="Report")
@@ -138,11 +173,12 @@ def generate_pdf(df: pd.DataFrame, config: dict, system_arch: dict, selected_nod
     # Add summary info
     story.extend(get_summary(df, config, system_arch))
 
-    curves_figures = figures[:len(system_arch)*2]
-    mem_carm_figures = figures[len(system_arch)*2:]
-
-    # Add figures
-    story.extend(get_figures_story(system_arch, selected_nodes, figures))
+    if expert: 
+        #TODO: If there is more graphs in overview mode, we need to make this indexing dynamic!!
+        story.extend(get_overview_story([figures[0]]))
+        story.extend(get_figures_story(system_arch, selected_nodes, figures[1:]))
+    else:
+        story.extend(get_overview_story(figures))
 
     # Build the PDF
     doc.build(story)

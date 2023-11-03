@@ -44,6 +44,9 @@ def parse_args():
     parser.add_argument('--save-feather', dest='save_feather',
                         action='store_true', help='Save processed .prv data to a .feather file.')
     
+    parser.add_argument('--expert', dest='expert',
+                        action='store_true', help='If expert mode is enabled.')
+    
     return parser.parse_args()
 
 def get_config(config_file_path: str):
@@ -51,9 +54,9 @@ def get_config(config_file_path: str):
         config = json.load(f)
     return config
 
-def get_dash_app(df, config_json: dict, system_arch: dict, max_elements: int):
+def get_dash_app(df, config_json: dict, system_arch: dict, max_elements: int, expert: bool):
     app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-    app.layout = layouts.get_layout(df, config_json, system_arch, max_elements)
+    app.layout = layouts.get_layout(df, config_json, system_arch, max_elements, expert)
     return app
 
 def save_pdf(trace_file: str):
@@ -124,8 +127,12 @@ if __name__ == '__main__':
         max_elements = None
     '''
 
+    #df_overview = df.copy()
+    df = df.reset_index(drop=True)
+
+    df_overview = df.copy()
+
     max_elements = 10000
-    # TODO make each socket have the same number of elements
     if len(df) > max_elements:
         total_sockets = 0
         for node_name, sockets in system_arch.items():
@@ -137,19 +144,22 @@ if __name__ == '__main__':
         for node_name, sockets in system_arch.items():
             for socket in sockets:
                 node_socket_data = df[(df['node_name'] == node_name) & (df['socket'] == socket)]
-
+                
                 if len(node_socket_data) >= data_points:
                     stress_scores = node_socket_data['stress_score'].sort_values()
-                    k = len(stress_scores) // data_points
+
+                    # Calculate 'k' as the ceiling of the ratio of the total data points to the desired data points per socket, ensuring at least one data point is sampled.
+                    k = max((len(stress_scores) + data_points - 1) // data_points, 1)
+
                     indices_to_select = np.arange(0, len(stress_scores), k)
-                    sampled_node_socket_indices.extend(node_socket_data.iloc[indices_to_select].index)
+                    sampled_indices = node_socket_data.iloc[indices_to_select].index
+                    sampled_node_socket_indices.extend(sampled_indices)
                 else:
                     sampled_node_socket_indices.extend(node_socket_data.index)
 
         df = df.loc[sampled_node_socket_indices]
     else:
         max_elements = None
-
 
     # load and process curves
     curves = curve_utils.get_curves(args.curves_path, config_json['cpu_freq'])
@@ -158,7 +168,8 @@ if __name__ == '__main__':
     if args.plot_pdf:
         save_pdf(args.trace_file)
 
-    app = get_dash_app(df, config_json, system_arch, max_elements)
-    register_callbacks(app, df, curves, config_json, system_arch, args.trace_file, labels, stress_score_config, max_elements)
+    #TODO: If the expert argument changes change it here.
+    app = get_dash_app(df, config_json, system_arch, max_elements, args.expert)
+    register_callbacks(app, df, df_overview, curves, config_json, system_arch, args.trace_file, labels, stress_score_config, max_elements, args.expert)
     app.run_server(debug=False)
     #app.run_server(debug=True)
