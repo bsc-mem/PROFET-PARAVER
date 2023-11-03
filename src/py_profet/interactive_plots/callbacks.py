@@ -33,7 +33,7 @@ def replace_after_char(s, char, replacement):
     # Replace everything after the character with the replacement string
     return s[:index + 1] + replacement
 
-def register_callbacks(app, df, curves, config, system_arch, trace_file, labels, stress_score_config, max_elements=None, expert=False):
+def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_file, labels, stress_score_config, max_elements=None, expert=False):
 
     # toggle sidebar, showing it when the curves tab is selected and hidding it otherwise
     @app.callback(
@@ -386,7 +386,6 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
 
     @app.callback(
         Output('overview-chart', 'figure'),
-        Output('overview-chart-bw-balance', 'children'),
         Input('sampling-range-slider', 'value'),
         Input('curves-color-dropdown', 'value'),
         Input('curves-transparency-slider', 'value'),
@@ -394,41 +393,32 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
         Input('markers-color-dropdown', 'value'),
         Input('markers-transparency-slider', 'value'),
         State('overview-chart', 'figure'),
-        State('overview-chart-bw-balance', 'children'),
         # prevent_initial_call=True,
     )
     def update_overview_graph(sample_range, curves_color, curves_transparency, time_range, markers_color, markers_transparency, *states):
         
         overview_fig = states[0]
-        bw_balances = states[1:][0]
 
         input_id = callback_context.triggered[0]['prop_id'].split('.')[0]
         
         if len(callback_context.triggered) > 1 or input_id == 'sampling-range-slider':
-            if sample_range != 0:
-                df_copy = df.copy()
+            if sample_range[0] != 0:
+                df_copy = df_overview.copy()
                 df_copy['timestamp'] = df_copy['timestamp'] // (sample_range[0] * 10 ** 9)
                 result_df = df_copy.groupby('timestamp', as_index=False).apply(
                     lambda x: x.loc[x['stress_score'].idxmax()]).reset_index(drop=True)
             else:
-                result_df = df
-            
+                result_df = df_overview
 
             if markers_color == 'stress_score':
                 color_bar = curve_utils.get_color_bar(labels, stress_score_config)
-
-            bw_balance = 0#result_df['bw'].mean() * 100 / bw_per_mc.sum()
-
-            new_bw_balances = replace_after_char(bw_balances, ':', f' {bw_balance:.1f}%')
 
             graph_title = 'Application Curves'
             overview_fig = curve_utils.get_graph_fig(result_df, curves, curves_color, curves_transparency, markers_color, markers_transparency,
                                             graph_title, labels['bw'], labels['lat'], stress_score_config['colorscale'], color_bar)
 
-            return tuple(np.append(overview_fig, new_bw_balances))
-        
-        new_bw_balances = dash.no_update
-       
+            return overview_fig
+               
 
         # Handle callback logic. This is triggered by a single input.
         if input_id == 'curves-color-dropdown':
@@ -439,15 +429,15 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
                 curve['opacity'] = curves_transparency
         elif input_id == 'time-range-slider':
   
-            mask = (df['timestamp'] >= time_range[0] * 1e9) & (df['timestamp'] < time_range[1] * 1e9)
+            mask = (df_overview['timestamp'] >= time_range[0] * 1e9) & (df_overview['timestamp'] < time_range[1] * 1e9)
         
             if sample_range != 0:
-                df_copy = df[mask].copy()
+                df_copy = df_overview[mask].copy()
                 df_copy['timestamp'] = df_copy['timestamp'] // (sample_range[0] * 10 ** 9)
                 result_df = df_copy.groupby('timestamp', as_index=False).apply(
                     lambda x: x.loc[x['stress_score'].idxmax()]).reset_index(drop=True)
             else:
-                result_df = df[mask]
+                result_df = df_overview[mask]
             
             overview_fig['data'][-1]['x'] = result_df['bw']
             overview_fig['data'][-1]['y'] = result_df['lat']
@@ -457,12 +447,12 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
             # update the bw balance
         elif input_id == 'markers-color-dropdown':
             if markers_color == 'stress_score':
-                mask = (df['timestamp'] >= time_range[0] * 1e9) & (df['timestamp'] < time_range[1] * 1e9)
-                filt_df = df.loc[mask]
+                mask = (df_overview['timestamp'] >= time_range[0] * 1e9) & (df_overview['timestamp'] < time_range[1] * 1e9)
+                filt_df = df_overview.loc[mask]
                 overview_fig['data'][-1]['marker']['color'] = filt_df['stress_score']
             else:
                 overview_fig['data'][-1]['marker']['color'] = markers_color
         elif input_id == 'markers-transparency-slider':
             overview_fig['data'][-1]['marker']['opacity'] = markers_transparency
         
-        return tuple(np.append(overview_fig, new_bw_balances))
+        return overview_fig

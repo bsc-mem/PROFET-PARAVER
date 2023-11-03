@@ -170,7 +170,7 @@ def get_curve_graphs_sidebar(df: pd.DataFrame):
             html.P("Sampling (s):"),
             dcc.RangeSlider(
                 id='sampling-range-slider',
-                min=0.05,
+                min=0,
                 max=2,
                 step=0.05,
                 marks=marks_time_sampling,
@@ -265,15 +265,9 @@ def get_graphs_container(system_arch: dict, id_prefix: str, max_elements: int = 
 def get_overview_container(system_arch: dict, id_prefix: str, max_elements: int = None):
     container = dbc.Container([], id=f'app-overview-container', fluid=True)
 
-    #TODO: Should we add bw balance to the graphs?
-    bw_balance_str = 'Should we add bw balance?: '
-
     col = dbc.Col([
         html.Br(),
-        dcc.Graph(id='overview-chart'),
-        html.H6(children=bw_balance_str,
-                style={'padding-left': '5rem'},
-                id='overview-chart-bw-balance'),
+        dcc.Graph(id='overview-chart', style={'height': '800px'}),
     ])
     
     hidden_div = html.Div(id='overview-hidden-div', style={'display': 'none'})

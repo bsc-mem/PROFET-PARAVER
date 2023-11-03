@@ -1,4 +1,6 @@
 import os
+import sys
+import traceback
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -65,7 +67,7 @@ def get_graph_fig(df, curves, curves_color, curves_transparency, markers_color, 
                     'family': 'Arial, sans-serif',
                 },
                 'x':0.5,
-                'xanchor': 'center'
+                'xanchor': 'center',
             }
         )        
         return fig
@@ -114,7 +116,7 @@ def get_curves(curves_path, cpu_freq):
     return curves
 
 def get_curves_fig(curves, fig, color='black', transparency=1):
-    for i, w_ratio in enumerate(range(0, 51, 10)):
+    for i, w_ratio in enumerate(range(0, 50, 10)):
         curve_fig = px.line(x=curves[w_ratio]['bandwidths'], y=curves[w_ratio]['latencies'], color_discrete_sequence=[color])
         curve_opacity_step = transparency / len(range(0, 51, 10))
         curve_transparency = transparency - curve_opacity_step * i
