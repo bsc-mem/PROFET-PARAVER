@@ -32,7 +32,7 @@ def replace_after_char(s, char, replacement):
     # Replace everything after the character with the replacement string
     return s[:index + 1] + replacement
 
-def register_callbacks(app, df, curves, config, system_arch, trace_file, labels, stress_score_config, max_elements=None):
+def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_file, labels, stress_score_config, max_elements=None, expert=False):
 
     # toggle sidebar, showing it when the curves tab is selected and hidding it otherwise
     @app.callback(
@@ -50,13 +50,6 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
     def hide_curves_sidebar_options(active_tab):
         num_outputs = 2
         return [{'display': 'none'}]*num_outputs if active_tab == "app-overview-tab" else [{}]*num_outputs
-
-    @app.callback(
-        Output(f'test-mem-id', 'style'),
-        Input("tabs", "active_tab"),
-    )
-    def hide_memory_sidebar_options(active_tab):
-        return {'display': 'none'} if active_tab == "curves-tab" or active_tab == "app-overview-tab" else {}
 
     @app.callback(
         Output(f'sampling-section', 'style'),
@@ -85,7 +78,6 @@ def register_callbacks(app, df, curves, config, system_arch, trace_file, labels,
             State('node-selection-dropdown', 'value'),
             State('overview-chart', 'figure'),
             apply_to_hierarchy(lambda n, s, m: State(f'curves-node-{n}-socket-{s}-mc-{m}', 'figure'), system_arch),
-            apply_to_hierarchy(lambda n, s, m: State(f'mem-roofline-node-{n}-socket-{s}-mc-{m}', 'figure'), system_arch),
             prevent_initial_call=True,
         )
         def export_to_pdf(n, selected_nodes, *figures):

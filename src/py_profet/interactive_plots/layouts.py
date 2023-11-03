@@ -281,7 +281,7 @@ def get_curve_graphs_tab(system_arch: dict, max_elements: int = None):
 def get_overview_tab(system_arch: dict, max_elements: int = None):
     return get_overview_container(system_arch, "overview", max_elements)
 
-def get_main_content(df: pd.DataFrame, config: dict, system_arch: dict, max_elements: int = None):
+def get_main_content(df: pd.DataFrame, config: dict, system_arch: dict, max_elements: int = None, expert: bool = False):
     system_info_tab = get_summary_tab(df, config, system_arch)
     curves_tab = get_curve_graphs_tab(system_arch, max_elements)
     overview_tab = get_overview_tab(system_arch, max_elements)
