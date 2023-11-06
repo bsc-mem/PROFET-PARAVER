@@ -289,7 +289,7 @@ def get_main_content(df: pd.DataFrame, config: dict, system_arch: dict, max_elem
     t = [
         dbc.Tab(system_info_tab, label="Summary", tab_id="summary-tab"),
         dbc.Tab(overview_tab, label="Application Overview", tab_id="app-overview-tab"),
-    ]# + [dbc.Tab(curves_tab, label="Curves", tab_id="curves-tab")] if expert else []
+    ]
 
     if expert:
         t.append(dbc.Tab(curves_tab, label="Curves", tab_id="curves-tab"))

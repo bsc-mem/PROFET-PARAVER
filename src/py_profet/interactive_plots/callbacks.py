@@ -42,15 +42,18 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
     def toggle_sidebar(active_tab):
         return active_tab != "summary-tab"
 
+    # Hide the curve specific options when the roofline tab is active. 
     @app.callback(
         Output(f'curves-color-dropdown-section', 'style'),
         Output(f'curves-transparency-section', 'style'),
         Input("tabs", "active_tab"),
     )
     def hide_curves_sidebar_options(active_tab):
+        # Static number of outputs. If we add more options, we need to update this number
         num_outputs = 2
         return [{'display': 'none'}]*num_outputs if active_tab == "app-overview-tab" else [{}]*num_outputs
 
+    # Hide the overview tab specific options when the tab is not active.
     @app.callback(
         Output(f'sampling-section', 'style'),
         Input("tabs", "active_tab"),
@@ -58,6 +61,7 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
     def hide_only_overview_sidebar_options(active_tab):
         return {'display': 'none'} if active_tab == "curves-tab" else {}
 
+    # There is no node selection in the overview tab. This is why it's hidden when the tab is active.
     @app.callback(
         Output(f'node-selection-section', 'style'),
         Input("tabs", "active_tab"),
@@ -65,13 +69,14 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
     def hide_overview_sidebar_options(active_tab):
         return {'display': 'none'} if active_tab == "app-overview-tab" else {}
 
-
+    # Since the expert mode requires two differente callback definitions, but the same export to pdf function, we declare it separately
     def generic_pdf_export(n, selected_nodes, figures):
         pdf_string = pdf_gen.generate_pdf(df, config, system_arch, selected_nodes, figures, expert)
         pdf_base64 = base64.b64encode(pdf_string).decode('utf-8')
         return dict(content=pdf_base64, filename="my_report.pdf", type="application/pdf", base64=True)
 
     if expert:
+        # If expert mode is enabled, we need to add the memory roofline and curves figures to the pdf export
         @app.callback(
             Output("download-pdf", "data"),
             Input("btn-pdf-export", "n_clicks"),
@@ -83,6 +88,7 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
         def export_to_pdf(n, selected_nodes, *figures):
             return generic_pdf_export(n, selected_nodes, figures)
     else:
+        # If expert mode is disabled, we only need the overview figures to the pdf export
         @app.callback(
             Output("download-pdf", "data"),
             Input("btn-pdf-export", "n_clicks"),
@@ -166,7 +172,9 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
         return dict(content=config_json, filename=filename)
 
     if expert:
+        # If expert is enabled, we need to add the logic of the node selection for the curves.
         @app.callback(
+            # The style attribute is used to hide the container of the curves of the nodes that are not selected
             [Output(f'curves-node-{node_name}-container', 'style') for node_name in system_arch.keys()],
             Input('node-selection-dropdown', 'value'),
             prevent_initial_call=True,
@@ -178,7 +186,7 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
             return [{'display': 'none'} if node_name not in selected_nodes else {} for node_name in system_arch.keys()]
     
     if expert:
-        #TODO: Passar a modo expert / normal
+        # If expert is enabled, we want the curves and rooflines to be created and instanciated
         @app.callback(
             apply_to_hierarchy(lambda n, s, m: Output(f'curves-node-{n}-socket-{s}-mc-{m}', 'figure'), system_arch),
             apply_to_hierarchy(lambda n, s, m: Output(f'curves-node-{n}-socket-{s}-mc-{m}-bw-balance', 'children'), system_arch),
@@ -310,12 +318,17 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
     )
     def update_overview_graph(sample_range, curves_color, curves_transparency, time_range, markers_color, markers_transparency, *states):
 
+        # Get the current state of the overview chart
         overview_fig = states[0]
 
+        # Get the ID of the input that triggered the callback
         input_id = callback_context.triggered[0]['prop_id'].split('.')[0]
 
+        # Handle callback logic when triggered by multiple inputs or the sampling range slider
         if len(callback_context.triggered) > 1 or input_id == 'sampling-range-slider':
+            # Check if the sample_range is not zero
             if sample_range[0] != 0:
+                # Sample the dataframe to the specified sample range
                 df_copy = df_overview.copy()
                 df_copy['timestamp'] = df_copy['timestamp'] // (sample_range[0] * 10 ** 9)
                 result_df = df_copy.groupby('timestamp', as_index=False).apply(
@@ -341,10 +354,12 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
             for curve in overview_fig['data'][:-1]:
                 curve['opacity'] = curves_transparency
         elif input_id == 'time-range-slider':
-
+            # Apply a mask to filter data within the specified time range
             mask = (df_overview['timestamp'] >= time_range[0] * 1e9) & (df_overview['timestamp'] < time_range[1] * 1e9)
 
+            # Check if the sample_range is not zero
             if sample_range != 0:
+                # Sample the dataframe to the specified sample range
                 df_copy = df_overview[mask].copy()
                 df_copy['timestamp'] = df_copy['timestamp'] // (sample_range[0] * 10 ** 9)
                 result_df = df_copy.groupby('timestamp', as_index=False).apply(
@@ -352,6 +367,7 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
             else:
                 result_df = df_overview[mask]
 
+            # Update the x, y, and marker color of the last data trace in the overview figure
             overview_fig['data'][-1]['x'] = result_df['bw']
             overview_fig['data'][-1]['y'] = result_df['lat']
             if markers_color == 'stress_score':
@@ -359,6 +375,7 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
 
         elif input_id == 'markers-color-dropdown':
             if markers_color == 'stress_score':
+                # Apply a mask to filter data within the specified time range
                 mask = (df_overview['timestamp'] >= time_range[0] * 1e9) & (df_overview['timestamp'] < time_range[1] * 1e9)
                 filt_df = df_overview.loc[mask]
                 overview_fig['data'][-1]['marker']['color'] = filt_df['stress_score']
