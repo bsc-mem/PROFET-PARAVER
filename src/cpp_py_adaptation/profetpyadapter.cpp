@@ -198,8 +198,9 @@ void ProfetPyAdapter::runDashApp(string traceFilePath, double precision, double 
     o << setw(4) << dashConfig << endl;
 
     // Python call for running dash
-    string dashPlotsPath = pyProfetPath + "interactive_plots/new_dash.py";
-    string pythonCall = "python3 " + dashPlotsPath + " "  + traceFileAbsPath + " "  + curvesPath + " " + dashConfigFile;
+    string dashPlotsPath = pyProfetPath + "interactive_plots/dash_plots.py";
+    string expertMode = "--expert";
+    string pythonCall = "python3 " + dashPlotsPath + " " + expertMode + " "  + traceFileAbsPath + " "  + curvesPath + " " + dashConfigFile;
     if (!keepOriginalTraceFile) {
         pythonCall += " --excluded-original";
     }
@@ -209,7 +210,7 @@ void ProfetPyAdapter::runDashApp(string traceFilePath, double precision, double 
     // Create and open a file
     ofstream scriptContent(dashScriptFile);
     string featherTraceFile = regex_replace(traceFileAbsPath, regex(".prv"), ".feather");
-    string scriptPyCall = "python3 " + dashPlotsPath + " "  + featherTraceFile + " "  + curvesPath + " " + dashConfigFile;
+    string scriptPyCall = "python3 " + dashPlotsPath + " " + expertMode + " "  + featherTraceFile + " "  + curvesPath + " " + dashConfigFile;
     if (!keepOriginalTraceFile) {
         scriptPyCall += " --excluded-original";
     }
