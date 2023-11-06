@@ -5,11 +5,14 @@ import plotly.express as px
 import curve_utils
 
 def plot(peak_bw_gbs, peak_flopss, x_data=[], y_data=[], graph_title=''):
+    # Convert input data to NumPy arrays
     x_data = np.array(x_data)
     y_data = np.array(y_data)
     operational_intensity = np.logspace(0, 4, 400)
     
+    # Calculate memory-bound performance
     mem_bound_performance = operational_intensity * peak_bw_gbs
+    # Clip memory-bound performance to the compute roof
     mem_bound_performance = np.minimum(mem_bound_performance, peak_flopss)
 
     # TODO: decide what to do with the following. Do we have this kind of data? It looks weird on the chart
@@ -22,7 +25,7 @@ def plot(peak_bw_gbs, peak_flopss, x_data=[], y_data=[], graph_title=''):
     # Create figure
     fig = go.Figure()
 
-    # Add roofs
+    # Add memory and compute roofs
     fig.add_trace(go.Scatter(x=operational_intensity, y=mem_bound_performance, 
                              mode='lines', line=dict(color='black', width=2),
                              name='Roofline'))
@@ -48,7 +51,6 @@ def plot(peak_bw_gbs, peak_flopss, x_data=[], y_data=[], graph_title=''):
         font=dict(size=12, color='black')
     )
     
-    # x_pos_compute = 7 * peak_flopss / peak_bw_gbs
     fig.add_annotation(
         # Set x at 50% (indicated as 0.5 and 'paper')
         x=0.5,
@@ -77,8 +79,6 @@ def plot(peak_bw_gbs, peak_flopss, x_data=[], y_data=[], graph_title=''):
         xaxis_title="Operational Intensity (FLOPS/Byte)",
         yaxis_title="Performance (GFLOPS/s)",
         showlegend=False,
-        # xgrid=True,
-        # ygrid=True
     )
 
     return fig
@@ -91,37 +91,23 @@ def softplus(x):
 
 def plotCARM(df, peak_bw_gbs, peak_flopss, cache_bw, markers_color, markers_transparency, labels, stress_score_scale, graph_title=''):
 
-    #Creating random data for flops/s
+    # Creating random data for flops/s
     num_rows = len(df)
     df['flops/s'] = np.random.uniform(0, peak_flopss, num_rows)
-    df['flops/byte'] = df['flops/s'] / (df['bw'] * 40) #TODO: This *40 multiplier is arbitrary, but allowed for random data data to be positioned to the left of the graph. This should be revised.
 
+    # Calculate 'flops/byte' based on random 'flops/s' and 'bw' values
+    # TODO: The '* 40' multiplier is arbitrary and may need revision
+    df['flops/byte'] = df['flops/s'] / (df['bw'] * 40) 
+
+    # Filter out non-finite values and calculate 'max_x_value'
     filtered_values = df['flops/byte'][np.isfinite(df['flops/byte'])]
 
-    # Check if there are any non-infinite values left
     if len(filtered_values) > 0:
         max_x_value = round(filtered_values.max())+10000
     else:
         max_x_value = 10000
 
     fig = go.Figure()
-
-    '''
-    #Only compute roof stress score
-    distance_compute = peak_flopss - df['flops/s']
-    normalized_distance_compute = distance_compute / peak_flopss
-    stress_score_compute = np.clip(1-normalized_distance_compute, 0, 1)
-    df['stress_score'] = stress_score_compute
-    '''
-
-    '''
-    # An attempt at stress score using euclidean distance
-    proximity_x = df['flops/s'] / mem_bound_performance[df.index]
-    proximity_y = df['flops/byte'] / mem_bound_performance[df.index]
-
-    df['proximity'] = np.sqrt(proximity_x**2 + proximity_y**2)
-    df['stress_score'] = sigmoid(df['proximity'])
-    '''
 
     # Calculate the deviation of 'flops/s' from the peak value
     distance_compute = peak_flopss - df['flops/s']
@@ -150,9 +136,11 @@ def plotCARM(df, peak_bw_gbs, peak_flopss, cache_bw, markers_color, markers_tran
     x_data = np.array(df['flops/byte'])
     y_data = np.array(df['flops/s'])
 
+    # Create roofline markers using a function from 'curve_utils' module
     dots_fig = curve_utils.get_roofline_markers_dots_fig(df, x_data, y_data, markers_color, stress_score_scale, markers_transparency);
     fig.add_trace(dots_fig)
     
+    # Add a roofline line to the figure
     fig.add_trace(go.Scatter(x=[0, peak_flopss/peak_bw_gbs, max_x_value], y=[0, peak_flopss, peak_flopss], mode='lines', line=dict(color='black', width=2),
                              name=f'Roofline',
                              hoverlabel=dict(namelength=0),

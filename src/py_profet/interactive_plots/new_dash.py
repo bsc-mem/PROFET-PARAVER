@@ -110,53 +110,51 @@ if __name__ == '__main__':
     # print(dict(system_arch))
     
     # allow a maximum of elements to display. Randomly undersample if there are more elements than the limit
-    '''
-    # Ordering by timestamp after undersampling
-    max_elements = 10000
-    if len(df) > max_elements:
-        df = df.sort_values(by='stress_score')
-        k = len(df) // max_elements
-        indices_to_select = np.arange(0, len(df), k)
-
-        sampled_df = df.iloc[indices_to_select].copy()
-        sampled_df = sampled_df.append(df.nsmallest(3, 'stress_score'))
-        sampled_df = sampled_df.append(df.nlargest(3, 'stress_score'))
-        df = sampled_df
-        df = df.sort_values(by='timestamp')
-    else:
-        max_elements = None
-    '''
-
-    #df_overview = df.copy()
+    
+    # reset index to avoid problems with the sampling
     df = df.reset_index(drop=True)
 
+    # save a copy of the original dataframe
     df_overview = df.copy()
 
     max_elements = 10000
+    # Check if the length of the DataFrame exceeds the maximum limit
     if len(df) > max_elements:
         total_sockets = 0
+
+        # Calculate the total number of sockets in the system architecture
         for node_name, sockets in system_arch.items():
             total_sockets += len(sockets)
+        
+        # Calculate the desired number of data points per socket
         data_points = max_elements // total_sockets
 
         sampled_node_socket_indices = []
 
         for node_name, sockets in system_arch.items():
             for socket in sockets:
+                # Sort stress scores to select representative data points
                 node_socket_data = df[(df['node_name'] == node_name) & (df['socket'] == socket)]
                 
+                # Check if there are enough data points to sample
                 if len(node_socket_data) >= data_points:
                     stress_scores = node_socket_data['stress_score'].sort_values()
 
                     # Calculate 'k' as the ceiling of the ratio of the total data points to the desired data points per socket, ensuring at least one data point is sampled.
+                    # ensuring at least one data point is sampled.
                     k = max((len(stress_scores) + data_points - 1) // data_points, 1)
 
+                    # Select indices for sampling
                     indices_to_select = np.arange(0, len(stress_scores), k)
                     sampled_indices = node_socket_data.iloc[indices_to_select].index
+
+                    # Extend the list of sampled indices
                     sampled_node_socket_indices.extend(sampled_indices)
                 else:
+                    # If there are not enough data points, include all available indices
                     sampled_node_socket_indices.extend(node_socket_data.index)
 
+        # Update the DataFrame with the sampled indices
         df = df.loc[sampled_node_socket_indices]
     else:
         max_elements = None

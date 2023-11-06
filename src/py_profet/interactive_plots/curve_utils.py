@@ -138,6 +138,7 @@ def get_application_memory_dots_fig(df, color, stress_score_scale=None, opacity=
     return dots_fig
 
 def get_roofline_markers_dots_fig(df, x_data, y_data, color, stress_score_scale=None, opacity=0.01):
+    # Create the roofline markers
     if color == 'stress_score':
         dots_fig = go.Scatter(x=x_data, y=y_data, mode='markers', showlegend=False, marker=dict(
                 size=5,
@@ -170,7 +171,7 @@ def get_peak_bandwidth(curves):
     return peak_bandwidth
 
 def get_cache_bandwidth(curves):
-    #TODO: How to get cache bandwidth? Which values should we use?
+    #TODO: Pending to make this dynamic with real values.
     return [
         {
             'level': 'L1',
