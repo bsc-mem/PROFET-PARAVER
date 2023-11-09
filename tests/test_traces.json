@@ -54,6 +54,6 @@
         "nsockets": 2,
         "nmcs": 6,
         "precision": 2,
-        "exclude_original": true
+        "omit_original": true
     }
 ]

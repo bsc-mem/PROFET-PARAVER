@@ -21,11 +21,15 @@
 #include <regex>
 #include <fstream>
 #include <sys/stat.h>
+#include <filesystem>
 #include <Python.h>
 // #include "curves.h"
 #include "utils.h"
+#include "single_include/nlohmann/json.hpp"
 
 using namespace std;
+namespace fs = std::filesystem;
+using json = nlohmann::json;
 
 
 class ProfetPyAdapter {
@@ -65,7 +69,7 @@ class ProfetPyAdapter {
 
     tuple<double, double, double, double, double> computeMemoryMetrics(double cpuFreqGHz, double writeRatio, double bandwidth, bool displayWarnings);
 
-    void runDashApp(string traceFilePath, double precision, double cpuFreq, bool keepOriginalTraceFile);
+    void runDashApp(string traceFilePath, double precision, double cpuFreq, bool expertMode, bool keepOriginalTraceFile);
 
   private:
     PyObject* getFunctionFromProfetIntegration(string fnName);

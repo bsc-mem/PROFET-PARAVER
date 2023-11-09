@@ -184,25 +184,38 @@ tuple<double, double, double, double, double> ProfetPyAdapter::computeMemoryMetr
     return {maxBandwidth, latency, leadOffLatency, maxLatency, stressScore};
 }
 
-void ProfetPyAdapter::runDashApp(string traceFilePath, double precision, double cpuFreq, bool keepOriginalTraceFile) {
-    string dashPlotsPath = pyProfetPath + "dash_plots.py";
-    string traceFileFlag = " --trace-file " + traceFilePath;
-    string curvesDirFlag = " --bw-lat-curves-dir " + curvesPath;
-    string precisionFlag = " --precision " + to_string(int(precision));
-    string cpuFreqFlag = " --cpufreq " + to_string(cpuFreq);
-    string pythonCall = "python3 " + dashPlotsPath + traceFileFlag + curvesDirFlag + precisionFlag + cpuFreqFlag;
+void ProfetPyAdapter::runDashApp(string traceFilePath, double precision, double cpuFreq, bool expertMode, bool keepOriginalTraceFile) {
+    // Make sure the trace file path is a canonical absolute path
+    string traceFileAbsPath = fs::canonical(traceFilePath).string();
+
+    // Write dash config JSON file
+    json dashConfig = {
+        {"precision", int(precision)},
+        {"cpu_freq", cpuFreq},
+    };
+    string dashConfigFile = regex_replace(traceFileAbsPath, regex(".prv"), ".dashboard.config.json");
+    ofstream o(dashConfigFile);
+    o << setw(4) << dashConfig << endl;
+
+    // Python call for running dash
+    string dashPlotsPath = pyProfetPath + "interactive_plots/dash_plots.py";
+    string expert = "";
+    if (expertMode) {
+        expert = " --expert";
+    }
+    string pythonCall = "python3 " + dashPlotsPath + " " + expert + " "  + traceFileAbsPath + " "  + curvesPath + " " + dashConfigFile;
     if (!keepOriginalTraceFile) {
-        pythonCall += " --excluded-original";
+        pythonCall += " --omit-original";
     }
 
     // Create dashboard execution script for running it later
-    string dashScriptFile = regex_replace(traceFilePath, regex(".prv"), ".dashboard.sh");
+    string dashScriptFile = regex_replace(traceFileAbsPath, regex(".prv"), ".dashboard.sh");
     // Create and open a file
     ofstream scriptContent(dashScriptFile);
-    string featherTraceFileFlag = " --trace-file " + regex_replace(traceFilePath, regex(".prv"), ".feather");
-    string scriptPyCall = "python3 " + dashPlotsPath + featherTraceFileFlag + curvesDirFlag + precisionFlag + cpuFreqFlag;
+    string featherTraceFile = regex_replace(traceFileAbsPath, regex(".prv"), ".feather");
+    string scriptPyCall = "python3 " + dashPlotsPath + " " + expert + " "  + featherTraceFile + " "  + curvesPath + " " + dashConfigFile;
     if (!keepOriginalTraceFile) {
-        scriptPyCall += " --excluded-original";
+        scriptPyCall += " --omit-original";
     }
     // Write to the file
     scriptContent << "#!/bin/bash\n\n";
@@ -217,7 +230,7 @@ void ProfetPyAdapter::runDashApp(string traceFilePath, double precision, double 
     }
 
     // Generate PDF image and save feather DF by default when running dash from here
-    string pythonCallPDF = pythonCall + " --pdf --save-feather";
+    string pythonCallPDF = pythonCall + " --save-feather";
     // Run dash
     system(pythonCallPDF.c_str());
 }

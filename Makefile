@@ -26,4 +26,5 @@ all:
       $(PY_CFLAGS) \
       -I libs/paraver-kernel/utils/traceparser \
       -I libs/boost_1_79_0 \
+      -I libs/json-develop/ \
       -o bin/profet $(SRC_CPP_FILES) $(SRC_CC_FILES) $(PY_LDFLAGS)

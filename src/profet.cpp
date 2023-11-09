@@ -20,6 +20,14 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
+#include <iostream>
+#include <limits.h>       
+#ifdef __linux__          
+#include <unistd.h>       
+#elif defined(__APPLE__)  
+#include <mach-o/dyld.h>  
+#endif
+
 using namespace std;
 namespace pt = boost::property_tree;
 namespace fs = std::filesystem;
@@ -34,21 +42,48 @@ namespace fs = std::filesystem;
 #include "cpp_py_adaptation/profetpyadapter.h"
 #include "rowfileparser.h"
 
-
 string getProjectPath() {
-  // Returns home path of current project
-  char result[PATH_MAX];
-  ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
-  string exec_path;
-  if (count != -1) {
-      exec_path = dirname(result);
-      exec_path.replace(exec_path.find("bin"), 3, "");
-  }
-  else {
-    cerr << "Unable to locate current execution path." << endl;
+    char result[PATH_MAX];
+    string exec_path;
+#ifdef __linux__ // Check for Linux
+    ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
+    if (count != -1) {
+        exec_path = dirname(result);
+        exec_path.replace(exec_path.find("bin"), 3, "");
+    } else {
+        std::cerr << "Unable to locate current execution path." << std::endl;
+        exit(1);
+    }
+#elif defined(__APPLE__) // Check for macOS
+    uint32_t bufsize = sizeof(result);
+    if (_NSGetExecutablePath(result, &bufsize) == 0) {
+        exec_path = dirname(result);
+        exec_path.replace(exec_path.find("bin"), 3, "");
+    } else {
+        std::cerr << "Unable to locate current execution path." << std::endl;
+        exit(1);
+    }
+#elif defined(_WIN32) || defined(_WIN64) 
+    char buffer[MAX_PATH];
+    if (GetModuleFileName(NULL, buffer, MAX_PATH) != 0) {
+        exec_path = buffer;
+        size_t pos = exec_path.find_last_of("\\");
+        if (pos != string::npos) {
+            exec_path = exec_path.substr(0, pos);
+        } else {
+            std::cerr << "Unable to locate current execution path." << std::endl;
+            exit(1);
+        }
+    } else {
+        std::cerr << "Unable to locate current execution path." << std::endl;
+        exit(1);
+    }
+#else
+    std::cerr << "Unsupported operating system" << std::endl;
     exit(1);
-  }
-  return exec_path;
+#endif
+
+    return exec_path;
 }
 
 const string PROJECT_PATH = getProjectPath();
@@ -77,8 +112,10 @@ void printHelp() {
   //         "\t\tConfiguration file\n"
   cout << "-m, --memory-channel\n"
           "\t\tCalculate memory stress metrics per memory channel, rather than per socket (default)\n"
-          "-e, --exclude-original\n"
-          "\t\tExclude the first application of the original trace in the output trace file\n"
+          "-e, --expert\n"
+          "\t\tEnables expert mode for interactive plotting. If --plot-interactive is not set, --expert is ignored.\n"
+          "-o, --omit-original\n"
+          "\t\tOmits the first application of the original trace in the output trace file\n"
           "-w, --no-warnings\n"
           "\t\tSuppress warning messages\n"
           "-q, --quiet\n"
@@ -92,15 +129,16 @@ void printHelp() {
   exit(1);
 }
 
-tuple<string, string, string, bool, bool, int, int, int> processArgs(int argc, char** argv) {
+tuple<string, string, string, bool, bool, bool, int, int, int> processArgs(int argc, char** argv) {
   // const char* const short_opts = "i:o:c:w";
-  const char* const short_opts = "mewqIph";
+  const char* const short_opts = "meowqIph";
   const option long_opts[] = {
           // {"input", required_argument, nullptr, 'i'},
           // {"output", required_argument, nullptr, 'o'},
           // {"config", required_argument, nullptr, 'c'},
           {"memory-channel", no_argument, nullptr, 'm'},
-          {"exclude-original", no_argument, nullptr, 'e'},
+          {"expert", no_argument, nullptr, 'e'},
+          {"omit-original", no_argument, nullptr, 'o'},
           {"no-warnings", no_argument, nullptr, 'w'},
           {"quiet", no_argument, nullptr, 'q'},
           {"plot-interactive", no_argument, nullptr, 'I'},
@@ -113,6 +151,7 @@ tuple<string, string, string, bool, bool, int, int, int> processArgs(int argc, c
   int displayWarnings = 1; // whether to display warnings or not (it need to be an integer for sending it to python (booleans don't work))
   int runDash = 0; // whether to run dash or not (it need to be an integer for sending it to python (booleans don't work))
   bool perSocket = true;
+  bool expert = false;
   bool keepOriginalTrace = true;
   bool showSupportedSystems = false;
   bool showHelp = false;
@@ -125,6 +164,10 @@ tuple<string, string, string, bool, bool, int, int, int> processArgs(int argc, c
           break;
 
       case 'e':
+          expert = true;
+          break;
+
+      case 'o':
           keepOriginalTrace = false;
           break;
 
@@ -183,7 +226,7 @@ tuple<string, string, string, bool, bool, int, int, int> processArgs(int argc, c
   optind++;
   string configFile = argv[optind];
 
-  return {inFile, outFile, configFile, perSocket, keepOriginalTrace, displayWarnings, displayText, runDash};
+  return {inFile, outFile, configFile, perSocket, expert, keepOriginalTrace, displayWarnings, displayText, runDash};
 }
 
 void checkInputOutputFiles(string inFile, string outFile) {
@@ -241,7 +284,7 @@ bool isMemoryEvent(map<int, MemoryEvent> memEventTypes, TEventValue evtValue) {
 void addProcessModelHierarchy(map<int, vector<int>> MCsPerSocket, int nNodes, ProcessModel <> &originalProcessModel,
                               ProcessModel<> &outputProcessModel, bool perSocket, bool keepOriginalTrace) {
   if (keepOriginalTrace) {
-    // Keep hierarchy of the original process model (only the 1st app, we  can ignore the second (memory counters))
+    // Keep hierarchy of the original process model (only the 1st app, we can ignore the second (memory counters))
     // We can assume we always have 2 apps.
     auto originalFirstApplIt = originalProcessModel.cbegin();
     outputProcessModel.addApplication();
@@ -466,7 +509,7 @@ void printFinalMessage(vector<NodeMemoryRecords> nodes, string prvOutputFile) {
 
 int main(int argc, char *argv[]) {
   // Process arguments
-  auto [inFile, outFile, configFile, perSocket, keepOriginalTrace, displayWarnings, displayText, runDash] = processArgs(argc, argv);
+  auto [inFile, outFile, configFile, perSocket, expertMode, keepOriginalTrace, displayWarnings, displayText, runDash] = processArgs(argc, argv);
   checkInputOutputFiles(inFile, outFile);
   // Read config file
   auto [memorySystem, cpuModel, cpuFreqGHz, cacheLineBytes] = readConfigFile(configFile);
@@ -572,7 +615,7 @@ int main(int argc, char *argv[]) {
   addProcessModelHierarchy(MCsPerSocket, nNodes, processModel, outputProcessModel, perSocket, keepOriginalTrace);
 
   // Communicators to be dumped to the output trace
-  std::vector< std::string > outCommunicators;
+  vector <string> outCommunicators;
   if (keepOriginalTrace) {
     outCommunicators = communicators;
   }
@@ -688,7 +731,7 @@ int main(int argc, char *argv[]) {
   // Initialize dash app
   if (runDash) {
     cout << "\nLoading interactive plot..." << endl;
-    profetPyAdapter.runDashApp(outFile, PRECISION, cpuFreqGHz, keepOriginalTrace);
+    profetPyAdapter.runDashApp(outFile, PRECISION, cpuFreqGHz, expertMode, keepOriginalTrace);
   }
 
   traceFile.close();
