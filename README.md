@@ -48,9 +48,12 @@ Parameters:
 
 	-m, --memory-channel
 		Calculate memory stress metrics per memory channel, rather than per socket (default).
+
+	-e, --expert
+		Enables expert mode for interactive plotting. If --plot-interactive is not set, --expert is ignored.
 	
-	-e, --exclude-original
-		Exclude the first application of the original trace in the output trace file.
+	-o, --omit-original
+		Omit the first application of the original trace in the output trace file.
 		
 	-w, --no-warnings
 		Suppress warning messages.
