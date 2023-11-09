@@ -5,7 +5,7 @@ import numpy as np
 import dash
 from dash import html, Input, Output, State, callback_context
 from dash.exceptions import PreventUpdate
-
+import pandas as pd
 import curve_utils
 import utils
 import roofline
@@ -65,10 +65,12 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
     # Hide the overview tab specific options when the tab is not active.
     @app.callback(
         Output(f'sampling-section', 'style'),
+        Output(f'overview-sampling-mode-section', 'style'),
         Input("tabs", "active_tab"),
     )
     def hide_only_overview_sidebar_options(active_tab):
-        return {'display': 'none'} if active_tab == "curves-tab" or active_tab == "mem-roofline-tab" else {}
+        num_outputs = 2
+        return [{'display': 'none'} if active_tab == "curves-tab" or active_tab == "mem-roofline-tab" else {}]*num_outputs
 
     # There is no node selection in the overview tab. This is why it's hidden when the tab is active.
     @app.callback(
@@ -393,6 +395,8 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
 
     @app.callback(
         Output('overview-chart', 'figure'),
+        Output('sampling-label', 'children'),
+        Input('overview-sampling-mode', 'value'),
         Input('sampling-range-slider', 'value'),
         Input('curves-color-dropdown', 'value'),
         Input('curves-transparency-slider', 'value'),
@@ -400,36 +404,60 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
         Input('markers-color-dropdown', 'value'),
         Input('markers-transparency-slider', 'value'),
         State('overview-chart', 'figure'),
+        State('sampling-label', 'children'),
     )
-    def update_overview_graph(sample_range, curves_color, curves_transparency, time_range, markers_color, markers_transparency, *states):
+    def update_overview_graph(sampling_mode, sample_range, curves_color, curves_transparency, time_range, markers_color, markers_transparency, *states):
         
         # Get the current state of the overview chart
         overview_fig = states[0]
+        sampling_label = states[1]
 
         # Get the ID of the input that triggered the callback
         input_id = callback_context.triggered[0]['prop_id'].split('.')[0]
         
         # Handle callback logic when triggered by multiple inputs or the sampling range slider
-        if len(callback_context.triggered) > 1 or input_id == 'sampling-range-slider':
+        if len(callback_context.triggered) > 1 or input_id == 'sampling-range-slider' or input_id == 'overview-sampling-mode':
             # Check if the sample_range is not zero
+            sampling_label = sampling_label.split('(').pop(0) + f'({sample_range[0]*1000}ms)'
             if sample_range[0] != 0:
                 # Sample the dataframe to the specified sample range
                 df_copy = df_overview.copy()
                 df_copy['timestamp'] = df_copy['timestamp'] // (sample_range[0] * 10 ** 9)
-                result_df = df_copy.groupby('timestamp', as_index=False).apply(
-                    lambda x: x.loc[x['stress_score'].idxmax()]).reset_index(drop=True)
+                grouped = df_copy.groupby('timestamp', as_index=False)
+
+                aggregation_dict = {col: 'first' for col in df_copy.columns if col != 'stress_score'}
+
+
+                if sampling_mode == 'stress':
+                    result_df = grouped.apply(lambda x: x.loc[x['stress_score'].idxmax()]).reset_index(drop=True)
+                elif sampling_mode == 'mean':
+                    aggregation_dict['stress_score'] = 'mean'
+                    grouped = df_copy.groupby('timestamp', as_index=False)
+                    result_df = grouped.agg(aggregation_dict).reset_index(drop=True)
+                elif sampling_mode == 'median':
+                    aggregation_dict['stress_score'] = 'median'
+                    grouped = df_copy.groupby('timestamp', as_index=False)
+                    result_df = grouped.agg(aggregation_dict).reset_index(drop=True)
+                elif sampling_mode == 'mode':
+                    aggregation_dict['stress_score'] = lambda x: pd.Series.mode(x).iloc[0] if not x.empty else np.nan
+                    result_df = grouped.agg(aggregation_dict).reset_index(drop=True)
+                else:
+                    result_df = df_copy
             else:
                 result_df = df_overview
+            
+            if 'bw' not in result_df.columns or 'lat' not in result_df.columns:
+                raise Exception('The dataframe does not contain the required columns for the overview chart.')
+            else:
+                if markers_color == 'stress_score':
+                    color_bar = curve_utils.get_color_bar(labels, stress_score_config)
 
-            if markers_color == 'stress_score':
-                color_bar = curve_utils.get_color_bar(labels, stress_score_config)
+                graph_title = 'Application Curves'
+                overview_fig = curve_utils.get_graph_fig(result_df, curves, curves_color, curves_transparency, markers_color, markers_transparency,
+                                                graph_title, labels['bw'], labels['lat'], stress_score_config['colorscale'], color_bar)
 
-            graph_title = 'Application Curves'
-            overview_fig = curve_utils.get_graph_fig(result_df, curves, curves_color, curves_transparency, markers_color, markers_transparency,
-                                            graph_title, labels['bw'], labels['lat'], stress_score_config['colorscale'], color_bar)
-
-            return overview_fig
-               
+                return overview_fig, sampling_label
+                
 
         # Handle callback logic. This is triggered by a single input.
         if input_id == 'curves-color-dropdown':
@@ -470,4 +498,4 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
         elif input_id == 'markers-transparency-slider':
             overview_fig['data'][-1]['marker']['opacity'] = markers_transparency
         
-        return overview_fig
+        return overview_fig, sampling_label

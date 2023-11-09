@@ -50,6 +50,8 @@ def get_graph_fig(df, curves, curves_color, curves_transparency, markers_color, 
 
         # plot application bw-lat dots
         dots_fig = get_application_memory_dots_fig(df, markers_color, stress_score_scale, markers_transparency)
+        if dots_fig is None:
+            return None
         fig.add_trace(dots_fig.data[0])
 
         fig.update_xaxes(title=x_title)
@@ -128,6 +130,10 @@ def get_curves_fig(curves, fig, color='black', transparency=1):
     return fig
 
 def get_application_memory_dots_fig(df, color, stress_score_scale=None, opacity=0.01):
+    if 'bw' not in df.columns or 'lat' not in df.columns:
+        print('Error: bw or lat not in df.columns')
+        return None
+
     if color == 'stress_score':
         dots_fig = px.scatter(df, x='bw', y='lat', color='stress_score', color_continuous_scale=stress_score_scale)
     else:
