@@ -318,7 +318,7 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
         State('overview-chart', 'figure'),
         State('sampling-label', 'children'),
     )
-    def update_overview_graph(sample_range, curves_color, curves_transparency, time_range, markers_color, markers_transparency, *states):
+    def update_overview_graph(sampling_mode, sample_range, curves_color, curves_transparency, time_range, markers_color, markers_transparency, *states):
         # Get the current state of the overview chart
         overview_fig = states[0]
         sampling_label = states[1]
@@ -329,7 +329,8 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
         # Handle callback logic when triggered by multiple inputs or the sampling range slider
         if len(callback_context.triggered) > 1 or input_id == 'sampling-range-slider' or input_id == 'overview-sampling-mode':
             # Check if the sample_range is not zero
-            sampling_label = sampling_label.split('(').pop(0) + f'({sample_range[0]*1000}ms)'
+            if sampling_label is not None:
+                sampling_label = sampling_label.split('(').pop(0) + f'({sample_range[0]*1000}ms)'
             if sample_range[0] != 0:
                 # Sample the dataframe to the specified sample range
                 df_copy = df_overview.copy()
