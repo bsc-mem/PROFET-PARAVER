@@ -18,22 +18,22 @@ def get_platform(config: dict):
             },
         },
         'cpu': {
-            'model': {
-                'label': 'Model',
-                'value': 'TODO',
-            },
-            'n_cores': {
-                'label': 'Number of cores',
-                'value': 'TODO',
-            },
+            # 'model': {
+            #     'label': 'Model',
+            #     'value': 'TODO',
+            # },
+            # 'n_cores': {
+            #     'label': 'Number of cores',
+            #     'value': 'TODO',
+            # },
             'freq': {
                 'label': 'Frequency',
                 'value': f'{config["cpu_freq"]:.1f} GHz',
             },
-            'hyper': {
-                'label': 'Hyper-threading',
-                'value': 'TODO: ON/OFF',
-            },
+            # 'hyper': {
+            #     'label': 'Hyper-threading',
+            #     'value': 'TODO: ON/OFF',
+            # },
         },
         'memory': {
             'model': {
@@ -91,10 +91,10 @@ def get_trace_info(df: pd.DataFrame, system_arch: dict):
             'label': 'Sockets per node',
             'value': sockets_per_node_str,
         },
-        'n_cores': {
-            'label': 'Number of cores',
-            'value': 'TODO',
-        },
+        # 'n_cores': {
+        #     'label': 'Number of cores',
+        #     'value': 'TODO',
+        # },
     }
 
 def get_summary_info(df: pd.DataFrame, config: dict, system_arch: dict):

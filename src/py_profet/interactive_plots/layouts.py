@@ -6,25 +6,14 @@ import summary_info
 import utils
 
 
-def get_summary_platform_row(platform: dict, summary_table_attrs: dict):
-    # get rows from platform dict (see summary_info.py)
-    server_rows = utils.get_dash_table_rows(platform['server'])
-    cpu_rows = utils.get_dash_table_rows(platform['cpu'])
-    memory_rows = utils.get_dash_table_rows(platform['memory'])
+def get_summary_row(summary: dict, summary_table_attrs: dict):
+    # Create rows for each table
+    cpu_rows = utils.get_dash_table_rows(summary['platform']['cpu'])
+    memory_profile_rows = utils.get_dash_table_rows(summary['memory_profile'])
+    trace_info_rows = utils.get_dash_table_rows(summary['trace_info'])
 
     return dbc.Row([
-        html.H2('Platform', className='summary-section-title'),
-        # Server
-        dbc.Col([
-            dbc.Table([
-                html.Thead([
-                    html.Tr([
-                        html.Th('Server', className='fixed-width-header'),
-                    ])
-                ], className='no-border-thead'),
-                html.Tbody(server_rows)
-            ], **summary_table_attrs, id='summary-table-server'),
-        ], md=4),
+        html.H2('Summary', className='summary-section-title'),
         # CPU
         dbc.Col([
             dbc.Table([
@@ -34,56 +23,32 @@ def get_summary_platform_row(platform: dict, summary_table_attrs: dict):
                     ])
                 ], className='no-border-thead'),
                 html.Tbody(cpu_rows)
-            ], **summary_table_attrs, id='summary-table-cpu'),
+            ], **summary_table_attrs, id='summary-table-server'),
         ], md=4),
-        # Memory
+        # Memory profile
         dbc.Col([
             dbc.Table([
                 html.Thead([
                     html.Tr([
-                        html.Th('Memory', className='fixed-width-header'),
+                        html.Th('Memory Profile', className='fixed-width-header'),
                     ])
                 ], className='no-border-thead'),
-                html.Tbody(memory_rows)
+                html.Tbody(memory_profile_rows)
+            ], **summary_table_attrs, id='summary-table-cpu'),
+        ], md=4),
+        # Trace
+        dbc.Col([
+            dbc.Table([
+                html.Thead([
+                    html.Tr([
+                        html.Th('Trace', className='fixed-width-header'),
+                    ])
+                ], className='no-border-thead'),
+                html.Tbody(trace_info_rows)
             ], **summary_table_attrs, id='summary-table-memory')
         ], md=4),
     ])
 
-def get_summary_memory_row(memory: dict, summary_table_attrs: dict):
-    # get rows from memory dict (see summary_info.py)
-    memory_profile_rows = utils.get_dash_table_rows(memory)
-    
-    return dbc.Row([
-        html.H2('Memory profile', className='summary-section-title'),
-        dbc.Col([
-            dbc.Table([
-                html.Thead([
-                    html.Tr([
-                        html.Th('Header?', className='fixed-width-header'),
-                    ])
-                ], className='no-border-thead'),
-                html.Tbody(memory_profile_rows)
-            ], **summary_table_attrs, id='summary-table-memory-profile'),
-        ], md=4),
-    ])
-
-def get_summary_trace_row(trace_info: dict, summary_table_attrs: dict):
-    # get rows from trace_info dict (see summary_info.py)
-    trace_info_rows = utils.get_dash_table_rows(trace_info)
-
-    return dbc.Row([
-        html.H2('Trace', className='summary-section-title'),
-        dbc.Col([
-            dbc.Table([
-                html.Thead([
-                    html.Tr([
-                        html.Th('Header?', className='fixed-width-header'),
-                    ])
-                ], className='no-border-thead'),
-                html.Tbody(trace_info_rows)
-            ], **summary_table_attrs, id='summary-table-trace'),
-        ], md=4),
-    ])
 
 def get_summary_tab(df: pd.DataFrame, config: dict, system_arch: dict):
     summary_table_attrs = {'bordered': True, 'hover': False, 'responsive': True,
@@ -91,12 +56,8 @@ def get_summary_tab(df: pd.DataFrame, config: dict, system_arch: dict):
     summary = summary_info.get_summary_info(df, config, system_arch)
 
     return html.Div([
-        # Platform summary
-        get_summary_platform_row(summary['platform'], summary_table_attrs),
-        # Memory profile summary
-        get_summary_memory_row(summary['memory_profile'], summary_table_attrs),
-        # Trace summary
-        get_summary_trace_row(summary['trace_info'], summary_table_attrs),
+        # Summary of application and system
+        get_summary_row(summary, summary_table_attrs),
     ], id='summary-tab-content')
 
 def get_curve_graphs_sidebar(df: pd.DataFrame):
