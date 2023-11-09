@@ -205,7 +205,7 @@ void ProfetPyAdapter::runDashApp(string traceFilePath, double precision, double 
     }
     string pythonCall = "python3 " + dashPlotsPath + " " + expert + " "  + traceFileAbsPath + " "  + curvesPath + " " + dashConfigFile;
     if (!keepOriginalTraceFile) {
-        pythonCall += " --excluded-original";
+        pythonCall += " --omit-original";
     }
 
     // Create dashboard execution script for running it later
@@ -215,7 +215,7 @@ void ProfetPyAdapter::runDashApp(string traceFilePath, double precision, double 
     string featherTraceFile = regex_replace(traceFileAbsPath, regex(".prv"), ".feather");
     string scriptPyCall = "python3 " + dashPlotsPath + " " + expert + " "  + featherTraceFile + " "  + curvesPath + " " + dashConfigFile;
     if (!keepOriginalTraceFile) {
-        scriptPyCall += " --excluded-original";
+        scriptPyCall += " --omit-original";
     }
     // Write to the file
     scriptContent << "#!/bin/bash\n\n";
