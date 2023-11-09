@@ -28,7 +28,7 @@ def parse_args():
 
 def test_with_parameters(raw_file: str, processed_file: str, config_file: str, precision: int, nnodes: int, nsockets: int, nmcs: int,
                          no_warnings: bool = True, no_text: bool = True, per_socket: bool = True, fail_fast: bool = True, no_tests: bool = False,
-                         exclude_original_trace: bool = False):
+                         omit_original_trace: bool = False):
     # perform functional test with the given parameters
     # raw_file: raw trace file path (file with memory read and write counters, the one we use for processing in PROFET)
     # processed_file: processed file path after running PROFET
@@ -44,8 +44,8 @@ def test_with_parameters(raw_file: str, processed_file: str, config_file: str, p
         flags += '--quiet '
     if not per_socket:
         flags += '--memory-channel '
-    if exclude_original_trace:
-        flags += '--exclude-original '
+    if omit_original_trace:
+        flags += '--omit-original '
 
     profet_command = f'./bin/profet {raw_file} {processed_file} {config_file} {flags}'
     print(profet_command)
@@ -58,7 +58,7 @@ def test_with_parameters(raw_file: str, processed_file: str, config_file: str, p
 
     if not no_tests:
         # run with command instead of importing the module. It is much better like this because of the way unittests work.
-        tests_exit_code = os.system(f'python3 tests/functional_test.py {raw_file} {processed_file} {precision} {nnodes} {nsockets} {nmcs} {int(exclude_original_trace)}')
+        tests_exit_code = os.system(f'python3 tests/functional_test.py {raw_file} {processed_file} {precision} {nnodes} {nsockets} {nmcs} {int(omit_original_trace)}')
         if fail_fast and tests_exit_code != 0:
             raise Exception('Functional tests failed.')
 
@@ -80,16 +80,16 @@ if __name__ == "__main__":
     print('=====================================================\n')
     for trace_config in test_traces:
         out_trace_file = trace_config["trace_file"]
-        exclude_original = False
-        if 'exclude_original' in trace_config and trace_config['exclude_original']:
-            exclude_original = True
-            out_trace_file = trace_config["trace_file"].replace('.prv', '.exclude_original.prv')
+        omit_original = False
+        if 'omit_original' in trace_config and trace_config['omit_original']:
+            omit_original = True
+            out_trace_file = trace_config["trace_file"].replace('.prv', '.omit_original.prv')
 
         print(trace_config["trace_file"])
         test_with_parameters(f'tests/traces/{trace_config["trace_file"]}', f'tests/out_traces_per_mc/{out_trace_file}',
                              f'configs/{trace_config["config"]}', trace_config["precision"], trace_config["nnodes"],
                              trace_config["nsockets"], trace_config["nmcs"], per_socket=False, fail_fast=args.fail_fast,
-                             no_tests=args.no_tests, exclude_original_trace=exclude_original)
+                             no_tests=args.no_tests, omit_original_trace=omit_original)
         print('\n')
             
     # process traces per socket
@@ -98,14 +98,14 @@ if __name__ == "__main__":
     print('=====================================================\n')
     for trace_config in test_traces:
         out_trace_file = trace_config["trace_file"]
-        exclude_original = False
-        if 'exclude_original' in trace_config and trace_config['exclude_original']:
-            exclude_original = True
-            out_trace_file = trace_config["trace_file"].replace('.prv', '.exclude_original.prv')
+        omit_original = False
+        if 'omit_original' in trace_config and trace_config['omit_original']:
+            omit_original = True
+            out_trace_file = trace_config["trace_file"].replace('.prv', '.omit_original.prv')
 
         print(trace_config["trace_file"])
         test_with_parameters(f'tests/traces/{trace_config["trace_file"]}', f'tests/out_traces_per_socket/{out_trace_file}',
                              f'configs/{trace_config["config"]}', trace_config["precision"], trace_config["nnodes"],
                              trace_config["nsockets"], -1, per_socket=True, fail_fast=args.fail_fast,
-                             no_tests=args.no_tests, exclude_original_trace=exclude_original)
+                             no_tests=args.no_tests, omit_original_trace=omit_original)
         print('\n')

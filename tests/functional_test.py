@@ -28,7 +28,7 @@ def metric_val(line_sp, metric_id, precision):
     return line_sp[pos] / 10**precision
 
 
-def prv_out_to_df(prv_path, precision, base_evt, exclude_original_trace):
+def prv_out_to_df(prv_path, precision, base_evt, omit_original_trace):
     df = []
     with open(prv_path, 'r') as f:
         # skip header
@@ -39,7 +39,7 @@ def prv_out_to_df(prv_path, precision, base_evt, exclude_original_trace):
 
             l = list(map(lambda i: int(i), line.split(':')))
             app_id = l[2]
-            if not exclude_original_trace and app_id == 1:
+            if not omit_original_trace and app_id == 1:
                 pass
                 # df.append({'node': 1, 'time': l[5]})
             else:
@@ -86,7 +86,7 @@ class TestOutput(unittest.TestCase):
     def setUpClass(self):
         if self.PROCESSED_FILE == None:
             raise Exception('Required file for testing has not been set up yet.')
-        self.out_df = prv_out_to_df(self.PROCESSED_FILE, self.PRECISION, self.PROFET_BASE_EVENT_TYPE, self.EXCLUDE_ORIGINAL_TRACE)
+        self.out_df = prv_out_to_df(self.PROCESSED_FILE, self.PRECISION, self.PROFET_BASE_EVENT_TYPE, self.OMIT_ORIGINAL_TRACE)
 
     def test_same_prv_output(self):
         # assert that the output prv file is equal to the previously correct one
@@ -127,7 +127,7 @@ class TestOutput(unittest.TestCase):
     def test_same_n_nodes(self):
         # assert that the generated file has the correct number of nodes
         test_df = self.out_df
-        if 'exclude_original' not in self.PROCESSED_FILE:
+        if 'omit_original' not in self.PROCESSED_FILE:
             test_df = self.out_df[self.out_df['node'] > 1]
         self.assertEqual(self.N_NODES, test_df['node'].nunique())
 
@@ -172,7 +172,7 @@ if __name__ == '__main__':
 
     # receive output file path as argument
     # NOTE: use sys.argv.pop(), as sys.argv[i] does not work properly
-    TestOutput.EXCLUDE_ORIGINAL_TRACE = bool(int(sys.argv.pop()))
+    TestOutput.OMIT_ORIGINAL_TRACE = bool(int(sys.argv.pop()))
     TestOutput.N_MCS = int(sys.argv.pop())
     TestOutput.N_SOCKETS = int(sys.argv.pop())
     TestOutput.N_NODES = int(sys.argv.pop())
