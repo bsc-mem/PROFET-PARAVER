@@ -201,7 +201,7 @@ void ProfetPyAdapter::runDashApp(string traceFilePath, double precision, double 
     string dashPlotsPath = pyProfetPath + "interactive_plots/dash_plots.py";
     string expert = "";
     if (expertMode) {
-        expert = " --expert";
+        expert = "--expert";
     }
     string pythonCall = "python3 " + dashPlotsPath + " " + expert + " "  + traceFileAbsPath + " "  + curvesPath + " " + dashConfigFile;
     if (!keepOriginalTraceFile) {
