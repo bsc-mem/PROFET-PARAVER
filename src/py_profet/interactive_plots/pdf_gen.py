@@ -49,7 +49,7 @@ def get_summary(df: pd.DataFrame, config: dict, system_arch: dict) -> list:
         textColor='black'
     )
     return [
-        Paragraph("Summary", heading1_style),
+        Paragraph("Operational Overview", heading1_style),
         # Platform
         Paragraph("CPU", heading2_style),
         # Paragraph("Server", heading3_style),

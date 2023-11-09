@@ -13,7 +13,7 @@ def get_summary_row(summary: dict, summary_table_attrs: dict):
     trace_info_rows = utils.get_dash_table_rows(summary['trace_info'])
 
     return dbc.Row([
-        html.H2('Summary', className='summary-section-title'),
+        html.H2('Operational Overview', className='summary-section-title'),
         # CPU
         dbc.Col([
             dbc.Table([
