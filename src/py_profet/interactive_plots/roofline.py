@@ -3,6 +3,7 @@ import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
 import curve_utils
+import os
 
 def plot(peak_bw_gbs, peak_flopss, x_data=[], y_data=[], graph_title=''):
     # Convert input data to NumPy arrays
@@ -230,6 +231,210 @@ def plotCARM(df, peak_bw_gbs, peak_flopss, cache_bw, markers_color, markers_tran
         yaxis_type="log",
         xaxis_title="Operational Intensity (FLOPS/Byte)",
         yaxis_title="Performance (GFLOPS/s)",
+        showlegend=True,
+    )
+
+    
+    return fig
+
+
+def read_config(config_file):
+    f = open(config_file, "r")
+
+    for line in f:
+        l = line.split('=')
+        if(l[0] == 'name'):
+            name = l[1].rstrip()
+
+        if(l[0] == 'nominal_frequency'):
+            freq = l[1].rstrip()
+
+        if(l[0] == 'l1_cache'):
+            l1_size = l[1].rstrip()
+
+        if(l[0] == 'l2_cache'):
+            l2_size = l[1].rstrip()
+        
+        if(l[0] == 'l3_cache'):
+            l3_size = l[1].rstrip()
+
+    return name, freq, l1_size, l2_size, l3_size
+
+def get_system_properties(file_path):
+
+    current_path = os.path.dirname(os.path.abspath(__file__))
+
+    f = open(current_path + "/" + file_path, "r")
+
+    for line in f:
+        l = line.split('=')
+        if(l[0] == 'name'):
+            name = l[1].rstrip()
+        if(l[0] == 'nominal_frequency'):
+            freq = l[1].rstrip()
+
+        if(l[0] == 'l1_cache'):
+            l1_size = l[1].rstrip()
+
+        if(l[0] == 'l2_cache'):
+            l2_size = l[1].rstrip()
+        
+        if(l[0] == 'l3_cache'):
+            l3_size = l[1].rstrip()
+        
+        if(l[0] == 'L1'):
+            L1 = l[1].rstrip()
+        
+        if(l[0] == 'L2'):
+            L2 = l[1].rstrip()
+        
+        if(l[0] == 'L3'):
+            L3 = l[1].rstrip()
+        
+        if(l[0] == 'DRAM'):
+            dram = l[1].rstrip()
+        
+        if(l[0] == 'FP'):
+            fp = l[1].rstrip()
+        
+
+    return {
+        'name': name,
+        'nominal_frequency': float(freq),
+        'l1_cache': float(l1_size),
+        'l2_cache': float(l2_size),
+        'l3_cache': float(l3_size),
+        'fp': float(fp),
+        'bw': [
+            {
+                'level': 'L1',
+                'value': float(L1),
+                'unit': f'{round(float(L1), 2)} GB/s'
+            },
+            {
+                'level': 'L2',
+                'value': float(L2),
+                'unit': f'{round(float(L2), 2)} GB/s'
+            },
+            {
+                'level': 'L3',
+                'value': float(L3),
+                'unit': f'{round(float(L3), 2)} GB/s'
+            },
+            {
+                'level': 'DRAM',
+                'value': float(dram),
+                'unit': f'{round(float(dram), 2)} GB/s'
+            },
+            
+        ]
+    }
+
+def singleRoofline(df, peak_bw_gbs, peak_flopss, cache_bw, labels, stress_score_scale, graph_title=''):
+
+
+    # Add dynamically computed value to x_values
+    x_values = [0, peak_flopss / peak_bw_gbs, peak_flopss/2]
+    y_values = [0, peak_flopss, peak_flopss]
+
+    fig = go.Figure()
+
+    
+    fig.add_trace(
+        go.Scatter(
+            x=x_values,
+            y=y_values,
+            mode="lines",
+            line=dict(color="black", width=2),
+            name=f'Roofline',
+            hoverlabel=dict(namelength=0),
+            hovertemplate=f'<b>Roofline</b><br>' + 'Operational Intensity: %{x} (FLOPS/Byte)<br>' + 'Performance: %{y} (GFLOPS/s)<br>'
+        )
+    )
+
+    # Create roofline markers using a function from 'curve_utils' module
+    #dots_fig = curve_utils.get_roofline_markers_dots_fig(df, x_data, y_data, markers_color, stress_score_scale, markers_transparency);
+    #fig.add_trace(dots_fig)
+
+    # Add a roofline line to the figure
+    fig.add_trace(go.Scatter(x=[1, peak_flopss/peak_bw_gbs, peak_flopss/2], y=[0, peak_flopss, peak_flopss], mode='lines', line=dict(color='black', width=2),
+                             name=f'Roofline',
+                             hoverlabel=dict(namelength=0),
+                             
+                             hovertemplate=f'<b>Roofline</b><br>' +
+                                            'Operational Intensity: %{x} (FLOPS/Byte)<br>' +
+                                            'Performance: %{y} (GFLOPS/s)<br>'))
+
+
+    
+    #Defining different dash types for each cache level
+    dash_type = ['dot', 'dash', 'longdash', 'dashdot', 'longdashdot']
+
+    # #Adding cache BW roofs
+    # for i in range(len(cache_bw)):
+    #     cache_elbow = peak_flopss/cache_bw[i]['value']
+    #     level= cache_bw[i]['level']
+    #     fig.add_trace(go.Scatter(x=[0, cache_elbow], y=[0, peak_flopss], mode='lines', line=dict(color='black', width=2, dash=dash_type[i]),
+    #         hoverlabel=dict(namelength=0),
+    #                             hovertemplate=f'<b>{f"Cache BW roof ({level})" if level != "DRAM" else level}</b><br>BW: {cache_bw[i]["unit"]}<br>' +
+    #                                       'Operational Intensity: %{x} (FLOPS/Byte)<br>' +
+    #                                       'Performance: %{y} (GFLOPS/s)<br>',
+    #                             name=f'{cache_bw[i]["level"]} ({cache_bw[i]["unit"]})', showlegend=True))
+
+
+    #Makes legend responsive so that it doesn't overlap with the chart when window is resized.
+    fig.update_layout(
+        legend=dict(
+            orientation="h",
+            y=1,
+            yref="paper",
+            yanchor="bottom",
+            x=0.5,
+            xref="paper",
+            xanchor="center",
+        )
+    )
+
+    # # Annotations for Memory and Compute Roofs
+    # fig.add_annotation(
+    #     x=3*(np.log10(peak_flopss/peak_bw_gbs + max_x_value)/4),
+    #     y=np.log10(peak_flopss * 1.25),
+    #     text=f"<b>Compute roof ({(0.000001*peak_flopss):.2f} TFLOPS/s)</b>",
+    #     showarrow=False,
+    #     font=dict(size=12, color='black'),
+    # )
+
+    # # Angle calculation for the memory roof annotation
+    # angle = math.atan2(np.log10(peak_flopss), np.log10(peak_flopss/peak_bw_gbs)) * 180 / math.pi
+
+    # fig.add_annotation(
+    #     x=np.log10((peak_flopss/peak_bw_gbs)/9),
+    #     y=np.log10(peak_flopss/9)+0.3,
+    #     text=f"<b>Memory BW roof<br>({peak_bw_gbs:.1f} GB/s)</b>",
+    #     showarrow=False,
+    #     textangle=-angle*0.75,
+    #     font=dict(size=12, color='black')
+    # )
+
+    fig.update_layout(
+        title={
+            "text": graph_title,
+            "font": {
+                "size": 24,
+                "color": "black",
+                "family": "Arial, sans-serif",
+            },
+            "x": 0.5,
+            "xanchor": "center",
+        },
+        xaxis={
+            # Set the x-axis to linear scale
+            "type": "linear",
+            "title": "Operational Intensity (FLOPS/Byte)",
+        },
+        yaxis={
+            "title": "Performance (GFLOPS/s)",
+        },
         showlegend=True,
     )
 

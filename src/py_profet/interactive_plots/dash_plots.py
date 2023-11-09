@@ -20,6 +20,7 @@ import numpy as np
 import layouts
 import utils
 import curve_utils
+from roofline import get_system_properties 
 
 # define a custom continuous color scale for stress score
 stress_score_config = {
@@ -31,6 +32,8 @@ stress_score_config = {
         (1.0, 'red'),
     ],
 }
+
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -165,9 +168,14 @@ if __name__ == '__main__':
     # save a pdf file with a default chart
     if args.plot_pdf:
         save_pdf(args.trace_file)
+    
+
+    #READING THE ROOFLINE VALUES:
+    system_data = get_system_properties('../roofline/EPEEC_SYSTEM_data_roofline_12:59:00.207067_2023-11-07.out')    
+
 
     #TODO: If the expert argument changes change it here.
     app = get_dash_app(df, config_json, system_arch, max_elements, args.expert)
-    register_callbacks(app, df, df_overview, curves, config_json, system_arch, args.trace_file, labels, stress_score_config, max_elements, args.expert)
-    app.run_server(debug=False)
-    #app.run_server(debug=True)
+    register_callbacks(app, system_data, df, df_overview, curves, config_json, system_arch, args.trace_file, labels, stress_score_config, max_elements, args.expert)
+    #app.run_server(debug=False)
+    app.run_server(debug=True)

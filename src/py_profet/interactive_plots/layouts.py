@@ -271,9 +271,26 @@ def get_overview_container(system_arch: dict, id_prefix: str, max_elements: int 
 
     return container
 
+def get_single_roofline_container():
+    container = dbc.Container([], id=f'single-roofline-container', fluid=True)
+
+    col = dbc.Col([
+        html.Br(),
+        dcc.Graph(id='single-roofline-chart', style={'height': '800px'}),
+    ])
+    
+    hidden_div = html.Div(id='single-roofline-hidden-div', style={'display': 'none'})
+
+    container.children.append(col)
+    container.children.append(hidden_div)
+
+    return container
 
 def get_curve_graphs_tab(system_arch: dict, max_elements: int = None):
     return get_graphs_container(system_arch, "curves", max_elements)
+
+def get_single_roofline_tab():
+    return get_single_roofline_container()
 
 def get_roofline_tab(system_arch: dict, max_elements: int = None):
     
@@ -281,11 +298,6 @@ def get_roofline_tab(system_arch: dict, max_elements: int = None):
 
     container.children.insert(0, html.Div(id='hidden-div', children='Initial Value', style={'display': 'none'}))
     return container
-    #return dbc.Container([
-    #    # Hidden div for trigering roofline callback (TODO: remove this when we have other components that trigger the callback)
-    #    html.Div(id='hidden-div', children='Initial Value', style={'display': 'none'}),
-    #    #dcc.Graph(id=f'roofline-graph'),
-    #])
 
 
 def get_overview_tab(system_arch: dict, max_elements: int = None):
@@ -296,10 +308,12 @@ def get_main_content(df: pd.DataFrame, config: dict, system_arch: dict, max_elem
     curves_tab = get_curve_graphs_tab(system_arch, max_elements)
     roofline_tab = get_roofline_tab(system_arch, max_elements)
     overview_tab = get_overview_tab(system_arch, max_elements)
+    improved_roofline_tab = get_single_roofline_tab()
 
     t = [
         dbc.Tab(system_info_tab, label="Summary", tab_id="summary-tab"),
         dbc.Tab(overview_tab, label="Application Overview", tab_id="app-overview-tab"),
+        dbc.Tab(improved_roofline_tab, label="New Roofline", tab_id="single-roofline-tab"),
     ]
 
     # Add expert tabs
@@ -307,7 +321,7 @@ def get_main_content(df: pd.DataFrame, config: dict, system_arch: dict, max_elem
         t.append(dbc.Tab(curves_tab, label="Curves", tab_id="curves-tab"))
         t.append(dbc.Tab(roofline_tab, label="Roofline", tab_id="mem-roofline-tab"))
 
-    tabs = dbc.Tabs(t, id="tabs", active_tab="summary-tab")
+    tabs = dbc.Tabs(t, id="tabs", active_tab="single-roofline-tab")
 
     return html.Div([
         dbc.Button("Export to PDF", id="btn-pdf-export", className=["corporative-button", "pdf-button"]),

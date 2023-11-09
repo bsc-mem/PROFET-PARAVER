@@ -33,7 +33,7 @@ def replace_after_char(s, char, replacement):
     # Replace everything after the character with the replacement string
     return s[:index + 1] + replacement
 
-def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_file, labels, stress_score_config, max_elements=None, expert=False):
+def register_callbacks(app, system_data, df, df_overview, curves, config, system_arch, trace_file, labels, stress_score_config, max_elements=None, expert=False):
 
     # toggle sidebar, showing it when the curves tab is selected and hidding it otherwise
     @app.callback(
@@ -390,6 +390,37 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
 
 
             return current_figures
+
+
+    @app.callback(
+        Output('single-roofline-chart', 'figure'),
+        Input('time-range-slider', 'value'),
+        State('single-roofline-chart', 'figure')
+    )
+    def update_single_roofline_chart(time_range, current_figure):
+        # Get the figures and metadata from the states
+
+        input_id = callback_context.triggered[0]['prop_id'].split('.')[0]
+        
+        if len(callback_context.triggered) > 1 or input_id == 'time-range-slider':
+            #TODO: Read the correct BW
+            cache_bw = system_data['bw']
+
+            # Get the peak bandwidth
+            peak_bw_gbs = max([cache_bw[i]['value'] for i in range(len(cache_bw))])
+
+            # TODO: Define peak flops (peak_flopss) - Not implemented in the provided code
+            peak_flopss = system_data["fp"]
+
+            
+            graph_title = "Cache Aware Roofline Model"
+            fig = roofline.singleRoofline(df, peak_bw_gbs, peak_flopss, cache_bw, labels, stress_score_config, graph_title=graph_title)
+            
+            return fig
+        
+        return current_figure
+
+
 
     @app.callback(
         Output('overview-chart', 'figure'),

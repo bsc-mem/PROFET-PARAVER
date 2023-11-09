@@ -7,6 +7,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
+
+
 def get_color_bar(labels, stress_score_config):
     # if toggled_time:
     #     return {
