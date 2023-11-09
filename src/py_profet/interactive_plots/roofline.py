@@ -330,56 +330,144 @@ def get_system_properties(file_path):
         ]
     }
 
-def singleRoofline(df, peak_bw_gbs, peak_flopss, cache_bw, labels, stress_score_scale, graph_title=''):
+
+def carm_eq(ai, bw, fp):
+    return np.minimum(ai*bw, fp)
 
 
-    # Add dynamically computed value to x_values
-    x_values = [0, peak_flopss / peak_bw_gbs, peak_flopss/2]
-    y_values = [0, peak_flopss, peak_flopss]
+def singleRoofline(df, peak_bw_gbs, peak_flopss, cache_bw, roofline_opts, region_transparency, labels, stress_score_scale, graph_title=''):
+
+
+     # Creating random data for flops/s
+    num_rows = len(df)
+    df['flops/s'] = np.random.uniform(0, peak_flopss, num_rows)
+
+    df['flops/byte'] = df['flops/s'] / (df['bw'] * 40) 
 
     fig = go.Figure()
 
-    
-    fig.add_trace(
-        go.Scatter(
-            x=x_values,
-            y=y_values,
-            mode="lines",
-            line=dict(color="black", width=2),
-            name=f'Roofline',
-            hoverlabel=dict(namelength=0),
-            hovertemplate=f'<b>Roofline</b><br>' + 'Operational Intensity: %{x} (FLOPS/Byte)<br>' + 'Performance: %{y} (GFLOPS/s)<br>'
-        )
-    )
+    ai = np.logspace(-3, 5, 100)
+
+
+    max_x_value = round(ai.max())
+
 
     # Create roofline markers using a function from 'curve_utils' module
-    #dots_fig = curve_utils.get_roofline_markers_dots_fig(df, x_data, y_data, markers_color, stress_score_scale, markers_transparency);
-    #fig.add_trace(dots_fig)
-
+    # dots_fig = curve_utils.get_roofline_markers_dots_fig(df, x_data, y_data, markers_color, stress_score_scale, markers_transparency);
+    # fig.add_trace(dots_fig)
+    
     # Add a roofline line to the figure
-    fig.add_trace(go.Scatter(x=[1, peak_flopss/peak_bw_gbs, peak_flopss/2], y=[0, peak_flopss, peak_flopss], mode='lines', line=dict(color='black', width=2),
+
+    
+    #Defining different dash types for each cache level
+    dash_type = ['dot', 'dash', 'longdash', 'dashdot', 'longdashdot']
+
+
+    if 'regions' in roofline_opts:
+        # Add the bound regions so that the user can see the different regions
+        opacity = region_transparency
+
+        cache_elbows = [peak_flopss / bw['value'] for bw in cache_bw]
+
+        min_cache_elbow = min(cache_elbows)
+        max_cache_elbow = max(cache_elbows)
+
+        # Memory bound region
+        fig.add_trace(go.Scatter(x=[0, peak_flopss/peak_bw_gbs, max_x_value, 0], 
+                                y=[0, peak_flopss, 0, 0], 
+                                fill="toself", 
+                                line=dict(width=0),
+                                fillcolor=f"rgba(135, 206, 250, {opacity})",
+                                marker=dict(color='rgba(0,0,0,0)'),
+                                hoverlabel=dict(namelength=0),
+                                hoverinfo='none',
+                                name=f'Memory Bound',
+                                showlegend=False))
+
+        fig.add_annotation(
+            x=np.log10((peak_flopss/peak_bw_gbs)/10),
+            y=-2,
+            xref="x",
+            yref="y",
+            text="<b>Memory Bound</b>",
+            showarrow=False,
+            font=dict(size=20, color=f"rgba(0, 0, 0, {opacity})", family="Arial, sans-serif"),
+            align="center"
+        )
+
+        if 'cache' in roofline_opts:
+
+            x_value_compute = [max_cache_elbow, max_x_value, max_x_value, max_cache_elbow]
+            x_value_compute_annotation = np.log10((max_cache_elbow+ max_x_value)/100)
+
+            # Mixed region
+            fig.add_trace(go.Scatter(x=[min_cache_elbow, max_cache_elbow, max_cache_elbow, min_cache_elbow], 
+                                    y=[peak_flopss, peak_flopss, 0, 0], 
+                                fill="toself", 
+                                line=dict(width=0),
+                                fillcolor=f"rgba(248,216,145, {opacity})",
+                                marker=dict(color='rgba(0,0,0,0)'),
+                                hoverlabel=dict(namelength=0),
+                                hoverinfo='none',
+                                name=f'Mixed Region',
+                                showlegend=False))
+            
+            fig.add_annotation(
+                x=np.log10(max_cache_elbow/5),
+                y=-2,
+                xref="x",
+                yref="y",
+                text="<b>Mixed</b>",
+                showarrow=False,
+                font=dict(size=20, color=f"rgba(0, 0, 0, {opacity})", family="Arial, sans-serif"),
+                align="center"
+            )
+
+        else:
+            x_value_compute = [min_cache_elbow, max_x_value, max_x_value, min_cache_elbow]
+            x_value_compute_annotation = np.log10((min_cache_elbow+ max_x_value)/100)
+
+        # Compute bound region
+        fig.add_trace(go.Scatter(x=x_value_compute,
+                                y=[peak_flopss, peak_flopss, 0, 0], 
+                                fill="toself", 
+                                line=dict(width=0),
+                                fillcolor=f"rgba(250, 17, 17, {opacity})", 
+                                marker=dict(color='rgba(0,0,0,0)'),
+                                hoverinfo='none',
+                                name='Compute Bound',
+                                showlegend=False))
+
+        fig.add_annotation(
+            x=x_value_compute_annotation,
+            y=-2,
+            xref="x",
+            yref="y",
+            text="<b>Compute Bound</b>",
+            showarrow=False,
+            font=dict(size=20, color=f"rgba(0, 0, 0, {opacity})", family="Arial, sans-serif"),
+            align="center"
+        )
+
+    if 'cache' in roofline_opts:
+        #Adding cache BW roofs
+        for i in range(len(cache_bw)):
+            level= cache_bw[i]['level']
+            fig.add_trace(go.Scatter(x=ai, y=carm_eq(ai, cache_bw[i]['value'], peak_flopss), mode='lines', line=dict(color='black', width=1.5, dash=dash_type[i]),
+                hoverlabel=dict(namelength=0),
+                                    hovertemplate=f'<b>{f"Cache BW roof ({level})" if level != "DRAM" else level}</b><br>BW: {cache_bw[i]["unit"]}<br>' +
+                                            'Operational Intensity: %{x} (FLOPS/Byte)<br>' +
+                                            'Performance: %{y} (GFLOPS/s)<br>',
+                                    name=f'{cache_bw[i]["level"]} ({cache_bw[i]["unit"]})', showlegend=True))
+
+
+    fig.add_trace(go.Scatter(x=ai, y=carm_eq(ai, peak_bw_gbs, peak_flopss), mode='lines', line=dict(color='black', width=2),
                              name=f'Roofline',
                              hoverlabel=dict(namelength=0),
                              
                              hovertemplate=f'<b>Roofline</b><br>' +
                                             'Operational Intensity: %{x} (FLOPS/Byte)<br>' +
                                             'Performance: %{y} (GFLOPS/s)<br>'))
-
-
-    
-    #Defining different dash types for each cache level
-    dash_type = ['dot', 'dash', 'longdash', 'dashdot', 'longdashdot']
-
-    # #Adding cache BW roofs
-    # for i in range(len(cache_bw)):
-    #     cache_elbow = peak_flopss/cache_bw[i]['value']
-    #     level= cache_bw[i]['level']
-    #     fig.add_trace(go.Scatter(x=[0, cache_elbow], y=[0, peak_flopss], mode='lines', line=dict(color='black', width=2, dash=dash_type[i]),
-    #         hoverlabel=dict(namelength=0),
-    #                             hovertemplate=f'<b>{f"Cache BW roof ({level})" if level != "DRAM" else level}</b><br>BW: {cache_bw[i]["unit"]}<br>' +
-    #                                       'Operational Intensity: %{x} (FLOPS/Byte)<br>' +
-    #                                       'Performance: %{y} (GFLOPS/s)<br>',
-    #                             name=f'{cache_bw[i]["level"]} ({cache_bw[i]["unit"]})', showlegend=True))
 
 
     #Makes legend responsive so that it doesn't overlap with the chart when window is resized.
@@ -394,47 +482,52 @@ def singleRoofline(df, peak_bw_gbs, peak_flopss, cache_bw, labels, stress_score_
             xanchor="center",
         )
     )
+    # Annotations for Memory and Compute Roofs
+    fig.add_annotation(
+        x=np.log10(max_x_value)/3,  
+        y=np.log10(peak_flopss+5),           
+        text=f"<b>Compute roof ({(peak_flopss):.2f} GFLOPS/s)</b>",
+        showarrow=False,
+        font=dict(size=12, color='black'),
+        xref="x",
+        yref="y"
+    )
 
-    # # Annotations for Memory and Compute Roofs
-    # fig.add_annotation(
-    #     x=3*(np.log10(peak_flopss/peak_bw_gbs + max_x_value)/4),
-    #     y=np.log10(peak_flopss * 1.25),
-    #     text=f"<b>Compute roof ({(0.000001*peak_flopss):.2f} TFLOPS/s)</b>",
-    #     showarrow=False,
-    #     font=dict(size=12, color='black'),
-    # )
 
-    # # Angle calculation for the memory roof annotation
-    # angle = math.atan2(np.log10(peak_flopss), np.log10(peak_flopss/peak_bw_gbs)) * 180 / math.pi
+    # Angle calculation for the memory roof annotation
+    angle = math.atan2(np.log10(peak_flopss*(1/3)), np.log10((peak_flopss/peak_bw_gbs)/ 5)) * 180 / math.pi
 
-    # fig.add_annotation(
-    #     x=np.log10((peak_flopss/peak_bw_gbs)/9),
-    #     y=np.log10(peak_flopss/9)+0.3,
-    #     text=f"<b>Memory BW roof<br>({peak_bw_gbs:.1f} GB/s)</b>",
-    #     showarrow=False,
-    #     textangle=-angle*0.75,
-    #     font=dict(size=12, color='black')
-    # )
+    fig.add_annotation(
+        x=np.log10((peak_flopss/peak_bw_gbs) / 5),
+        y=np.log10(peak_flopss*(1/3)),
+        text=f"<b>Memory BW roof ({peak_bw_gbs:.1f} GB/s)</b>",
+        showarrow=False,
+        textangle=angle + 180,
+        font=dict(size=12, color='black'),
+        xref="x",
+        yref="y"
+    )
+
 
     fig.update_layout(
         title={
-            "text": graph_title,
-            "font": {
-                "size": 24,
-                "color": "black",
-                "family": "Arial, sans-serif",
+            'text': graph_title,
+            'font': {
+                'size': 24,
+                'color': 'black',
+                'family': 'Arial, sans-serif',
             },
-            "x": 0.5,
-            "xanchor": "center",
+            'x':0.5,
+            'xanchor': 'center'
         },
-        xaxis={
-            # Set the x-axis to linear scale
-            "type": "linear",
-            "title": "Operational Intensity (FLOPS/Byte)",
-        },
-        yaxis={
-            "title": "Performance (GFLOPS/s)",
-        },
+        xaxis=dict(
+            type="log",
+            title="Operational Intensity (FLOPS/Byte)",
+        ),
+        yaxis=dict(
+            type="log",
+            title="Performance (GFLOPS/s)",
+        ),
         showlegend=True,
     )
 

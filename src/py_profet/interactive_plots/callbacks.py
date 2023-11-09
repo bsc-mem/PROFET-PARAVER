@@ -52,7 +52,7 @@ def register_callbacks(app, system_data, df, df_overview, curves, config, system
     def hide_curves_sidebar_options(active_tab):
         # Static number of outputs. If we add more options, we need to update this number
         num_outputs = 2
-        return [{'display': 'none'}]*num_outputs if active_tab == "mem-roofline-tab" else [{}]*num_outputs
+        return [{'display': 'none'}]*num_outputs if active_tab == "mem-roofline-tab" or active_tab == "single-roofline-tab" else [{}]*num_outputs
 
     # Hide the roofline specific options when the curves tab or overview tab is active.
     @app.callback(
@@ -68,7 +68,7 @@ def register_callbacks(app, system_data, df, df_overview, curves, config, system
         Input("tabs", "active_tab"),
     )
     def hide_only_overview_sidebar_options(active_tab):
-        return {'display': 'none'} if active_tab == "curves-tab" or active_tab == "mem-roofline-tab" else {}
+        return {'display': 'none'} if active_tab == "curves-tab" or active_tab == "mem-roofline-tab" or active_tab == "single-roofline-tab" else {}
 
     # There is no node selection in the overview tab. This is why it's hidden when the tab is active.
     @app.callback(
@@ -395,31 +395,30 @@ def register_callbacks(app, system_data, df, df_overview, curves, config, system
     @app.callback(
         Output('single-roofline-chart', 'figure'),
         Input('time-range-slider', 'value'),
+        Input('roofline-opts-checklist', 'value'),
+        Input('region-transparency-slider', 'value'),
         State('single-roofline-chart', 'figure')
     )
-    def update_single_roofline_chart(time_range, current_figure):
+    def update_single_roofline_chart(time_range, roofline_opts, region_transparency, current_figure):
         # Get the figures and metadata from the states
 
-        input_id = callback_context.triggered[0]['prop_id'].split('.')[0]
+        # input_id = callback_context.triggered[0]['prop_id'].split('.')[0]
         
-        if len(callback_context.triggered) > 1 or input_id == 'time-range-slider':
-            #TODO: Read the correct BW
-            cache_bw = system_data['bw']
+        #TODO: Read the correct BW
+        cache_bw = system_data['bw']
 
-            # Get the peak bandwidth
-            peak_bw_gbs = max([cache_bw[i]['value'] for i in range(len(cache_bw))])
+        # Get the peak bandwidth
+        peak_bw_gbs = max([cache_bw[i]['value'] for i in range(len(cache_bw))])
 
-            # TODO: Define peak flops (peak_flopss) - Not implemented in the provided code
-            peak_flopss = system_data["fp"]
+        # TODO: Define peak flops (peak_flopss) - Not implemented in the provided code
+        peak_flopss = system_data["fp"]
 
-            
-            graph_title = "Cache Aware Roofline Model"
-            fig = roofline.singleRoofline(df, peak_bw_gbs, peak_flopss, cache_bw, labels, stress_score_config, graph_title=graph_title)
-            
-            return fig
         
-        return current_figure
-
+        graph_title = "Cache Aware Roofline Model"
+        fig = roofline.singleRoofline(df, peak_bw_gbs, peak_flopss, cache_bw, roofline_opts, region_transparency, labels, stress_score_config, graph_title=graph_title)
+        
+        return fig
+    
 
 
     @app.callback(

@@ -144,8 +144,24 @@ def get_curve_graphs_sidebar(df: pd.DataFrame):
                 clearable=False,
             ),
         ], id='curves-color-dropdown-section', className='sidebar-element'),
-        dbc.Row([
-            html.P("Pending roofline specific opts", style={'color': 'grey', 'font-style': 'italic'}),
+        dbc.Col([
+            dbc.Checklist(
+                options=[
+                    {"label": 'Show Cache Levels', "value": 'cache'},
+                    {"label": 'Show bound regions', "value": 'regions'},
+                ],
+                id="roofline-opts-checklist",
+                labelStyle={'padding-left': '2rem'},
+                inputStyle={'margin-right': '5px'},
+                style={'text-align': 'center', 'display': 'inline-block'},
+                value=['Show Cache Levels', 'Show bound regions'],
+                inline=False,
+                className='sidebar-element'
+            ),
+            dbc.Row([
+                html.P("Region Transparency:"),
+                dcc.Slider(0, 1, 0.01, value=0.3, id='region-transparency-slider', marks=marks_opacity),
+            ], id='region-transparency-section', className='sidebar-element'),
         ], id='test-mem-id', className='sidebar-element'),
         dbc.Row([
             html.P("Curves Transparency:"),
@@ -256,6 +272,7 @@ def get_graphs_container(system_arch: dict, id_prefix: str, max_elements: int = 
     return dbc.Container(chart_rows, id=f'{id_prefix}-graphs-container', fluid=True)
 
 
+
 def get_overview_container(system_arch: dict, id_prefix: str, max_elements: int = None):
     container = dbc.Container([], id=f'app-overview-container', fluid=True)
 
@@ -274,8 +291,13 @@ def get_overview_container(system_arch: dict, id_prefix: str, max_elements: int 
 def get_single_roofline_container():
     container = dbc.Container([], id=f'single-roofline-container', fluid=True)
 
+    marks_opacity = {i: str(i) for i in np.linspace(0, 1, 5)}
+
     col = dbc.Col([
-        html.Br(),
+        html.Hr(),
+        html.H3('Roofline Options', style={'text-align': 'center'}),
+        
+        html.Hr(),
         dcc.Graph(id='single-roofline-chart', style={'height': '800px'}),
     ])
     
