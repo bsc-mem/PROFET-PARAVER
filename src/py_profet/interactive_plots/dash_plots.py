@@ -109,7 +109,7 @@ if __name__ == '__main__':
         system_arch[a][b] = sorted(unique_c.tolist())
     
     # allow a maximum of elements to display. Randomly undersample if there are more elements than the limit
-    
+
     # reset index to avoid problems with the sampling
     df = df.reset_index(drop=True)
 

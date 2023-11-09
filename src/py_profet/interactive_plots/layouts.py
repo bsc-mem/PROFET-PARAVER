@@ -105,7 +105,7 @@ def get_curve_graphs_sidebar(df: pd.DataFrame):
     marks_time = {i: str(round(i, 1)) for i in np.linspace(df['timestamp'].min()/1e9, df['timestamp'].max()/1e9, 5)}
     marks_opacity = {i: str(i) for i in np.linspace(0, 1, 5)}
 
-    marks_time_sampling = {i: f'{i}' for i in np.arange(0, 2.25, 0.25)}
+    marks_time_sampling = {i: f'{i}' for i in np.arange(0, 1.25, 0.25)}
 
     sidebar = html.Div([
         dbc.Row([
@@ -138,17 +138,11 @@ def get_curve_graphs_sidebar(df: pd.DataFrame):
                     {'label': 'Red', 'value': 'red'},
                     {'label': 'Green', 'value': 'green'},
                     {'label': 'Blue', 'value': 'blue'},
-                    # {'label': 'Rainbow', 'value': 'rainbow'},
-                    # {'label': 'None', 'value': 'none'},
                 ],
                 value='black',
                 searchable=True,
                 clearable=False,
             ),
-            # daq.ColorPicker(
-            #     id='curves-color-picker',
-            #     value=dict(hex='#000000')
-            # ),
         ], id='curves-color-dropdown-section', className='sidebar-element'),
         dbc.Row([
             html.P("Curves Transparency:"),
@@ -164,14 +158,29 @@ def get_curve_graphs_sidebar(df: pd.DataFrame):
             ),
         ], id='timestamp-section', className='sidebar-element'),
         dbc.Row([
-            html.P("Sampling (s):"),
+            html.P("Stress Score Sampling:"),
+            dcc.Dropdown(
+                id='overview-sampling-mode',
+                options=[
+                    {'label': 'Maximum', 'value': 'stress'},
+                    {'label': 'Mean', 'value': 'mean'},
+                    {'label': 'Median', 'value': 'median'},
+                    {'label': 'Mode', 'value': 'mode'},
+                ],
+                value='stress',
+                searchable=True,
+                clearable=False,
+            ),
+        ], id='overview-sampling-mode-section', className='sidebar-element'),
+        dbc.Row([
+            html.P("Sampling (500ms):", id='sampling-label'),
             dcc.RangeSlider(
                 id='sampling-range-slider',
                 min=0,
-                max=2,
-                step=0.05,
+                max=1,
+                step=0.005,
                 marks=marks_time_sampling,
-                value=[1],
+                value=[0.5],
             ),
         ], id='sampling-section', className='sidebar-element'),
         dbc.Row([
@@ -291,6 +300,7 @@ def get_main_content(df: pd.DataFrame, config: dict, system_arch: dict, max_elem
         dbc.Tab(overview_tab, label="Application Overview", tab_id="app-overview-tab"),
     ]
 
+    # Add expert tabs
     if expert:
         t.append(dbc.Tab(curves_tab, label="Curves", tab_id="curves-tab"))
     tabs = dbc.Tabs(t, id="tabs", active_tab="summary-tab")
