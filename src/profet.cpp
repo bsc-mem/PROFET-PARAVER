@@ -252,14 +252,27 @@ void checkNodeNames(vector<string> nodeNames, string rowInputFile, int nNodes) {
 
 tuple<string, string, double, int> readConfigFile(string configFile) {
   pt::ptree root;
-  pt::read_json(configFile, root);
-  // Read values
-  string memorySystem = root.get<string>("memory_system");
-  string cpuModel = root.get<string>("cpu_model");
-  double cpuFreqGHz = root.get<double>("cpu_freq_ghz");
-  int cacheLineBytes = root.get<int>("cache_line_bytes");
 
-  return {memorySystem, cpuModel, cpuFreqGHz, cacheLineBytes};
+  try {
+    // Read json file
+    pt::read_json(configFile, root);
+  } catch (const pt::ptree_error &e) {
+    cerr << "Error reading configuration file " << configFile << endl;
+    exit(1);
+  };
+
+  try {
+    // Read values
+    string memorySystem = root.get<string>("memory_system");
+    string cpuModel = root.get<string>("cpu_model");
+    double cpuFreqGHz = root.get<double>("cpu_freq_ghz");
+    int cacheLineBytes = root.get<int>("cache_line_bytes");
+    return {memorySystem, cpuModel, cpuFreqGHz, cacheLineBytes};
+  } catch (const pt::ptree_error &e) {
+    cerr << "Error reading configuration file " << configFile << ". ";
+    cerr << "One of the required keys is missing: memory_system, cpu_model, cpu_freq_ghz, cache_line_bytes." << endl;
+    exit(1);
+  };
 }
 
 vector<string> getNodeNames(RowFileParser<> inRowFile, int nNodes) {
