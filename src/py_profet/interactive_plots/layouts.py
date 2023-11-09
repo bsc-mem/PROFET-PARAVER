@@ -161,11 +161,11 @@ def get_curve_graphs_sidebar(df: pd.DataFrame):
             ),
         ], id='timestamp-section', className='sidebar-element'),
         dbc.Row([
-            html.P("Sampling Mode:"),
+            html.P("Stress Score Sampling:"),
             dcc.Dropdown(
                 id='overview-sampling-mode',
                 options=[
-                    {'label': 'Max Stress', 'value': 'stress'},
+                    {'label': 'Maximum', 'value': 'stress'},
                     {'label': 'Mean', 'value': 'mean'},
                     {'label': 'Median', 'value': 'median'},
                     {'label': 'Mode', 'value': 'mode'},
