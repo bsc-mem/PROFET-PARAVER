@@ -69,7 +69,7 @@ class ProfetPyAdapter {
 
     tuple<double, double, double, double, double> computeMemoryMetrics(double cpuFreqGHz, double writeRatio, double bandwidth, bool displayWarnings);
 
-    void runDashApp(string traceFilePath, double precision, double cpuFreq, bool keepOriginalTraceFile);
+    void runDashApp(string traceFilePath, double precision, double cpuFreq, bool expertMode, bool keepOriginalTraceFile);
 
   private:
     PyObject* getFunctionFromProfetIntegration(string fnName);

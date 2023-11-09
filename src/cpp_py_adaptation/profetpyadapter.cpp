@@ -184,7 +184,7 @@ tuple<double, double, double, double, double> ProfetPyAdapter::computeMemoryMetr
     return {maxBandwidth, latency, leadOffLatency, maxLatency, stressScore};
 }
 
-void ProfetPyAdapter::runDashApp(string traceFilePath, double precision, double cpuFreq, bool keepOriginalTraceFile) {
+void ProfetPyAdapter::runDashApp(string traceFilePath, double precision, double cpuFreq, bool expertMode, bool keepOriginalTraceFile) {
     // Make sure the trace file path is a canonical absolute path
     string traceFileAbsPath = fs::canonical(traceFilePath).string();
 
@@ -199,8 +199,11 @@ void ProfetPyAdapter::runDashApp(string traceFilePath, double precision, double 
 
     // Python call for running dash
     string dashPlotsPath = pyProfetPath + "interactive_plots/dash_plots.py";
-    string expertMode = "--expert";
-    string pythonCall = "python3 " + dashPlotsPath + " " + expertMode + " "  + traceFileAbsPath + " "  + curvesPath + " " + dashConfigFile;
+    string expert = "";
+    if (expertMode) {
+        expert = " --expert";
+    }
+    string pythonCall = "python3 " + dashPlotsPath + " " + expert + " "  + traceFileAbsPath + " "  + curvesPath + " " + dashConfigFile;
     if (!keepOriginalTraceFile) {
         pythonCall += " --excluded-original";
     }
@@ -210,7 +213,7 @@ void ProfetPyAdapter::runDashApp(string traceFilePath, double precision, double 
     // Create and open a file
     ofstream scriptContent(dashScriptFile);
     string featherTraceFile = regex_replace(traceFileAbsPath, regex(".prv"), ".feather");
-    string scriptPyCall = "python3 " + dashPlotsPath + " " + expertMode + " "  + featherTraceFile + " "  + curvesPath + " " + dashConfigFile;
+    string scriptPyCall = "python3 " + dashPlotsPath + " " + expert + " "  + featherTraceFile + " "  + curvesPath + " " + dashConfigFile;
     if (!keepOriginalTraceFile) {
         scriptPyCall += " --excluded-original";
     }

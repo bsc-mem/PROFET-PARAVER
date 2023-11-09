@@ -111,8 +111,10 @@ void printHelp() {
   //         "\t\tConfiguration file\n"
   cout << "-m, --memory-channel\n"
           "\t\tCalculate memory stress metrics per memory channel, rather than per socket (default)\n"
-          "-e, --exclude-original\n"
-          "\t\tExclude the first application of the original trace in the output trace file\n"
+          "-e, --expert\n"
+          "\t\tEnables expert mode for interactive plotting. If --plot-interactive is not set, --expert is ignored.\n"
+          "-o, --omit-original\n"
+          "\t\tOmits the first application of the original trace in the output trace file\n"
           "-w, --no-warnings\n"
           "\t\tSuppress warning messages\n"
           "-q, --quiet\n"
@@ -126,15 +128,16 @@ void printHelp() {
   exit(1);
 }
 
-tuple<string, string, string, bool, bool, int, int, int> processArgs(int argc, char** argv) {
+tuple<string, string, string, bool, bool, bool, int, int, int> processArgs(int argc, char** argv) {
   // const char* const short_opts = "i:o:c:w";
-  const char* const short_opts = "mewqIph";
+  const char* const short_opts = "meowqIph";
   const option long_opts[] = {
           // {"input", required_argument, nullptr, 'i'},
           // {"output", required_argument, nullptr, 'o'},
           // {"config", required_argument, nullptr, 'c'},
           {"memory-channel", no_argument, nullptr, 'm'},
-          {"exclude-original", no_argument, nullptr, 'e'},
+          {"expert", no_argument, nullptr, 'e'},
+          {"omit-original", no_argument, nullptr, 'o'},
           {"no-warnings", no_argument, nullptr, 'w'},
           {"quiet", no_argument, nullptr, 'q'},
           {"plot-interactive", no_argument, nullptr, 'I'},
@@ -147,6 +150,7 @@ tuple<string, string, string, bool, bool, int, int, int> processArgs(int argc, c
   int displayWarnings = 1; // whether to display warnings or not (it need to be an integer for sending it to python (booleans don't work))
   int runDash = 0; // whether to run dash or not (it need to be an integer for sending it to python (booleans don't work))
   bool perSocket = true;
+  bool expert = false;
   bool keepOriginalTrace = true;
   bool showSupportedSystems = false;
   bool showHelp = false;
@@ -159,6 +163,10 @@ tuple<string, string, string, bool, bool, int, int, int> processArgs(int argc, c
           break;
 
       case 'e':
+          expert = true;
+          break;
+
+      case 'o':
           keepOriginalTrace = false;
           break;
 
@@ -217,7 +225,7 @@ tuple<string, string, string, bool, bool, int, int, int> processArgs(int argc, c
   optind++;
   string configFile = argv[optind];
 
-  return {inFile, outFile, configFile, perSocket, keepOriginalTrace, displayWarnings, displayText, runDash};
+  return {inFile, outFile, configFile, perSocket, expert, keepOriginalTrace, displayWarnings, displayText, runDash};
 }
 
 void checkInputOutputFiles(string inFile, string outFile) {
@@ -500,7 +508,7 @@ void printFinalMessage(vector<NodeMemoryRecords> nodes, string prvOutputFile) {
 
 int main(int argc, char *argv[]) {
   // Process arguments
-  auto [inFile, outFile, configFile, perSocket, keepOriginalTrace, displayWarnings, displayText, runDash] = processArgs(argc, argv);
+  auto [inFile, outFile, configFile, perSocket, expertMode, keepOriginalTrace, displayWarnings, displayText, runDash] = processArgs(argc, argv);
   checkInputOutputFiles(inFile, outFile);
   // Read config file
   auto [memorySystem, cpuModel, cpuFreqGHz, cacheLineBytes] = readConfigFile(configFile);
@@ -722,7 +730,7 @@ int main(int argc, char *argv[]) {
   // Initialize dash app
   if (runDash) {
     cout << "\nLoading interactive plot..." << endl;
-    profetPyAdapter.runDashApp(outFile, PRECISION, cpuFreqGHz, keepOriginalTrace);
+    profetPyAdapter.runDashApp(outFile, PRECISION, cpuFreqGHz, expertMode, keepOriginalTrace);
   }
 
   traceFile.close();
