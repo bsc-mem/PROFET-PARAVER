@@ -352,7 +352,6 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
                     grouped = df_copy.groupby('timestamp', as_index=False)
                     result_df = grouped.agg(aggregation_dict).reset_index(drop=True)
                 elif sampling_mode == 'mode':
-                    print(df['stress_score'])
                     aggregation_dict['stress_score'] = lambda x: pd.Series.mode(x).iloc[0] if not x.empty else np.nan
                     result_df = grouped.agg(aggregation_dict).reset_index(drop=True)
                 else:
