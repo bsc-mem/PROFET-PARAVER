@@ -51,13 +51,12 @@ def get_summary(df: pd.DataFrame, config: dict, system_arch: dict) -> list:
     return [
         Paragraph("Summary", heading1_style),
         # Platform
-        Paragraph("Platform", heading2_style),
-        Paragraph("Server", heading3_style),
-        get_summary_bullets(summary['platform']['server'], bullet_style),
-        Paragraph("CPU", heading3_style),
+        Paragraph("CPU", heading2_style),
+        # Paragraph("Server", heading3_style),
+        # get_summary_bullets(summary['platform']['server'], bullet_style),
         get_summary_bullets(summary['platform']['cpu'], bullet_style),
-        Paragraph("Memory", heading3_style),
-        get_summary_bullets(summary['platform']['memory'], bullet_style),
+        # Paragraph("Memory", heading3_style),
+        # get_summary_bullets(summary['platform']['memory'], bullet_style),
 
         # Memory profile
         Paragraph("Memory profile", heading2_style),
