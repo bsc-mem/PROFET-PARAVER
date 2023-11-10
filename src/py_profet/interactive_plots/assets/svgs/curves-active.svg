@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1116px" height="1085px" viewBox="0 0 1116 1085" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>1024x1024@1x</title>
+    <g id="1024x1024" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" stroke-linecap="round">
+        <line x1="100" y1="68" x2="100" y2="978" id="Line" stroke="#1F3970" stroke-width="105" stroke-linejoin="round"></line>
+        <line x1="1025.75" y1="978.25" x2="100.25" y2="977.75" id="Line" stroke="#1F3970" stroke-width="105" stroke-linejoin="round"></line>
+        <path d="M100.25,977.75 C213.098232,861.448419 381.132999,791.077157 604.354299,766.636217 C827.5756,742.195276 941.763702,596.317525 946.918605,329.002964" id="Path" stroke="#1F3970" stroke-width="50"></path>
+        <path d="M100,978.5 C247.238384,789.996421 405.41999,695.744631 574.544819,695.744631 C743.669648,695.744631 827.105187,555.511933 824.851437,275.046535" id="Path" stroke="#1F3970" stroke-width="50"></path>
+        <path d="M100.25,977.75 C241.593331,881.294296 423.218903,833.066443 645.126714,833.066443 C867.034525,833.066443 1001.6055,716.110832 1048.83964,482.19961" id="Path" stroke="#1F3970" stroke-width="50"></path>
+    </g>
+</svg>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1116px" height="1085px" viewBox="0 0 1116 1085" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>1024x1024@1x</title>
+    <g id="1024x1024" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="100.5" y1="68.5" x2="100.5" y2="978.5" id="Line" stroke="#6e757c" stroke-width="105"></line>
+        <line x1="1026.5" y1="978.5" x2="101" y2="978" id="Line" stroke="#6e757c" stroke-width="105"></line>
+        <line x1="426" y1="503" x2="120" y2="951" id="Line" stroke="#6e757c" stroke-width="116"></line>
+        <line x1="426" y1="503" x2="1026.5" y2="502.5" id="Line" stroke="#6e757c" stroke-width="116"></line>
+    </g>
+</svg>

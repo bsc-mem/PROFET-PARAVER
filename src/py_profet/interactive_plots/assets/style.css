@@ -1,5 +1,5 @@
 body {
-    background-color: #F5F5F5;  /* soft gray color for whole webpage background */
+    background-color: #e4e6eb;  /* soft gray color for whole webpage background */
     font-family: Arial, sans-serif;  /* Use Arial as default font */
     overflow-x: hidden;  /* Prevent horizontal scrollbar */
     margin: 2rem 1rem;  /* Space from top and sides of the page */
@@ -13,6 +13,9 @@ body {
 
 .pdf-button {
     float: right;
+    padding-top: 8px;
+    padding-bottom: 10px;
+    border-radius: 5px 5px 0 0;
 }
 
 /* Sidebar */
@@ -55,13 +58,24 @@ body {
     background-color: white;
     padding: 2rem 1rem;
 }
+.nav-tabs{
+    --bs-nav-tabs-border-color: #1f3970;
+    --bs-nav-tabs-border-width: 2px;
+    --bs-nav-tabs-link-hover-border-color: #1f3970 #1f3970 white;
+}
 .nav-tabs .nav-item.show .nav-link, .nav-tabs .nav-link.active {
-    color: #fff;
-    background-color: #1f3970;
-    border-color: #dee2e6 #dee2e6 #fff;
+    border: 2px solid #1f3970;
+    border-bottom: 2px solid white;
+    box-shadow: 0 -2px 5px -2px rgba(0, 0, 0, 0.5);
 }
 .nav-tabs .nav-link {
     color: #6c757d;
+    font-weight: 700;
+    border-radius: 5px 5px 0 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: row;
     border: none;
 }
 
@@ -89,6 +103,53 @@ body {
     border-top: none !important;
     border-right: none !important;
 }
-/* .fixed-width-header {
-    width: 200px;
-} */
+
+.tab-summary::before, .app-overview::before, .single-roofline::before, .curves::before, .mem-roofline::before {
+    background-size: 20px 20px;
+    display: inline-block;
+    width: 20px; 
+    height: 20px;
+    margin-right: 10px;
+    content: "";
+}
+
+.tab-summary::before {
+    background-image: url('/assets/svgs/info.svg');
+}
+
+.app-overview::before {
+    background-image: url('/assets/svgs/app.svg');
+}
+
+.single-roofline::before {
+    background-image: url('/assets/svgs/roofline.svg');
+}
+
+.curves::before {
+    background-image: url('/assets/svgs/curves.svg');
+}
+
+.mem-roofline::before {
+    background-image: url('/assets/svgs/roofline.svg');
+}
+
+
+.active-summary-label::before {
+    background-image: url('/assets/svgs/info-active.svg');
+}
+
+.active-app-overview-label::before {
+    background-image: url('/assets/svgs/app-active.svg');
+}
+
+.active-single-roofline-label::before {
+    background-image: url('/assets/svgs/roofline-active.svg');
+}
+
+.active-curves-label::before {
+    background-image: url('/assets/svgs/curves-active.svg');
+}
+
+.active-mem-roofline-label::before {
+    background-image: url('/assets/svgs/roofline-active.svg');
+}

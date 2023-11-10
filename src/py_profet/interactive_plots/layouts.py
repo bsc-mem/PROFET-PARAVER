@@ -145,16 +145,19 @@ def get_curve_graphs_sidebar(df: pd.DataFrame):
             ),
         ], id='curves-color-dropdown-section', className='sidebar-element'),
         dbc.Col([
+            html.Hr(),
+            html.H3('Roofline Specific Options', style={'text-align': 'center'}),
+            html.Br(),
             dbc.Checklist(
                 options=[
                     {"label": 'Show Cache Levels', "value": 'cache'},
-                    {"label": 'Show bound regions', "value": 'regions'},
+                    {"label": 'Show Bound Regions', "value": 'regions'},
                 ],
                 id="roofline-opts-checklist",
                 labelStyle={'padding-left': '2rem'},
                 inputStyle={'margin-right': '5px'},
-                style={'text-align': 'center', 'display': 'inline-block'},
-                value=['Show Cache Levels', 'Show bound regions'],
+                style={'text-align': 'start', 'display': 'inline-block'},
+                value=['cache', 'regions'],
                 inline=False,
                 className='sidebar-element'
             ),
@@ -162,6 +165,7 @@ def get_curve_graphs_sidebar(df: pd.DataFrame):
                 html.P("Region Transparency:"),
                 dcc.Slider(0, 1, 0.01, value=0.3, id='region-transparency-slider', marks=marks_opacity),
             ], id='region-transparency-section', className='sidebar-element'),
+            html.Hr(),
         ], id='test-mem-id', className='sidebar-element'),
         dbc.Row([
             html.P("Curves Transparency:"),
@@ -210,7 +214,7 @@ def get_curve_graphs_sidebar(df: pd.DataFrame):
     ], className='sidebar')
 
     # keep the side bar in a collapsed state, so we can hide it when the charts tab is not selected
-    return dbc.Collapse([sidebar], id="sidebar")
+    return dbc.Collapse([sidebar], id="sidebar", style={'border-radius': '1rem', 'box-shadow': '0 1px 5px -2px rgba(0, 0, 0, 0.5)'})
 
 
 def get_graphs_container(system_arch: dict, id_prefix: str, max_elements: int = None):
@@ -294,10 +298,6 @@ def get_single_roofline_container():
     marks_opacity = {i: str(i) for i in np.linspace(0, 1, 5)}
 
     col = dbc.Col([
-        html.Hr(),
-        html.H3('Roofline Options', style={'text-align': 'center'}),
-        
-        html.Hr(),
         dcc.Graph(id='single-roofline-chart', style={'height': '800px'}),
     ])
     
@@ -333,23 +333,23 @@ def get_main_content(df: pd.DataFrame, config: dict, system_arch: dict, max_elem
     improved_roofline_tab = get_single_roofline_tab()
 
     t = [
-        dbc.Tab(system_info_tab, label="Summary", tab_id="summary-tab"),
-        dbc.Tab(overview_tab, label="Application Overview", tab_id="app-overview-tab"),
-        dbc.Tab(improved_roofline_tab, label="New Roofline", tab_id="single-roofline-tab"),
+        dbc.Tab(system_info_tab, label="Summary", tab_id="summary-tab", labelClassName='tab-summary', active_label_class_name='active-summary-label'),
+        dbc.Tab(overview_tab, label="Application Overview", tab_id="app-overview-tab", labelClassName='app-overview', active_label_class_name='active-app-overview-label' ),
+        dbc.Tab(improved_roofline_tab, label="New Roofline", tab_id="single-roofline-tab", labelClassName='single-roofline', active_label_class_name='active-single-roofline-label'),
     ]
 
     # Add expert tabs
     if expert:
-        t.append(dbc.Tab(curves_tab, label="Curves", tab_id="curves-tab"))
-        t.append(dbc.Tab(roofline_tab, label="Roofline", tab_id="mem-roofline-tab"))
+        t.append(dbc.Tab(curves_tab, label="Curves", tab_id="curves-tab", labelClassName='curves', active_label_class_name='active-curves-label')),
+        t.append(dbc.Tab(roofline_tab, label="Roofline", tab_id="mem-roofline-tab", labelClassName='mem-roofline', active_label_class_name='active-mem-roofline-label'))
 
-    tabs = dbc.Tabs(t, id="tabs", active_tab="single-roofline-tab")
+    tabs = dbc.Tabs(t, id="tabs", active_tab="single-roofline-tab", className='tabBar', style={'border-bottom:': '1px solid #dee2e6'})
 
     return html.Div([
         dbc.Button("Export to PDF", id="btn-pdf-export", className=["corporative-button", "pdf-button"]),
         dcc.Download(id="download-pdf"),
         tabs,
-    ], className='tab-content')
+    ], className='tab-content', style={'border-radius': '1rem', 'box-shadow': '0 1px 5px -2px rgba(0, 0, 0, 0.5)'})
 
 # Update the layout function
 def get_layout(df: pd.DataFrame, config: dict, system_arch: dict, max_elements: int = None, expert: bool = False):
@@ -360,7 +360,7 @@ def get_layout(df: pd.DataFrame, config: dict, system_arch: dict, max_elements: 
             dbc.Row([
                 dbc.Col([get_curve_graphs_sidebar(df)], width=2),
                 dbc.Col([get_main_content(df, config, system_arch, max_elements, expert)], width=10),
-            ]),
+            ], style={'padding': '1rem', 'background-color': '#f4f5f8', 'border-radius': '1rem'}),
         ], fluid=True)],
         fullscreen=True,
     )

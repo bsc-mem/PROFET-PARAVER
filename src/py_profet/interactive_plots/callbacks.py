@@ -42,7 +42,7 @@ def register_callbacks(app, system_data, df, df_overview, curves, config, system
     )
     def toggle_sidebar(active_tab):
         return active_tab != "summary-tab"
-
+    
     # Hide the curve specific options when the roofline tab is active. 
     @app.callback(
         Output(f'curves-color-dropdown-section', 'style'),
@@ -76,7 +76,7 @@ def register_callbacks(app, system_data, df, df_overview, curves, config, system
         Input("tabs", "active_tab"),
     )
     def hide_overview_sidebar_options(active_tab):
-        return {'display': 'none'} if active_tab == "app-overview-tab" else {}
+        return {'display': 'none'} if active_tab == "app-overview-tab" or "single-roofline-tab" else {}
 
 
     # Since the expert mode requires two differente callback definitions, but the same export to pdf function, we declare it separately
