@@ -6,6 +6,7 @@ import summary_info
 import utils
 
 
+
 def get_summary_platform_row(platform: dict, summary_table_attrs: dict):
     # get rows from platform dict (see summary_info.py)
     server_rows = utils.get_dash_table_rows(platform['server'])
@@ -179,7 +180,7 @@ def get_curve_graphs_sidebar(df: pd.DataFrame):
             html.P("Sampling (500ms):", id='sampling-label'),
             dcc.RangeSlider(
                 id='sampling-range-slider',
-                min=0,
+                min=-1,
                 max=1,
                 step=0.005,
                 marks=marks_time_sampling,
@@ -332,6 +333,7 @@ def get_main_content(df: pd.DataFrame, config: dict, system_arch: dict, max_elem
 
 # Update the layout function
 def get_layout(df: pd.DataFrame, config: dict, system_arch: dict, max_elements: int = None, expert: bool = False):
+
     return dcc.Loading(
         id="loading",
         type="default",  # changes the loading spinner

@@ -41,6 +41,7 @@ def filter_df(df, node_name=None, i_socket=None, i_mc=None, time_range=(), bw_ra
 
 def get_graph_fig(df, curves, curves_color, curves_transparency, markers_color, markers_transparency,
                   graph_title, x_title, y_title, stress_score_scale=None, color_bar=None):
+    
     fig = make_subplots(rows=1, cols=1)
     # if curves_color != "none":
 
@@ -72,6 +73,9 @@ def get_graph_fig(df, curves, curves_color, curves_transparency, markers_color, 
                 'xanchor': 'center',
             }
         )        
+
+
+
         return fig
     except Exception as e:
         fig.add_annotation(

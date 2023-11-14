@@ -21,6 +21,7 @@ import layouts
 import utils
 import curve_utils
 
+
 # define a custom continuous color scale for stress score
 stress_score_config = {
     'min': 0,
@@ -165,7 +166,7 @@ if __name__ == '__main__':
     # save a pdf file with a default chart
     if args.plot_pdf:
         save_pdf(args.trace_file)
-
+    
     #TODO: If the expert argument changes change it here.
     app = get_dash_app(df, config_json, system_arch, max_elements, args.expert)
     register_callbacks(app, df, df_overview, curves, config_json, system_arch, args.trace_file, labels, stress_score_config, max_elements, args.expert)

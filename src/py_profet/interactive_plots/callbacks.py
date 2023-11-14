@@ -1,3 +1,4 @@
+import math
 import os
 import json
 import base64
@@ -253,6 +254,7 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
                             graph_title = f'Memory channel {id_mc}' if len(mcs) > 1 else f'Socket {i_socket}'
                             fig = curve_utils.get_graph_fig(filt_df, curves, curves_color, curves_transparency, markers_color, markers_transparency,
                                                             graph_title, labels['bw'], labels['lat'], stress_score_config['colorscale'], color_bar)
+
                             figures.append(fig)
                 return tuple(np.append(figures, new_bw_balances))
             
@@ -396,6 +398,8 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
     @app.callback(
         Output('overview-chart', 'figure'),
         Output('sampling-label', 'children'),
+        Output('sampling-range-slider', 'min'),
+        Output('sampling-range-slider', 'value'),
         Input('overview-sampling-mode', 'value'),
         Input('sampling-range-slider', 'value'),
         Input('curves-color-dropdown', 'value'),
@@ -403,14 +407,37 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
         Input('time-range-slider', 'value'),
         Input('markers-color-dropdown', 'value'),
         Input('markers-transparency-slider', 'value'),
+        State('sampling-range-slider', 'min'),  # Default min
+        State('sampling-range-slider', 'step'),  # Default min
         State('overview-chart', 'figure'),
         State('sampling-label', 'children'),
     )
     def update_overview_graph(sampling_mode, sample_range, curves_color, curves_transparency, time_range, markers_color, markers_transparency, *states):
         
         # Get the current state of the overview chart
-        overview_fig = states[0]
-        sampling_label = states[1]
+        default_min = states[0]
+        step_size = states[1]
+        overview_fig = states[2]
+        sampling_label = states[3]
+
+
+        if default_min == -1:
+            # We use the default_min value as a flag to only apply this the first time the screen is loaded.
+            default_min = 0
+            a = step_size   # Start with the smallest increment
+            b = 0.001       # Adjust this for the growth rate
+
+            # Calculate default value
+            total_points = len(df_overview)
+            print('Total points: ', total_points)
+            if total_points <= 10000:
+                sample_range = 0
+            else:
+                default_value = a * math.exp(b * (total_points - 10000))
+
+            rounded_value = round(default_value / step_size) * step_size
+
+            sample_range =  [ min(rounded_value, 1) ]
 
         # Get the ID of the input that triggered the callback
         input_id = callback_context.triggered[0]['prop_id'].split('.')[0]
@@ -426,7 +453,6 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
                 grouped = df_copy.groupby('timestamp', as_index=False)
 
                 aggregation_dict = {col: 'first' for col in df_copy.columns if col != 'stress_score'}
-
 
                 if sampling_mode == 'stress':
                     result_df = grouped.apply(lambda x: x.loc[x['stress_score'].idxmax()]).reset_index(drop=True)
@@ -456,7 +482,7 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
                 overview_fig = curve_utils.get_graph_fig(result_df, curves, curves_color, curves_transparency, markers_color, markers_transparency,
                                                 graph_title, labels['bw'], labels['lat'], stress_score_config['colorscale'], color_bar)
 
-                return overview_fig, sampling_label
+                return overview_fig, sampling_label, default_min, sample_range
                 
 
         # Handle callback logic. This is triggered by a single input.
@@ -498,4 +524,4 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
         elif input_id == 'markers-transparency-slider':
             overview_fig['data'][-1]['marker']['opacity'] = markers_transparency
         
-        return overview_fig, sampling_label
+        return overview_fig, sampling_label, default_min, sample_range
