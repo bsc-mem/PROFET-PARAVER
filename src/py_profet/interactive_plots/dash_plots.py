@@ -20,7 +20,7 @@ import numpy as np
 import layouts
 import utils
 import curve_utils
-from roofline import get_system_properties 
+from roofline import get_system_properties, get_hw_counter_data
 
 # define a custom continuous color scale for stress score
 stress_score_config = {
@@ -172,11 +172,12 @@ if __name__ == '__main__':
     
 
     #READING THE ROOFLINE VALUES:
-    system_data = get_system_properties('../roofline/EPEEC_SYSTEM_data_roofline_12:59:00.207067_2023-11-07.out')    
+    system_data = get_system_properties('../roofline/system_config.txt')    
+    get_hw_counter_readings = get_hw_counter_data('../roofline/likwid/likwid_602.gcc_s_double.txt')
 
 
     #TODO: If the expert argument changes change it here.
     app = get_dash_app(df, config_json, system_arch, max_elements, args.expert)
-    register_callbacks(app, system_data, df, df_overview, curves, config_json, system_arch, args.trace_file, labels, stress_score_config, max_elements, args.expert)
+    register_callbacks(app, system_data, get_hw_counter_readings, df, df_overview, curves, config_json, system_arch, args.trace_file, labels, stress_score_config, max_elements, args.expert)
     #app.run_server(debug=False)
     app.run_server(debug=True)

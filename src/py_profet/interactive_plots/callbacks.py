@@ -33,7 +33,7 @@ def replace_after_char(s, char, replacement):
     # Replace everything after the character with the replacement string
     return s[:index + 1] + replacement
 
-def register_callbacks(app, system_data, df, df_overview, curves, config, system_arch, trace_file, labels, stress_score_config, max_elements=None, expert=False):
+def register_callbacks(app, system_data, hw_counter ,df, df_overview, curves, config, system_arch, trace_file, labels, stress_score_config, max_elements=None, expert=False):
 
     # toggle sidebar, showing it when the curves tab is selected and hidding it otherwise
     @app.callback(
@@ -397,9 +397,11 @@ def register_callbacks(app, system_data, df, df_overview, curves, config, system
         Input('time-range-slider', 'value'),
         Input('roofline-opts-checklist', 'value'),
         Input('region-transparency-slider', 'value'),
+        Input('markers-color-dropdown', 'value'),
+        Input('markers-transparency-slider', 'value'),
         State('single-roofline-chart', 'figure')
     )
-    def update_single_roofline_chart(time_range, roofline_opts, region_transparency, current_figure):
+    def update_single_roofline_chart(time_range, roofline_opts, region_transparency, markers_color, markers_transparency, current_figure):
         # Get the figures and metadata from the states
 
         # input_id = callback_context.triggered[0]['prop_id'].split('.')[0]
@@ -414,8 +416,8 @@ def register_callbacks(app, system_data, df, df_overview, curves, config, system
         peak_flopss = system_data["fp"]
 
         
-        graph_title = "Cache Aware Roofline Model"
-        fig = roofline.singleRoofline(df, peak_bw_gbs, peak_flopss, cache_bw, roofline_opts, region_transparency, labels, stress_score_config, graph_title=graph_title)
+        graph_title = f"Cache Aware Roofline Model<br><sup>{hw_counter['CPU']['name']} · {hw_counter['CPU']['type']} · {hw_counter['CPU']['clock']}</sup>"
+        fig = roofline.singleRoofline(hw_counter, peak_bw_gbs, peak_flopss, cache_bw, roofline_opts, region_transparency, markers_color, markers_transparency, labels, stress_score_config, graph_title=graph_title)
         
         return fig
     

@@ -4,6 +4,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 import curve_utils
 import os
+from hw_counter_parser import parse_cpu_info_from_file
 
 def plot(peak_bw_gbs, peak_flopss, x_data=[], y_data=[], graph_title=''):
     # Convert input data to NumPy arrays
@@ -237,28 +238,14 @@ def plotCARM(df, peak_bw_gbs, peak_flopss, cache_bw, markers_color, markers_tran
     
     return fig
 
+def get_hw_counter_data(file_path):
 
-def read_config(config_file):
-    f = open(config_file, "r")
+    current_path = os.path.dirname(os.path.abspath(__file__))
 
-    for line in f:
-        l = line.split('=')
-        if(l[0] == 'name'):
-            name = l[1].rstrip()
+    parsed_data = parse_cpu_info_from_file(current_path + "/" + file_path)
 
-        if(l[0] == 'nominal_frequency'):
-            freq = l[1].rstrip()
+    return parsed_data
 
-        if(l[0] == 'l1_cache'):
-            l1_size = l[1].rstrip()
-
-        if(l[0] == 'l2_cache'):
-            l2_size = l[1].rstrip()
-        
-        if(l[0] == 'l3_cache'):
-            l3_size = l[1].rstrip()
-
-    return name, freq, l1_size, l2_size, l3_size
 
 def get_system_properties(file_path):
 
@@ -296,7 +283,11 @@ def get_system_properties(file_path):
         
         if(l[0] == 'FP'):
             fp = l[1].rstrip()
-        
+
+    L1 = float(L1) * 4
+    L2 = float(L2) * 4
+    L3 = float(L3) * 4
+    dram = float(dram) * 4
 
     return {
         'name': name,
@@ -304,7 +295,7 @@ def get_system_properties(file_path):
         'l1_cache': float(l1_size),
         'l2_cache': float(l2_size),
         'l3_cache': float(l3_size),
-        'fp': float(fp),
+        'fp': float(fp) * 1000,
         'bw': [
             {
                 'level': 'L1',
@@ -334,15 +325,46 @@ def get_system_properties(file_path):
 def carm_eq(ai, bw, fp):
     return np.minimum(ai*bw, fp)
 
+def get_roofline_markers_dots_fig(x_data, y_data, color, opacity=0.01):
+    # # Create the roofline markers
+    # if color == 'stress_score':
+    #     dots_fig = go.Scatter(x=x_data, y=y_data, mode='markers', showlegend=False, marker=dict(
+    #             size=5,
+    #             opacity=opacity, 
+    #             color=df['stress_score'], 
+    #             colorscale=stress_score_scale['colorscale'],
+    #             colorbar=dict(
+    #                 title='Stress score',
+    #             ),
+    #             cmin=stress_score_scale['min'],
+    #             cmax=stress_score_scale['max'],
+    #         ),
+    #         xaxis='x', 
+    #         yaxis='y',
+    #         name='Data',
+    #         hovertemplate='<b>Stress score</b>: %{marker.color:.2f}<br><b>Operational Intensity</b>: %{x:.2f} (FLOPS/Byte)<br><b>Performance</b>: %{y:.2f} (GFLOPS/s)<br><b>Bandwidth</b>: %{customdata[3]:.2f} GB/s<br><b>Latency</b>: %{customdata[4]:.2f} ns<br><b>Timestamp</b>: %{text}<br><b>Node</b>: %{customdata[0]}<br><b>Socket</b>: %{customdata[1]}<br><b>MC</b>: %{customdata[2]}<extra></extra>', customdata=df[['node_name', 'socket', 'mc', 'bw', 'lat', 'stress_score']], text=df['timestamp'])
+    # else:
 
-def singleRoofline(df, peak_bw_gbs, peak_flopss, cache_bw, roofline_opts, region_transparency, labels, stress_score_scale, graph_title=''):
+    if color == 'stress_score':
+        color = 'red'
+
+    hover_data = np.column_stack((x_data, y_data))
+
+
+    dots_fig = go.Scatter(x=x_data, y=y_data, mode='markers', showlegend=False, marker=dict(size=5, opacity=opacity, color=color), 
+                        xaxis='x', 
+                        yaxis='y',
+                        hoverlabel=dict(namelength=0),
+                        customdata=hover_data,
+                        hovertemplate='<b>Operational Intensity</b>: %{customdata[0]:.2f} (FLOPS/Byte)<br><b>Performance</b>: %{customdata[1]:.2f} (GFLOPS/s)',
+    )
+
+    return dots_fig
+
+def singleRoofline(hw_counter, peak_bw_gbs, peak_flopss, cache_bw, roofline_opts, region_transparency, markers_color, markers_transparency, labels, stress_score_scale, graph_title=''):
 
 
      # Creating random data for flops/s
-    num_rows = len(df)
-    df['flops/s'] = np.random.uniform(0, peak_flopss, num_rows)
-
-    df['flops/byte'] = df['flops/s'] / (df['bw'] * 40) 
 
     fig = go.Figure()
 
@@ -352,11 +374,23 @@ def singleRoofline(df, peak_bw_gbs, peak_flopss, cache_bw, roofline_opts, region
     max_x_value = round(ai.max())
 
 
+    num_rows = len(hw_counter)
+    #Create a new df:
+    # flops_s = np.random.uniform(0, peak_flopss, num_rows)
+
+    # flops_byte = flops_s / (df['bw'] * 40) 
     # Create roofline markers using a function from 'curve_utils' module
-    # dots_fig = curve_utils.get_roofline_markers_dots_fig(df, x_data, y_data, markers_color, stress_score_scale, markers_transparency);
-    # fig.add_trace(dots_fig)
-    
-    # Add a roofline line to the figure
+
+
+
+    x_data = []
+    y_data = []
+    for i in range(len(hw_counter["Data"])):
+        x_data.append(hw_counter["Data"][i]['TOTAL_FLOPS'] / hw_counter["Data"][i]['TOTAL_BYTES'])
+        y_data.append((hw_counter["Data"][i]['TOTAL_FLOPS'] / 1000 / 1000) / hw_counter["Data"][i]['Total runtime [s]'])
+        # if y_data[-1] > peak_flopss:
+        #     y_data[-1] = peak_flopss
+
 
     
     #Defining different dash types for each cache level
@@ -470,22 +504,28 @@ def singleRoofline(df, peak_bw_gbs, peak_flopss, cache_bw, roofline_opts, region
                                             'Performance: %{y} (GFLOPS/s)<br>'))
 
 
+
+    dots_fig = get_roofline_markers_dots_fig(x_data, y_data, markers_color, markers_transparency);
+    fig.add_trace(dots_fig)
+    
+
     #Makes legend responsive so that it doesn't overlap with the chart when window is resized.
     fig.update_layout(
         legend=dict(
             orientation="h",
-            y=1,
+            y=0.99,
             yref="paper",
             yanchor="bottom",
             x=0.5,
             xref="paper",
             xanchor="center",
+            font = dict(size = 15, color = "black")
         )
     )
     # Annotations for Memory and Compute Roofs
     fig.add_annotation(
-        x=np.log10(max_x_value)/3,  
-        y=np.log10(peak_flopss+5),           
+        x=np.log10(max_x_value/3),  
+        y=np.log10(peak_flopss+15000),           
         text=f"<b>Compute roof ({(peak_flopss):.2f} GFLOPS/s)</b>",
         showarrow=False,
         font=dict(size=12, color='black'),
@@ -502,11 +542,12 @@ def singleRoofline(df, peak_bw_gbs, peak_flopss, cache_bw, roofline_opts, region
         y=np.log10(peak_flopss*(1/3)),
         text=f"<b>Memory BW roof ({peak_bw_gbs:.1f} GB/s)</b>",
         showarrow=False,
-        textangle=angle + 180,
+        textangle=angle + 255,
         font=dict(size=12, color='black'),
         xref="x",
         yref="y"
     )
+
 
 
     fig.update_layout(
