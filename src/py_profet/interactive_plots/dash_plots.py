@@ -32,6 +32,7 @@ stress_score_config = {
     ],
 }
 
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(dest='trace_file', default='', help='Trace file path.')
@@ -43,21 +44,24 @@ def parse_args():
                         action='store_true', help='If plot (store) pdf with curves and memory stress.')
     parser.add_argument('--save-feather', dest='save_feather',
                         action='store_true', help='Save processed .prv data to a .feather file.')
-    
+
     parser.add_argument('--expert', dest='expert',
                         action='store_true', help='If expert mode is enabled.')
-    
+
     return parser.parse_args()
+
 
 def get_config(config_file_path: str):
     with open(config_file_path, 'r') as f:
         config = json.load(f)
     return config
 
+
 def get_dash_app(df, config_json: dict, system_arch: dict, max_elements: int, expert: bool):
     app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
     app.layout = layouts.get_layout(df, config_json, system_arch, max_elements, expert)
     return app
+
 
 def save_pdf(trace_file: str):
     store_pdf_path = os.path.dirname(os.path.abspath(trace_file))
@@ -81,6 +85,7 @@ def save_pdf(trace_file: str):
     print('PDF chart file:', store_pdf_file_path)
     print()
 
+
 if __name__ == '__main__':
     # read and process arguments
     args = parse_args()
@@ -101,16 +106,16 @@ if __name__ == '__main__':
         df = pd.read_feather(args.trace_file)
     else:
         raise Exception(f'Unkown trace file extension ({args.trace_file.split(".")[-1]}) from {args.trace_file}.')
-    
+
     # get system architecture (nodes, sockets per node, mcs per socket) in a dict form
     grouped = df.groupby(['node_name', 'socket'])['mc'].unique()
     system_arch = defaultdict(dict)
     for (a, b), unique_c in grouped.items():
         system_arch[a][b] = sorted(unique_c.tolist())
     # print(dict(system_arch))
-    
+
     # allow a maximum of elements to display. Randomly undersample if there are more elements than the limit
-    
+
     # reset index to avoid problems with the sampling
     df = df.reset_index(drop=True)
 
@@ -125,7 +130,7 @@ if __name__ == '__main__':
         # Calculate the total number of sockets in the system architecture
         for node_name, sockets in system_arch.items():
             total_sockets += len(sockets)
-        
+
         # Calculate the desired number of data points per socket
         data_points = max_elements // total_sockets
 
@@ -135,7 +140,7 @@ if __name__ == '__main__':
             for socket in sockets:
                 # Sort stress scores to select representative data points
                 node_socket_data = df[(df['node_name'] == node_name) & (df['socket'] == socket)]
-                
+
                 # Check if there are enough data points to sample
                 if len(node_socket_data) >= data_points:
                     stress_scores = node_socket_data['stress_score'].sort_values()
@@ -166,8 +171,9 @@ if __name__ == '__main__':
     if args.plot_pdf:
         save_pdf(args.trace_file)
 
-    #TODO: If the expert argument changes change it here.
+    # TODO: If the expert argument changes change it here.
     app = get_dash_app(df, config_json, system_arch, max_elements, args.expert)
-    register_callbacks(app, df, df_overview, curves, config_json, system_arch, args.trace_file, labels, stress_score_config, max_elements, args.expert)
+    register_callbacks(app, df, df_overview, curves, config_json, system_arch, args.trace_file, labels,
+                       stress_score_config, max_elements, args.expert)
     app.run_server(debug=False)
-    #app.run_server(debug=True)
+    # app.run_server(debug=True)

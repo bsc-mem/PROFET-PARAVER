@@ -30,6 +30,7 @@ heading3_style = ParagraphStyle(
     leftIndent=0
 )
 
+
 def get_summary_bullets(summary_part: dict, bullet_style: ParagraphStyle) -> ListFlowable:
     bullets = []
     for _, bullet in summary_part.items():
@@ -37,8 +38,9 @@ def get_summary_bullets(summary_part: dict, bullet_style: ParagraphStyle) -> Lis
     return ListFlowable(
         bullets,
         bulletType='bullet',
-        start='\u2022' # bullet point symbol
+        start='\u2022'  # bullet point symbol
     )
+
 
 def get_summary(df: pd.DataFrame, config: dict, system_arch: dict) -> list:
     summary = summary_info.get_summary_info(df, config, system_arch)
@@ -68,6 +70,7 @@ def get_summary(df: pd.DataFrame, config: dict, system_arch: dict) -> list:
         get_summary_bullets(summary['trace_info'], bullet_style),
     ]
 
+
 def get_figures_story(system_arch: dict, selected_nodes: list, figures: list) -> list:
     """Generate a PNG image from a Plotly figure and return it as an in-memory binary stream."""
     # Pre: assume the system_arch minus the selected_nodes is the same length as the figures
@@ -83,12 +86,12 @@ def get_figures_story(system_arch: dict, selected_nodes: list, figures: list) ->
 
     story = []
     i_fig = 0
-    #story.append(PageBreak())
+    # story.append(PageBreak())
     while i_fig < len(figures):
         # Insert a page break for each new page
         if i_fig > 0:
             story.append(PageBreak())
-        
+
         for node_name, sockets in system_arch.items():
             if node_name not in selected_nodes:
                 continue
@@ -99,7 +102,7 @@ def get_figures_story(system_arch: dict, selected_nodes: list, figures: list) ->
             for i_socket, i_mc in sockets.items():
                 if len(i_mc) > 1:
                     story.append(Paragraph(f"Socket {i_socket}", heading2_style))
-            
+
                 for mc in i_mc:
                     fig = figures[i_fig]
                     i_fig += 1
@@ -107,16 +110,18 @@ def get_figures_story(system_arch: dict, selected_nodes: list, figures: list) ->
                     # generate a PNG image from the figure
                     img_stream = BytesIO()
 
-                    #TODO: Why is there values that are none? There are random None values in the middle? (Normally 1 or 2 ocurrances)
-                    #Probably due to how the stress score is calculated?
+                    # TODO: Why is there values that are none? There are random None values in the middle? (Normally 1 or 2 ocurrances)
+                    # Probably due to how the stress score is calculated?
                     if 'data' in fig:
                         if 'marker' in fig['data'][0]:
                             if 'color' in fig['data'][0]['marker']:
                                 if isinstance(fig['data'][0]['marker']['color'], list):
-                                    fig['data'][0]['marker']['color'] = [0 if item is None else item for item in fig['data'][0]['marker']['color']]
-                        
+                                    fig['data'][0]['marker']['color'] = [0 if item is None else item for item in
+                                                                         fig['data'][0]['marker']['color']]
+
                     # a scale of 2 doubles the resolution of the image
-                    img_bytes = pio.to_image(fig, format="png",width=pdf_width * dpi / 72, height=pdf_height * dpi / 72)
+                    img_bytes = pio.to_image(fig, format="png", width=pdf_width * dpi / 72,
+                                             height=pdf_height * dpi / 72)
                     img_stream.write(img_bytes)
                     img_stream.seek(0)
                     img = Image(img_stream, width=pdf_width, height=pdf_height)
@@ -124,6 +129,7 @@ def get_figures_story(system_arch: dict, selected_nodes: list, figures: list) ->
                     story.append(Spacer(1, 12))  # Optional spacer for better layout
 
     return story
+
 
 def get_overview_story(figures: list) -> list:
     width_margin = 2
@@ -143,13 +149,13 @@ def get_overview_story(figures: list) -> list:
         # Insert a page break for each new page
         if i_fig > 0:
             story.append(PageBreak())
-        
+
         fig = figures[i_fig]
         i_fig += 1
         # fig = figures[node_name][socket][mc]
         # generate a PNG image from the figure
         img_stream = BytesIO()
-        img_bytes = pio.to_image(fig, format="png",width=pdf_width * dpi / 72, height=pdf_height * dpi / 72)
+        img_bytes = pio.to_image(fig, format="png", width=pdf_width * dpi / 72, height=pdf_height * dpi / 72)
         img_stream.write(img_bytes)
         img_stream.seek(0)
         img = Image(img_stream, width=pdf_width, height=pdf_height)
@@ -159,7 +165,8 @@ def get_overview_story(figures: list) -> list:
     return story
 
 
-def generate_pdf(df: pd.DataFrame, config: dict, system_arch: dict, selected_nodes: list, figures: list, expert: bool) -> bytes:
+def generate_pdf(df: pd.DataFrame, config: dict, system_arch: dict, selected_nodes: list, figures: list,
+                 expert: bool) -> bytes:
     buffer = BytesIO()
     # Set up the document and styles
     doc = SimpleDocTemplate(buffer, pagesize=letter, title="Report")
@@ -173,8 +180,8 @@ def generate_pdf(df: pd.DataFrame, config: dict, system_arch: dict, selected_nod
     # Add summary info
     story.extend(get_summary(df, config, system_arch))
 
-    if expert: 
-        #TODO: If there is more graphs in overview mode, we need to make this indexing dynamic!!
+    if expert:
+        # TODO: If there is more graphs in overview mode, we need to make this indexing dynamic!!
         story.extend(get_overview_story([figures[0]]))
         story.extend(get_figures_story(system_arch, selected_nodes, figures[1:]))
     else:
