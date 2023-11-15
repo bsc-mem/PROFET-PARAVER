@@ -105,6 +105,8 @@ def get_curve_graphs_sidebar(df: pd.DataFrame):
     marks_time = {i: str(round(i, 1)) for i in np.linspace(df['timestamp'].min()/1e9, df['timestamp'].max()/1e9, 5)}
     marks_opacity = {i: str(i) for i in np.linspace(0, 1, 5)}
 
+    marks_offset = {i: str(i) for i in np.linspace(-10, 10, 9)}
+
     marks_time_sampling = {i: f'{i}' for i in np.arange(0, 2.25, 0.25)}
 
     sidebar = html.Div([
@@ -148,16 +150,22 @@ def get_curve_graphs_sidebar(df: pd.DataFrame):
             html.Hr(),
             html.H3('Roofline Specific Options', style={'text-align': 'center'}),
             html.Br(),
+            html.P('Profiled Application', style={'text-align': 'start', 'font-weight': 'bold', 'margin': '0'}),
+            html.P('602.gcc_s · double fp precision', style={'text-align': 'start', 'margin': '0'}),
+            html.Br(),
             dbc.Checklist(
                 options=[
+                    {"label": 'Show Data', "value": 'showData'},
                     {"label": 'Show Cache Levels', "value": 'cache'},
                     {"label": 'Show Bound Regions', "value": 'regions'},
+                    {"label": 'Show Roof Labels', "value": 'roofLabels'},
+                    {"label": 'Show Guidelines', "value": 'guides'},
                 ],
                 id="roofline-opts-checklist",
                 labelStyle={'padding-left': '2rem'},
                 inputStyle={'margin-right': '5px'},
                 style={'text-align': 'start', 'display': 'inline-block'},
-                value=['cache', 'regions'],
+                value=['showData', 'cache', 'regions', 'roofLabels'],
                 inline=False,
                 className='sidebar-element'
             ),
@@ -165,6 +173,16 @@ def get_curve_graphs_sidebar(df: pd.DataFrame):
                 html.P("Region Transparency:"),
                 dcc.Slider(0, 1, 0.01, value=0.3, id='region-transparency-slider', marks=marks_opacity),
             ], id='region-transparency-section', className='sidebar-element'),
+            dbc.Row([
+                html.P("Left X axis offset:"),
+                dcc.Slider(-10, 10, 0.5, value=0, id='lext-x-axis-offset-slider', marks=marks_offset, 
+                            tooltip={'placement': 'bottom', 'always_visible': False}),
+            ], id='lext-x-axis-offset-section', className='sidebar-element'),
+            dbc.Row([
+                html.P("Right X axis offset:"),
+                dcc.Slider(-10, 10, 0.5, value=0, id='right-x-axis-offset-slider', marks=marks_offset, 
+                            tooltip={'placement': 'bottom', 'always_visible': False}),
+            ], id='right-x-axis-offset-section', className='sidebar-element'),
             html.Hr(),
         ], id='test-mem-id', className='sidebar-element'),
         dbc.Row([
@@ -298,6 +316,7 @@ def get_single_roofline_container():
     marks_opacity = {i: str(i) for i in np.linspace(0, 1, 5)}
 
     col = dbc.Col([
+        html.H3('Roofline Model', style={'text-align': 'center'}),
         dcc.Graph(id='single-roofline-chart', style={'height': '800px'}),
     ])
     

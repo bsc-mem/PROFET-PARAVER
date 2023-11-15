@@ -246,6 +246,20 @@ def get_hw_counter_data(file_path):
 
     return parsed_data
 
+def convert_to_units(value, unit):
+    units = {'': 1, 'K': 1000, 'M': 1000000, 'G': 1000000000, 'T': 1000000000000, 'P': 1000000000000000}
+
+    if unit not in units:
+        print("ERROR: Unknown unit: " + unit)
+        return f'{value} {unit}'
+
+    converted_value = value * units[unit]
+
+    for u in ['P', 'T', 'G', 'M', 'K']:
+        if converted_value >= units[u]:
+            return f'{round(converted_value / units[u], 3)} {u}'
+
+    return f'{round(converted_value, 2)}'
 
 def get_system_properties(file_path):
 
@@ -284,10 +298,10 @@ def get_system_properties(file_path):
         if(l[0] == 'FP'):
             fp = l[1].rstrip()
 
-    L1 = float(L1) * 4
-    L2 = float(L2) * 4
-    L3 = float(L3) * 4
-    dram = float(dram) * 4
+    L1 = float(L1)      * 100
+    L2 = float(L2)      * 100
+    L3 = float(L3)      * 100
+    dram = float(dram)  * 100
 
     return {
         'name': name,
@@ -295,27 +309,28 @@ def get_system_properties(file_path):
         'l1_cache': float(l1_size),
         'l2_cache': float(l2_size),
         'l3_cache': float(l3_size),
-        'fp': float(fp) * 1000,
+        'fp': float(fp),
+        'fp_unit': f'{convert_to_units(float(fp), "G")}FLOPS/s',
         'bw': [
             {
                 'level': 'L1',
                 'value': float(L1),
-                'unit': f'{round(float(L1), 2)} GB/s'
+                'unit': f'{convert_to_units(float(L1), "G")}B/s'
             },
             {
                 'level': 'L2',
                 'value': float(L2),
-                'unit': f'{round(float(L2), 2)} GB/s'
+                'unit': f'{convert_to_units(float(L2), "G")}B/s'
             },
             {
                 'level': 'L3',
                 'value': float(L3),
-                'unit': f'{round(float(L3), 2)} GB/s'
+                'unit': f'{convert_to_units(float(L3), "G")}B/s'
             },
             {
                 'level': 'DRAM',
                 'value': float(dram),
-                'unit': f'{round(float(dram), 2)} GB/s'
+                'unit': f'{convert_to_units(float(dram), "G")}B/s'
             },
             
         ]
@@ -356,43 +371,116 @@ def get_roofline_markers_dots_fig(x_data, y_data, color, opacity=0.01):
                         yaxis='y',
                         hoverlabel=dict(namelength=0),
                         customdata=hover_data,
-                        hovertemplate='<b>Operational Intensity</b>: %{customdata[0]:.2f} (FLOPS/Byte)<br><b>Performance</b>: %{customdata[1]:.2f} (GFLOPS/s)',
+                        hovertemplate='<b>Operational Intensity</b>: %{customdata[0]} (FLOPS/Byte)<br><b>Performance</b>: %{customdata[1]} (GFLOPS/s)',
     )
 
     return dots_fig
 
-def singleRoofline(hw_counter, peak_bw_gbs, peak_flopss, cache_bw, roofline_opts, region_transparency, markers_color, markers_transparency, labels, stress_score_scale, graph_title=''):
+
+def find_max_leading_zeros_value(data):
+    max_leading_zeros = -1
+    max_leading_zeros_value = None
+
+    for value in data:
+        num_str = f'{value:.16f}'
+        leading_zeros = 0
+        start = False
+        if value != 0:
+            for char in num_str:
+                
+                if start:
+                    if char == '0':
+                        leading_zeros += 1
+                    else:
+                        break
+                elif char == '.':
+                    start = True
+
+            if leading_zeros > max_leading_zeros:
+                max_leading_zeros = leading_zeros
+                max_leading_zeros_value = value
+
+    return max_leading_zeros*-1, max_leading_zeros_value
 
 
-     # Creating random data for flops/s
+def orders_of_magnitude_apart(x, y):
+    if x == 0 or y == 0:
+        return abs(int(math.log10(max(abs(x), abs(y)))))
+    
+    order_of_magnitude = math.log10(abs(x) / abs(y))
 
-    fig = go.Figure()
+    if x < 1:
+        return order_of_magnitude + 1
+    else:
+        return order_of_magnitude + 1.5
 
-    ai = np.logspace(-3, 5, 100)
+def findMiddleLogPoint(first_power, second_power):
 
+    orders_of_mag = orders_of_magnitude_apart(first_power, second_power)
 
-    max_x_value = round(ai.max())
-
-
-    num_rows = len(hw_counter)
-    #Create a new df:
-    # flops_s = np.random.uniform(0, peak_flopss, num_rows)
-
-    # flops_byte = flops_s / (df['bw'] * 40) 
-    # Create roofline markers using a function from 'curve_utils' module
+    return np.log10(((10**first_power) + (10**second_power))/(10**(orders_of_mag)))
 
 
+def singleRoofline(hw_counter, peak_bw_gbs, peak_bw_gbs_text, peak_flopss, peak_flopss_text, cache_bw, roofline_opts, region_transparency, markers_color, markers_transparency, leftOffset, rightOffset,  labels, stress_score_scale, graph_title=''):
 
     x_data = []
     y_data = []
-    for i in range(len(hw_counter["Data"])):
-        x_data.append(hw_counter["Data"][i]['TOTAL_FLOPS'] / hw_counter["Data"][i]['TOTAL_BYTES'])
-        y_data.append((hw_counter["Data"][i]['TOTAL_FLOPS'] / 1000 / 1000) / hw_counter["Data"][i]['Total runtime [s]'])
-        # if y_data[-1] > peak_flopss:
-        #     y_data[-1] = peak_flopss
 
+    cache_elbows = [peak_flopss / bw['value'] for bw in cache_bw]
 
+    min_cache_elbow = min(cache_elbows)
+    max_cache_elbow = max(cache_elbows)
     
+    minTest = np.log10(min_cache_elbow)
+
+    if 'cache' in roofline_opts:
+        min_cache_index = min(range(len(cache_bw)), key=lambda i: cache_bw[i]['value'])
+    else:
+        min_cache_index = 0
+    
+    if 'cache' in roofline_opts:
+        max_cache_index = max(range(len(cache_bw)), key=lambda i: cache_bw[i]['value'])
+    else:
+        max_cache_index = 0
+    
+    fig = go.Figure()
+    
+    if len(hw_counter["Data"]) != 0 and 'showData' in roofline_opts:
+        for i in range(len(hw_counter["Data"])):
+            x_data.append(hw_counter["Data"][i]['TOTAL_FLOPS'] / hw_counter["Data"][i]['TOTAL_BYTES'])
+            y_data.append((hw_counter["Data"][i]['TOTAL_FLOPS'] / 1000 / 1000) / hw_counter["Data"][i]['Total runtime [s]'])
+            #TODO: Remove this correction
+            if y_data[-1] > peak_flopss:
+                y_data[-1] = peak_flopss / 2
+
+        max_leading_zeros, l = find_max_leading_zeros_value(x_data)
+
+        max_value = max(x_data)
+        max_power_of_10 = math.ceil(math.log10(max_value))
+
+        # TODO: Add a slider to modify the offset of X axis where the roofline starts
+        ai = np.logspace(max_leading_zeros-1 + leftOffset, max_power_of_10 + rightOffset, 100)
+
+        min_y_power, min_y_value = find_max_leading_zeros_value(y_data)
+
+        max_cache_ai_y_value = carm_eq(ai[0], cache_bw[max_cache_index]['value'], peak_flopss)
+
+        while min_y_value < carm_eq(ai[0], cache_bw[min_cache_index]['value'], peak_flopss):
+            leftOffset -= 0.25
+            ai = np.logspace(max_leading_zeros-1 + leftOffset, max_power_of_10 + rightOffset, 100)
+
+        max_x_power = max_power_of_10 + rightOffset
+        min_x_power = max_leading_zeros-1 + leftOffset
+    else:
+        ai = np.logspace(min_cache_elbow-5 + leftOffset, min_cache_elbow+3 + rightOffset, 100)
+        max_x_power = min_cache_elbow+3 + rightOffset
+        min_x_power = min_cache_elbow-5 + leftOffset
+        min_y_power = carm_eq(ai[0], cache_bw[min_cache_index]['value'], peak_flopss)-1
+        max_cache_ai_y_value = carm_eq(ai[0], cache_bw[max_cache_index]['value'], peak_flopss)
+
+    max_x_value = round(ai.max())
+    min_x_value = round(ai.min())
+
     #Defining different dash types for each cache level
     dash_type = ['dot', 'dash', 'longdash', 'dashdot', 'longdashdot']
 
@@ -400,11 +488,6 @@ def singleRoofline(hw_counter, peak_bw_gbs, peak_flopss, cache_bw, roofline_opts
     if 'regions' in roofline_opts:
         # Add the bound regions so that the user can see the different regions
         opacity = region_transparency
-
-        cache_elbows = [peak_flopss / bw['value'] for bw in cache_bw]
-
-        min_cache_elbow = min(cache_elbows)
-        max_cache_elbow = max(cache_elbows)
 
         # Memory bound region
         fig.add_trace(go.Scatter(x=[0, peak_flopss/peak_bw_gbs, max_x_value, 0], 
@@ -419,8 +502,8 @@ def singleRoofline(hw_counter, peak_bw_gbs, peak_flopss, cache_bw, roofline_opts
                                 showlegend=False))
 
         fig.add_annotation(
-            x=np.log10((peak_flopss/peak_bw_gbs)/10),
-            y=-2,
+            x=findMiddleLogPoint(min_x_power, minTest),
+            y=min_y_power-0.5,
             xref="x",
             yref="y",
             text="<b>Memory Bound</b>",
@@ -429,10 +512,23 @@ def singleRoofline(hw_counter, peak_bw_gbs, peak_flopss, cache_bw, roofline_opts
             align="center"
         )
 
+        if 'guides' in roofline_opts:
+            fig.add_trace(go.Scatter(x=[min_x_value, max_x_value],
+                                    y=[peak_flopss, peak_flopss], 
+                                    mode='lines', 
+                                    line=dict(color='grey', width=1, dash='dash'),
+                                    hoverinfo='none',
+                                    showlegend=False))
+            fig.add_trace(go.Scatter(x=[peak_flopss/peak_bw_gbs, peak_flopss/peak_bw_gbs],
+                                    y=[0, peak_flopss], 
+                                    mode='lines', 
+                                    line=dict(color='grey', width=1, dash='dash'),
+                                    hoverinfo='none',
+                                    showlegend=False))
+
         if 'cache' in roofline_opts:
 
             x_value_compute = [max_cache_elbow, max_x_value, max_x_value, max_cache_elbow]
-            x_value_compute_annotation = np.log10((max_cache_elbow+ max_x_value)/100)
 
             # Mixed region
             fig.add_trace(go.Scatter(x=[min_cache_elbow, max_cache_elbow, max_cache_elbow, min_cache_elbow], 
@@ -446,9 +542,20 @@ def singleRoofline(hw_counter, peak_bw_gbs, peak_flopss, cache_bw, roofline_opts
                                 name=f'Mixed Region',
                                 showlegend=False))
             
+            if 'guides' in roofline_opts:
+                fig.add_trace(go.Scatter(x=[max_cache_elbow, max_cache_elbow],
+                                        y=[0, peak_flopss], 
+                                        mode='lines', 
+                                        line=dict(color='grey', width=1, dash='dash'),
+                                        hoverinfo='none',
+                                        showlegend=False))
+            
+           
+
             fig.add_annotation(
+                #x=x_pos,
                 x=np.log10(max_cache_elbow/5),
-                y=-2,
+                y=min_y_power-0.5,
                 xref="x",
                 yref="y",
                 text="<b>Mixed</b>",
@@ -473,8 +580,8 @@ def singleRoofline(hw_counter, peak_bw_gbs, peak_flopss, cache_bw, roofline_opts
                                 showlegend=False))
 
         fig.add_annotation(
-            x=x_value_compute_annotation,
-            y=-2,
+            x=findMiddleLogPoint(max_cache_elbow, max_x_power),
+            y=min_y_power-0.5,
             xref="x",
             yref="y",
             text="<b>Compute Bound</b>",
@@ -498,22 +605,19 @@ def singleRoofline(hw_counter, peak_bw_gbs, peak_flopss, cache_bw, roofline_opts
     fig.add_trace(go.Scatter(x=ai, y=carm_eq(ai, peak_bw_gbs, peak_flopss), mode='lines', line=dict(color='black', width=2),
                              name=f'Roofline',
                              hoverlabel=dict(namelength=0),
-                             
                              hovertemplate=f'<b>Roofline</b><br>' +
                                             'Operational Intensity: %{x} (FLOPS/Byte)<br>' +
                                             'Performance: %{y} (GFLOPS/s)<br>'))
 
-
-
-    dots_fig = get_roofline_markers_dots_fig(x_data, y_data, markers_color, markers_transparency);
-    fig.add_trace(dots_fig)
+    if 'showData' in roofline_opts:
+        dots_fig = get_roofline_markers_dots_fig(x_data, y_data, markers_color, markers_transparency);
+        fig.add_trace(dots_fig)
     
-
     #Makes legend responsive so that it doesn't overlap with the chart when window is resized.
     fig.update_layout(
         legend=dict(
             orientation="h",
-            y=0.99,
+            y=1,
             yref="paper",
             yanchor="bottom",
             x=0.5,
@@ -522,32 +626,32 @@ def singleRoofline(hw_counter, peak_bw_gbs, peak_flopss, cache_bw, roofline_opts
             font = dict(size = 15, color = "black")
         )
     )
-    # Annotations for Memory and Compute Roofs
-    fig.add_annotation(
-        x=np.log10(max_x_value/3),  
-        y=np.log10(peak_flopss+15000),           
-        text=f"<b>Compute roof ({(peak_flopss):.2f} GFLOPS/s)</b>",
-        showarrow=False,
-        font=dict(size=12, color='black'),
-        xref="x",
-        yref="y"
-    )
+    if 'roofLabels' in roofline_opts:
+        # Annotations for Memory and Compute Roofs
+        fig.add_annotation(
+            #x=np.log10(max_x_value/3),  
+            x=findMiddleLogPoint(max_cache_elbow, max_x_power)-1,
+            y=np.log10(peak_flopss)*1.05,           
+            text=f"<b>Compute roof ({peak_flopss_text})</b>",
+            showarrow=False,
+            font=dict(size=12, color='black'),
+            xref="x",
+            yref="y"
+        )
+        
+        # Angle calculation for the memory roof annotation
+        #angle = math.atan2(np.log10(peak_flopss*(1/3)), np.log10((peak_flopss/peak_bw_gbs)/ 5)) * 180 / math.pi
 
-
-    # Angle calculation for the memory roof annotation
-    angle = math.atan2(np.log10(peak_flopss*(1/3)), np.log10((peak_flopss/peak_bw_gbs)/ 5)) * 180 / math.pi
-
-    fig.add_annotation(
-        x=np.log10((peak_flopss/peak_bw_gbs) / 5),
-        y=np.log10(peak_flopss*(1/3)),
-        text=f"<b>Memory BW roof ({peak_bw_gbs:.1f} GB/s)</b>",
-        showarrow=False,
-        textangle=angle + 255,
-        font=dict(size=12, color='black'),
-        xref="x",
-        yref="y"
-    )
-
+        fig.add_annotation(
+            x=findMiddleLogPoint(min_x_power, min_cache_elbow)-1,
+            y=findMiddleLogPoint(max_cache_ai_y_value, np.log10(peak_flopss))-1,
+            text=f"<b>Memory BW roof ({peak_bw_gbs_text})</b>",
+            showarrow=False,
+            #textangle=angle + 180,
+            font=dict(size=12, color='black'),
+            xref="x",
+            yref="y"
+        )
 
 
     fig.update_layout(

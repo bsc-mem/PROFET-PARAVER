@@ -399,9 +399,11 @@ def register_callbacks(app, system_data, hw_counter ,df, df_overview, curves, co
         Input('region-transparency-slider', 'value'),
         Input('markers-color-dropdown', 'value'),
         Input('markers-transparency-slider', 'value'),
+        Input('lext-x-axis-offset-slider', 'value'),
+        Input('right-x-axis-offset-slider', 'value'),
         State('single-roofline-chart', 'figure')
     )
-    def update_single_roofline_chart(time_range, roofline_opts, region_transparency, markers_color, markers_transparency, current_figure):
+    def update_single_roofline_chart(time_range, roofline_opts, region_transparency, markers_color, markers_transparency, leftOffset, rightOffset, current_figure):
         # Get the figures and metadata from the states
 
         # input_id = callback_context.triggered[0]['prop_id'].split('.')[0]
@@ -410,14 +412,18 @@ def register_callbacks(app, system_data, hw_counter ,df, df_overview, curves, co
         cache_bw = system_data['bw']
 
         # Get the peak bandwidth
-        peak_bw_gbs = max([cache_bw[i]['value'] for i in range(len(cache_bw))])
+        max_index = max(range(len(cache_bw)), key=lambda i: cache_bw[i]['value'])
+        peak_bw_gbs = cache_bw[max_index]['value']
+        # Fins the peak bandwidth text
+        peak_bw_gbs_text = cache_bw[max_index]['unit']
 
         # TODO: Define peak flops (peak_flopss) - Not implemented in the provided code
         peak_flopss = system_data["fp"]
+        peak_flopss_text = system_data["fp_unit"]
 
         
-        graph_title = f"Cache Aware Roofline Model<br><sup>{hw_counter['CPU']['name']} · {hw_counter['CPU']['type']} · {hw_counter['CPU']['clock']}</sup>"
-        fig = roofline.singleRoofline(hw_counter, peak_bw_gbs, peak_flopss, cache_bw, roofline_opts, region_transparency, markers_color, markers_transparency, labels, stress_score_config, graph_title=graph_title)
+        graph_title = f"<sup>{hw_counter['CPU']['name']} · {hw_counter['CPU']['type']} · {hw_counter['CPU']['clock']}</sup>"
+        fig = roofline.singleRoofline(hw_counter, peak_bw_gbs,peak_bw_gbs_text,  peak_flopss, peak_flopss_text, cache_bw, roofline_opts, region_transparency, markers_color, markers_transparency, leftOffset, rightOffset, labels, stress_score_config, graph_title=graph_title)
         
         return fig
     
