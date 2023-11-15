@@ -6,7 +6,6 @@ import summary_info
 import utils
 
 
-
 def get_summary_platform_row(platform: dict, summary_table_attrs: dict):
     # get rows from platform dict (see summary_info.py)
     server_rows = utils.get_dash_table_rows(platform['server'])
@@ -50,10 +49,11 @@ def get_summary_platform_row(platform: dict, summary_table_attrs: dict):
         ], md=4),
     ])
 
+
 def get_summary_memory_row(memory: dict, summary_table_attrs: dict):
     # get rows from memory dict (see summary_info.py)
     memory_profile_rows = utils.get_dash_table_rows(memory)
-    
+
     return dbc.Row([
         html.H2('Memory profile', className='summary-section-title'),
         dbc.Col([
@@ -67,6 +67,7 @@ def get_summary_memory_row(memory: dict, summary_table_attrs: dict):
             ], **summary_table_attrs, id='summary-table-memory-profile'),
         ], md=4),
     ])
+
 
 def get_summary_trace_row(trace_info: dict, summary_table_attrs: dict):
     # get rows from trace_info dict (see summary_info.py)
@@ -86,6 +87,7 @@ def get_summary_trace_row(trace_info: dict, summary_table_attrs: dict):
         ], md=4),
     ])
 
+
 def get_summary_tab(df: pd.DataFrame, config: dict, system_arch: dict):
     summary_table_attrs = {'bordered': True, 'hover': False, 'responsive': True,
                            'striped': True, 'className': 'summary-table'}
@@ -100,10 +102,11 @@ def get_summary_tab(df: pd.DataFrame, config: dict, system_arch: dict):
         get_summary_trace_row(summary['trace_info'], summary_table_attrs),
     ], id='summary-tab-content')
 
+
 def get_curve_graphs_sidebar(df: pd.DataFrame):
     node_names = sorted(df['node_name'].unique())
     # Define marks for sliders
-    marks_time = {i: str(round(i, 1)) for i in np.linspace(df['timestamp'].min()/1e9, df['timestamp'].max()/1e9, 5)}
+    marks_time = {i: str(round(i, 1)) for i in np.linspace(df['timestamp'].min() / 1e9, df['timestamp'].max() / 1e9, 5)}
     marks_opacity = {i: str(i) for i in np.linspace(0, 1, 5)}
 
     marks_time_sampling = {i: f'{i}' for i in np.arange(0, 1.25, 0.25)}
@@ -113,10 +116,12 @@ def get_curve_graphs_sidebar(df: pd.DataFrame):
             html.P("Configuration:"),
             dcc.Upload(
                 id='upload-config',
-                children=dbc.Button("Load", id='upload-config-button', n_clicks=0, className=['sidebar-button', 'corporative-button']),
+                children=dbc.Button("Load", id='upload-config-button', n_clicks=0,
+                                    className=['sidebar-button', 'corporative-button']),
             ),
             dcc.Download(id='download-config'),
-            dbc.Button("Save", id='save-config', n_clicks=0, className=['sidebar-button', 'corporative-button'], style={'margin-top': '1rem'}),
+            dbc.Button("Save", id='save-config', n_clicks=0, className=['sidebar-button', 'corporative-button'],
+                       style={'margin-top': '1rem'}),
         ], className='sidebar-element'),
         dbc.Row([
             html.P("Node selection:"),
@@ -156,9 +161,9 @@ def get_curve_graphs_sidebar(df: pd.DataFrame):
             html.P("Timestamp (s):"),
             dcc.RangeSlider(
                 id='time-range-slider',
-                min=df['timestamp'].min()/1e9, max=df['timestamp'].max()/1e9, step=0.1,
+                min=df['timestamp'].min() / 1e9, max=df['timestamp'].max() / 1e9, step=0.1,
                 marks=marks_time,
-                value=[df['timestamp'].min()/1e9, df['timestamp'].max()/1e9]
+                value=[df['timestamp'].min() / 1e9, df['timestamp'].max() / 1e9]
             ),
         ], id='timestamp-section', className='sidebar-element'),
         dbc.Row([
@@ -233,7 +238,8 @@ def get_graphs_container(system_arch: dict, id_prefix: str, max_elements: int = 
             bw_balance_str = 'Socket bandwidth balance: %'
             if len(mcs) > 1:
                 # Create a new container for each socket within the node container
-                socket_container = dbc.Container([], id=f'{id_prefix}-node-{node_name}-socket-{i_socket}-container', fluid=True)
+                socket_container = dbc.Container([], id=f'{id_prefix}-node-{node_name}-socket-{i_socket}-container',
+                                                 fluid=True)
                 socket_container.children.append(html.H3(f'Socket {i_socket}', style={'padding-top': '2rem'}))
                 socket_rows = dbc.Row([], id=f'{id_prefix}-node-{node_name}-socket-{i_socket}-row')
                 bw_balance_str = 'Memory channel bandwidth balance: '
@@ -258,7 +264,7 @@ def get_graphs_container(system_arch: dict, id_prefix: str, max_elements: int = 
                 else:
                     # Add the graph to the socket container
                     node_rows.children.append(col)
-            
+
             if len(mcs) > 1:
                 # Add the completed socket container to the node container's row
                 socket_container.children.append(socket_rows)
@@ -279,7 +285,7 @@ def get_overview_container(system_arch: dict, id_prefix: str, max_elements: int 
         html.Br(),
         dcc.Graph(id='overview-chart', style={'height': '800px'}),
     ])
-    
+
     hidden_div = html.Div(id='overview-hidden-div', style={'display': 'none'})
 
     container.children.append(col)
@@ -291,21 +297,22 @@ def get_overview_container(system_arch: dict, id_prefix: str, max_elements: int 
 def get_curve_graphs_tab(system_arch: dict, max_elements: int = None):
     return get_graphs_container(system_arch, "curves", max_elements)
 
+
 def get_roofline_tab(system_arch: dict, max_elements: int = None):
-    
     container = get_graphs_container(system_arch, "mem-roofline", max_elements)
 
     container.children.insert(0, html.Div(id='hidden-div', children='Initial Value', style={'display': 'none'}))
     return container
-    #return dbc.Container([
+    # return dbc.Container([
     #    # Hidden div for trigering roofline callback (TODO: remove this when we have other components that trigger the callback)
     #    html.Div(id='hidden-div', children='Initial Value', style={'display': 'none'}),
     #    #dcc.Graph(id=f'roofline-graph'),
-    #])
+    # ])
 
 
 def get_overview_tab(system_arch: dict, max_elements: int = None):
     return get_overview_container(system_arch, "overview", max_elements)
+
 
 def get_main_content(df: pd.DataFrame, config: dict, system_arch: dict, max_elements: int = None, expert: bool = False):
     system_info_tab = get_summary_tab(df, config, system_arch)
@@ -331,9 +338,9 @@ def get_main_content(df: pd.DataFrame, config: dict, system_arch: dict, max_elem
         tabs,
     ], className='tab-content')
 
+
 # Update the layout function
 def get_layout(df: pd.DataFrame, config: dict, system_arch: dict, max_elements: int = None, expert: bool = False):
-
     return dcc.Loading(
         id="loading",
         type="default",  # changes the loading spinner
@@ -345,4 +352,3 @@ def get_layout(df: pd.DataFrame, config: dict, system_arch: dict, max_elements: 
         ], fluid=True)],
         fullscreen=True,
     )
-

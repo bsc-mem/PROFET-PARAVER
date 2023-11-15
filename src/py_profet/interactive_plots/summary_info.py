@@ -51,6 +51,7 @@ def get_platform(config: dict):
         },
     }
 
+
 def get_memory_profile(df: pd.DataFrame):
     return {
         'lead_off_lat': {
@@ -62,6 +63,7 @@ def get_memory_profile(df: pd.DataFrame):
             'value': f'{df["bw"].max():.1f} GB/s',
         }
     }
+
 
 def get_trace_info(df: pd.DataFrame, system_arch: dict):
     execution_duration_sec = (df['timestamp'].max() - df['timestamp'].min()) / 1e9
@@ -96,6 +98,7 @@ def get_trace_info(df: pd.DataFrame, system_arch: dict):
             'value': 'TODO',
         },
     }
+
 
 def get_summary_info(df: pd.DataFrame, config: dict, system_arch: dict):
     return {
