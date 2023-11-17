@@ -44,11 +44,20 @@ class RatioRangesError(Exception):
             return f'Write ratios under 0% are not possible. The given write ratio is {self.write_ratio}%.'
         else:
             return f'Unknown error for the given write ratio of {self.write_ratio}%.'
-
-def bw_overshoot_warning(read_ratio, requested_bw, bw_units):
+        
+def bw_high_warning(read_ratio, requested_bw, bw_units, max_bw, max_lat):
     write_ratio = 100 - read_ratio
+    over_bw_factor = 1 - (requested_bw / max_bw) * 100
     warn = f'Cannot estimate latency for bandwidth {round(requested_bw, 2)} {bw_units} using bandwidth-latency curve for a write ratio of {write_ratio}%. ' +\
-           f'Provided bandwidth larger than the largest recorded bandwidth for said curve.'
+           f'The provided bandwidth is larger than the largest recorded bandwidth for said curve by a factor of {over_bw_factor:.2f%}.' +\
+           f'Using latency of {round(max_lat, 2)} cycles, corresponding to the maximum latency.'
+    warnings.warn(warn)
+
+def bw_overshoot_warning(read_ratio, requested_bw, bw_units, max_bw):
+    write_ratio = 100 - read_ratio
+    over_bw_factor = 1 - (requested_bw / max_bw) * 100
+    warn = f'Cannot estimate latency for bandwidth {round(requested_bw, 2)} {bw_units} using bandwidth-latency curve for a write ratio of {write_ratio}%. ' +\
+           f'The provided bandwidth is larger than the largest recorded bandwidth for said curve by a factor of {over_bw_factor:.2f%}.'
     warnings.warn(warn)
 
 def bw_low_warning(requested_bw, bw_units, lead_off_latency):
@@ -163,6 +172,9 @@ class Curve:
         # BWS in MB/s and lats in cycles
         check_ratio(read_ratio)
 
+        # factor to allow a limit of 5% overshoot
+        self.bw_grace_factor = 1.05
+
         if len(bws) != len(lats):
             raise Exception(f'Number of bandwidths ({len(bws)}) and latencies ({len(lats)}) do not match.')
 
@@ -223,15 +235,23 @@ class Curve:
             if self.display_warnings:
                 bw_low_warning(bw_mbps, bw_units='MB/s', lead_off_latency=self.lats[0])
             return self.lats[0]
+        
+        max_bw = self.get_max_bw()
+        # measured bandwidth is above the curve
+        if bw > max_bw:
+            if bw < max_bw * self.bw_grace_factor:
+                max_lat = self.get_max_lat()
+                if self.display_warnings:
+                    bw_high_warning(self.read_ratio, bw_mbps, bw_units='MB/s', max_bw=max_bw, max_lat=max_lat)
+                return max_lat
+            # show warning and return -1 when bandwidth is above-off the curve
+            else:
+                if self.display_warnings:
+                    bw_overshoot_warning(self.read_ratio, bw_mbps, bw_units='MB/s', max_bw=self.get_max_bw())
+            return -1
 
         # i = bisect.bisect_left(self.bws, bw)
         i = self._get_bw_posterior_index(bw_mbps, bw_units='MB/s')
-        if i + 1 >= len(self.bws):
-            # show warning and return -1 when bandwidth is above-off the curve
-            if self.display_warnings:
-                bw_overshoot_warning(self.read_ratio, bw_mbps, bw_units='MB/s')
-            return -1
-            # raise OvershootError(self.closest_curve_read_ratio, bw)
 
         # renaming variables to easily read the linear interpolation formula
         x = bw_mbps
@@ -268,9 +288,14 @@ class Curve:
 
         if bandwidth == 0:
             return 0
+        
+        is_max_lat = lat is not None and lat == max_lat
+        if is_max_lat:
+            return 1
 
         idx = self._get_bw_posterior_index(bandwidth, bw_units)
         if idx >= len(self.bws):
+            # TODO allow the overshoot grace factor
             return None
 
         if at_least_one_none:

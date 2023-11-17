@@ -340,7 +340,6 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
 
                 aggregation_dict = {col: 'first' for col in df_copy.columns if col != 'stress_score'}
 
-
                 if sampling_mode == 'stress':
                     result_df = grouped.apply(lambda x: x.loc[x['stress_score'].idxmax()]).reset_index(drop=True)
                 elif sampling_mode == 'mean':
