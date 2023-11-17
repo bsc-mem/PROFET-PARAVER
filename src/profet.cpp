@@ -114,8 +114,8 @@ void printHelp() {
           "\t\tCalculate memory stress metrics per memory channel, rather than per socket (default)\n"
           "-e, --expert\n"
           "\t\tEnables expert mode for interactive plotting. If --plot-interactive is not set, --expert is ignored.\n"
-          "-o, --omit-original\n"
-          "\t\tOmits the first application of the original trace in the output trace file\n"
+          "-k, --keep-original\n"
+          "\t\tKeeps the first application of the original trace in the output trace file\n"
           "-w, --no-warnings\n"
           "\t\tSuppress warning messages\n"
           "-q, --quiet\n"
@@ -131,14 +131,14 @@ void printHelp() {
 
 tuple<string, string, string, bool, bool, bool, int, int, int> processArgs(int argc, char** argv) {
   // const char* const short_opts = "i:o:c:w";
-  const char* const short_opts = "meowqIph";
+  const char* const short_opts = "mekwqIph";
   const option long_opts[] = {
           // {"input", required_argument, nullptr, 'i'},
           // {"output", required_argument, nullptr, 'o'},
           // {"config", required_argument, nullptr, 'c'},
           {"memory-channel", no_argument, nullptr, 'm'},
           {"expert", no_argument, nullptr, 'e'},
-          {"omit-original", no_argument, nullptr, 'o'},
+          {"keep-original", no_argument, nullptr, 'k'},
           {"no-warnings", no_argument, nullptr, 'w'},
           {"quiet", no_argument, nullptr, 'q'},
           {"plot-interactive", no_argument, nullptr, 'I'},
@@ -152,7 +152,7 @@ tuple<string, string, string, bool, bool, bool, int, int, int> processArgs(int a
   int runDash = 0; // whether to run dash or not (it need to be an integer for sending it to python (booleans don't work))
   bool perSocket = true;
   bool expert = false;
-  bool keepOriginalTrace = true;
+  bool keepOriginalTrace = false;
   bool showSupportedSystems = false;
   bool showHelp = false;
   int opt;
@@ -167,8 +167,8 @@ tuple<string, string, string, bool, bool, bool, int, int, int> processArgs(int a
           expert = true;
           break;
 
-      case 'o':
-          keepOriginalTrace = false;
+      case 'k':
+          keepOriginalTrace = true;
           break;
 
       case 'w':
