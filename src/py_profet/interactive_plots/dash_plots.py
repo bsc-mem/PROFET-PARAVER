@@ -37,14 +37,14 @@ def parse_args():
     parser.add_argument(dest='trace_file', default='', help='Trace file path.')
     parser.add_argument(dest='curves_path', default='', help='Directory of the bandwidth-latency curves.')
     parser.add_argument(dest='config_file', default=None, help='Configuration JSON file path.')
-    parser.add_argument('-e', '--excluded-original', dest='excluded_original',
-                        action='store_true', help='If original trace data is excluded from the given trace file.')
+    parser.add_argument('-k', '--keep-original', dest='keep_original',
+                        action='store_true', help='If original trace data is kept from the given trace file.')
     parser.add_argument('--pdf', dest='plot_pdf',
                         action='store_true', help='If plot (store) pdf with curves and memory stress.')
     parser.add_argument('--save-feather', dest='save_feather',
                         action='store_true', help='Save processed .prv data to a .feather file.')
     
-    parser.add_argument('--expert', dest='expert',
+    parser.add_argument('-e', '--expert', dest='expert',
                         action='store_true', help='If expert mode is enabled.')
     
     return parser.parse_args()
@@ -96,7 +96,7 @@ if __name__ == '__main__':
     # do it for all other cases (e.g. .pdf below)
     row_file_path = args.trace_file.replace('.prv', '.row')
     if args.trace_file.endswith('.prv'):
-        df = utils.prv_to_df(args.trace_file, row_file_path, config_json, args.excluded_original, args.save_feather)
+        df = utils.prv_to_df(args.trace_file, row_file_path, config_json, args.keep_original, args.save_feather)
     elif args.trace_file.endswith('.feather'):
         df = pd.read_feather(args.trace_file)
     else:

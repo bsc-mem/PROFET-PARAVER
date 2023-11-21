@@ -23,7 +23,7 @@ def get_node_names(row_file_path):
                     break
     return node_names
 
-def prv_to_df(trace_file_path, row_file_path, config_json, excluded_original, save_feather=False):
+def prv_to_df(trace_file_path, row_file_path, config_json, keep_original, save_feather=False):
     node_names = get_node_names(row_file_path)
     num_lines = sum(1 for _ in open(trace_file_path))
 
@@ -64,7 +64,7 @@ def prv_to_df(trace_file_path, row_file_path, config_json, excluded_original, sa
             row = defaultdict()
             row['node'] = int(sp[2])
             
-            if not excluded_original and row['node'] == 1:
+            if keep_original and row['node'] == 1:
                 # skip first application (original trace values) when it is excluded
                 continue
 
@@ -96,7 +96,7 @@ def prv_to_df(trace_file_path, row_file_path, config_json, excluded_original, sa
                 if metric_key == metric_keys[-1]:
                     # we've processed the last metric key we want, no need to continue (even if there are other events pending)
                     break
-
+                    
             df.append(row)
 
         print('Loading is 100% complete.')
