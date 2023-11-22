@@ -168,5 +168,5 @@ if __name__ == '__main__':
     #TODO: If the expert argument changes change it here.
     app = get_dash_app(df, config_json, system_arch, max_elements, args.expert)
     register_callbacks(app, df, df_overview, curves, config_json, system_arch, args.trace_file, labels, stress_score_config, max_elements, args.expert)
-    #app.run_server(debug=False)
-    app.run_server(debug=True)
+    app.run_server(debug=False)
+    # app.run_server(debug=True)
