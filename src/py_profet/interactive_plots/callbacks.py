@@ -43,17 +43,6 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
     def toggle_sidebar(active_tab):
         return active_tab != "summary-tab"
 
-    # Hide the curve specific options when the roofline tab is active.
-    @app.callback(
-        Output(f'curves-color-dropdown-section', 'style'),
-        Output(f'curves-transparency-section', 'style'),
-        Input("tabs", "active_tab"),
-    )
-    def hide_curves_sidebar_options(active_tab):
-        # Static number of outputs. If we add more options, we need to update this number
-        num_outputs = 2
-        return [{'display': 'none'}]*num_outputs if active_tab == "app-overview-tab" else [{}]*num_outputs
-
     # Hide the overview tab specific options when the tab is not active.
     @app.callback(
         Output(f'sampling-section', 'style'),
