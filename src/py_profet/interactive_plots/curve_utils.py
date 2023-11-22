@@ -40,13 +40,13 @@ def filter_df(df, node_name=None, i_socket=None, i_mc=None, time_range=(), bw_ra
 
 
 def get_graph_fig(df, curves, curves_color, curves_transparency, markers_color, markers_transparency,
-                  graph_title, x_title, y_title, stress_score_scale=None, color_bar=None):
+                  graph_title, x_title, y_title, stress_score_scale=None, color_bar=None, showAll = False):
     fig = make_subplots(rows=1, cols=1)
     # if curves_color != "none":
 
     try:
 
-        fig = get_curves_fig(curves, fig, curves_color, curves_transparency)
+        fig = get_curves_fig(curves, fig, curves_color, curves_transparency, showAll)
 
         # plot application bw-lat dots
         dots_fig = get_application_memory_dots_fig(df, markers_color, stress_score_scale, markers_transparency)
@@ -117,17 +117,30 @@ def get_curves(curves_path, cpu_freq):
                 }
     return curves
 
-def get_curves_fig(curves, fig, color='black', transparency=1):
-    for i, w_ratio in enumerate(range(0, 50, 10)):
+def get_curves_fig(curves, fig, color='black', transparency=1, showAll = False):
+
+    totalValues = len(curves) - 1
+
+    if showAll:
+        rang = range(0, totalValues*2, 2)
+        transparencyRange = range(0, totalValues*2 + 1, 2)
+    else:
+        rang = range(0, 50, 10)
+        transparencyRange = range(0, 51, 10)
+
+    for i, w_ratio in enumerate(rang):
+
         curve_fig = px.line(x=curves[w_ratio]['bandwidths'], y=curves[w_ratio]['latencies'], color_discrete_sequence=[color])
-        curve_opacity_step = transparency / len(range(0, 51, 10))
+        curve_opacity_step = transparency / len(transparencyRange)
         curve_transparency = transparency - curve_opacity_step * i
         curve_fig.update_traces(opacity=max(0, curve_transparency))
         curve_text = f'{w_ratio}%' if curve_transparency > 0 else ''
         fig.add_trace(curve_fig.data[0])
-        fig.add_annotation(x=curves[w_ratio]['bandwidths'][-1], y=curves[w_ratio]['latencies'][-1] + 15,
+        if not showAll:
+            fig.add_annotation(x=curves[w_ratio]['bandwidths'][-1], y=curves[w_ratio]['latencies'][-1] + 15,
                             text=curve_text, showarrow=False, arrowhead=1)
     return fig
+
 
 def get_application_memory_dots_fig(df, color, stress_score_scale=None, opacity=0.01):
     if 'bw' not in df.columns or 'lat' not in df.columns:

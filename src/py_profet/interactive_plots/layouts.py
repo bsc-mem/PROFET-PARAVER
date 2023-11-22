@@ -264,7 +264,7 @@ def get_main_content(df: pd.DataFrame, config: dict, system_arch: dict, max_elem
     # Add expert tabs
     if expert:
         t.append(dbc.Tab(curves_tab, label="Curves", tab_id="curves-tab"))
-    tabs = dbc.Tabs(t, id="tabs", active_tab="summary-tab")
+    tabs = dbc.Tabs(t, id="tabs", active_tab="app-overview-tab")
 
     return html.Div([
         dbc.Button("Export to PDF", id="btn-pdf-export", className=["corporative-button", "pdf-button"]),
