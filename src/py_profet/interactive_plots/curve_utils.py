@@ -122,18 +122,24 @@ def get_curves_fig(curves, fig, color='black', transparency=1, showAll = False):
     totalValues = len(curves) - 1
 
     if showAll:
-        rang = range(0, totalValues*2, 2)
-        transparencyRange = range(0, totalValues*2 + 1, 2)
+        # Since we may not always have all the curves from 0 to 100, we need to calculate the range of the curves to show all the curves
+        # To do so, we know the length of the curves will give us the total amount of readings we have. To know the ratios, we need to multiply by 2 since the increment is in steps of 2%
+        # We also need to add 2 to the total amount of values since we need to add the min and max values
+        rang = range(0, (totalValues*2) +2, 2)
+        transparencyRange = range(0, (totalValues*2) + 3, 2)
     else:
+        # In case we don't want to show all the curves we simply use the range of 0% to 50% with steps of 10%
         rang = range(0, 50, 10)
         transparencyRange = range(0, 51, 10)
 
     for i, w_ratio in enumerate(rang):
-
         curve_fig = px.line(x=curves[w_ratio]['bandwidths'], y=curves[w_ratio]['latencies'], color_discrete_sequence=[color])
         curve_opacity_step = transparency / len(transparencyRange)
         curve_transparency = transparency - curve_opacity_step * i
-        curve_fig.update_traces(opacity=max(0, curve_transparency))
+        curve_fig.update_traces(
+            hovertemplate="Bandwidth (BW): %{x}<br>Latency: %{y}<br>Write Ratio (WR): " + str(w_ratio) + "%<extra></extra>",
+            opacity=max(0, curve_transparency)
+        )
         curve_text = f'{w_ratio}%' if curve_transparency > 0 else ''
         fig.add_trace(curve_fig.data[0])
         if not showAll:
