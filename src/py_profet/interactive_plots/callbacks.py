@@ -365,8 +365,15 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
             for curve in overview_fig['data'][:-1]:
                 curve['line']['color'] = curves_color
         elif input_id == 'curves-transparency-slider':
+
+            totalValues = len(curves) - 1
+            transparencyRange = range(0, (totalValues*2) + 3, 2)
+            curve_opacity_step = curves_transparency / len(transparencyRange)
+            i=0
             for curve in overview_fig['data'][:-1]:
-                curve['opacity'] = curves_transparency
+                curve['opacity'] = curves_transparency - curve_opacity_step * i
+                i = i + 1
+
         elif input_id == 'time-range-slider':
             # Apply a mask to filter data within the specified time range
             mask = (df_overview['timestamp'] >= time_range[0] * 1e9) & (df_overview['timestamp'] < time_range[1] * 1e9)
