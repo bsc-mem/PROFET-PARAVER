@@ -146,7 +146,7 @@ def get_curves_fig(curves, fig, color='black', transparency=1, showAll = False):
             hovertemplate="Bandwidth (BW): %{x}<br>Latency: %{y}<br>Write Ratio (WR): " + str(w_ratio) + "%<extra></extra>",
             opacity=max(0, curve_transparency),
             showlegend=show_in_legend,
-            name=f'Rd:Wr {w_ratio}:{100-w_ratio}',
+            name=f'Rd:Wr {100-w_ratio}:{w_ratio}',
         )
         # if i == 0 or i == len(rang) - 1:
         #      curve_fig.update_traces(showLegend=True)
