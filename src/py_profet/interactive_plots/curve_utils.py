@@ -74,6 +74,7 @@ def get_graph_fig(df, curves, curves_color, curves_transparency, markers_color, 
         )        
         return fig
     except Exception as e:
+
         fig.add_annotation(
                 text="Something went wrong<br><sup>Please reload the page</sup>",
                 xref="paper",
@@ -129,15 +130,14 @@ def get_curves_fig(curves, fig, color='black', transparency=1, showAll = False):
         transparencyRange = range(0, (totalValues*2) + 3, 2)
     else:
         # In case we don't want to show all the curves we simply use the range of 0% to 50% with steps of 10%
-        rang = range(50, -1, 10)
+        rang = range(0, 50, 10)
         transparencyRange = range(0, 51, 10)
 
     for i, w_ratio in enumerate(rang):
 
         #This chooses which values are shown in the legend.
         # Right now the legend includes the first and last curve.
-        show_in_legend = (i == 0) or (i == len(rang) - 1)
-
+        show_in_legend = ((i == 0) or (i == len(rang) - 1)) and showAll
 
         curve_fig = px.line(x=curves[w_ratio]['bandwidths'], y=curves[w_ratio]['latencies'], color_discrete_sequence=[color])
         curve_opacity_step = transparency / len(transparencyRange)
@@ -148,8 +148,6 @@ def get_curves_fig(curves, fig, color='black', transparency=1, showAll = False):
             showlegend=show_in_legend,
             name=f'Rd:Wr {100-w_ratio}:{w_ratio}',
         )
-        # if i == 0 or i == len(rang) - 1:
-        #      curve_fig.update_traces(showLegend=True)
         curve_text = f'{w_ratio}%' if curve_transparency > 0 else ''
         fig.add_trace(curve_fig.data[0])
         if not showAll:
@@ -157,17 +155,18 @@ def get_curves_fig(curves, fig, color='black', transparency=1, showAll = False):
                             text=curve_text, showarrow=False, arrowhead=1)
         
 
-    fig.update_layout(legend=dict(
-        yanchor="top",
-        y=0.99,
-        xanchor="left",
-        x=0.01,
-        orientation='h',
-        font=dict(
-            size=16
-        )
+    if showAll:
+        fig.update_layout(legend=dict(
+            yanchor="top",
+            y=0.99,
+            xanchor="left",
+            x=0.01,
+            orientation='h',
+            font=dict(
+                size=16
+            )
 
-    ))
+        ))
     
     return fig
 
