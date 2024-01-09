@@ -323,8 +323,13 @@ class Curve:
         # prev and post BWs are expected in GB/s for properly calculating the angle
         bw_prev = self._bw_units_converter(bw_prev, from_unit=bw_units, to_unit='GB/s')
         bw_post = self._bw_units_converter(bw_post, from_unit=bw_units, to_unit='GB/s')
+        # angle in degrees between the two points
         angle = math.degrees(math.atan2((lat_post - lat_prev), (bw_post - bw_prev)))
+        # normalize the angle between 0 and 1
+        # because lat and bw are always positive and post > pre, we can just divide by 90
         score_angle = angle / 90
+        # normzalize between min and max values of latency
+        # i.e., a value in between 0 and 1 for latency
         score_latency = (latency - lead_off_latency) / (max_latency - lead_off_latency)
         latency_factor = 0.8
         score = latency_factor * score_latency + (1 - latency_factor) * score_angle
