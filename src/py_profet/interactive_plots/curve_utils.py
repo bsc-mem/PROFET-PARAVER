@@ -7,6 +7,9 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
+# Font size for the entire figure
+font_size = 35
+
 def get_color_bar(labels, stress_score_config):
     # if toggled_time:
     #     return {
@@ -14,7 +17,11 @@ def get_color_bar(labels, stress_score_config):
     #         'colorscale': 'burg',
     #     }
     return {
-        'colorbar': {'title': labels['stress_score'],},
+        'colorbar': {
+            'title': labels['stress_score'],
+            'title_font': {'size': font_size},
+            'tickfont': {'size': font_size}, 
+                     },
         'colorscale': stress_score_config['colorscale'],
         'cmin': stress_score_config['min'],
         'cmax': stress_score_config['max'],
@@ -40,7 +47,7 @@ def filter_df(df, node_name=None, i_socket=None, i_mc=None, time_range=(), bw_ra
 
 
 def get_graph_fig(df, curves, curves_color, curves_transparency, markers_color, markers_transparency,
-                  graph_title, x_title, y_title, stress_score_scale=None, color_bar=None, showAll = False):
+                  x_title, y_title, stress_score_scale=None, color_bar=None, showAll = False):
     fig = make_subplots(rows=1, cols=1)
     # if curves_color != "none":
 
@@ -54,24 +61,44 @@ def get_graph_fig(df, curves, curves_color, curves_transparency, markers_color, 
             return None
         fig.add_trace(dots_fig.data[0])
 
-        fig.update_xaxes(title=x_title)
-        fig.update_yaxes(title=y_title)
+        fig.update_xaxes(title=x_title, title_font=dict(size=font_size))
+        fig.update_yaxes(title=y_title, title_font=dict(size=font_size))
         if color_bar is not None:
             fig.update_coloraxes(**color_bar)
 
         # update the layout with a title
         fig.update_layout(
             title={
-                'text': graph_title,
                 'font': {
-                    'size': 24,
+                    'size': font_size,
                     'color': 'black',
                     'family': 'Arial, sans-serif',
                 },
                 'x':0.5,
                 'xanchor': 'center',
             }
-        )        
+        )     
+
+        # These liens ensure the background is white, and there is a box around the plot   
+        fig.update_layout(
+            paper_bgcolor='white', 
+            plot_bgcolor='white',  
+            xaxis=dict(
+                showgrid=False,          
+                linecolor='black',       
+                tickcolor='black',       
+                tickfont=dict(size=font_size),
+                mirror=True
+            ),
+            yaxis=dict(
+                showgrid=False,          
+                linecolor='black',       
+                tickcolor='black',       
+                tickfont=dict(size=font_size),
+                mirror=True
+            ),
+
+        )
         return fig
     except Exception as e:
 
@@ -83,7 +110,7 @@ def get_graph_fig(df, curves, curves_color, curves_transparency, markers_color, 
                 y=0.5,
                 showarrow=False,
                 font=dict(
-                    size=30,
+                    size=font_size,
                     color="black",
                     family="Arial, sans-serif",
                 ),
@@ -156,17 +183,20 @@ def get_curves_fig(curves, fig, color='black', transparency=1, showAll = False):
         
 
     if showAll:
-        fig.update_layout(legend=dict(
-            yanchor="top",
-            y=0.99,
-            xanchor="left",
-            x=0.01,
-            orientation='h',
-            font=dict(
-                size=16
-            )
-
-        ))
+        fig.update_layout(
+            legend=dict(
+                yanchor="top",
+                y=0.99,
+                xanchor="left",
+                x=0.01,
+                orientation='h',
+                font=dict(
+                    size=font_size
+                ),
+                bordercolor="black",
+                borderwidth=2     
+            ),
+        )
     
     return fig
 
@@ -177,10 +207,10 @@ def get_application_memory_dots_fig(df, color, stress_score_scale=None, opacity=
         return None
 
     if color == 'stress_score':
-        dots_fig = px.scatter(df, x='bw', y='lat', color='stress_score', color_continuous_scale=stress_score_scale)
+        dots_fig = px.scatter(df, x='bw', y='lat', color='stress_score', color_continuous_scale=stress_score_scale, )
     else:
         dots_fig = px.scatter(df, x='bw', y='lat', color_discrete_sequence=[color])
 
-    marker_opts = dict(size=10, opacity=opacity)
+    marker_opts = dict(size=14, opacity=opacity)
     dots_fig.update_traces(marker=marker_opts)
     return dots_fig
