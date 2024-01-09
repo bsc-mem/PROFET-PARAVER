@@ -43,17 +43,6 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
     def toggle_sidebar(active_tab):
         return active_tab != "summary-tab"
 
-    # Hide the curve specific options when the roofline tab is active.
-    @app.callback(
-        Output(f'curves-color-dropdown-section', 'style'),
-        Output(f'curves-transparency-section', 'style'),
-        Input("tabs", "active_tab"),
-    )
-    def hide_curves_sidebar_options(active_tab):
-        # Static number of outputs. If we add more options, we need to update this number
-        num_outputs = 2
-        return [{'display': 'none'}]*num_outputs if active_tab == "app-overview-tab" else [{}]*num_outputs
-
     # Hide the overview tab specific options when the tab is not active.
     @app.callback(
         Output(f'sampling-section', 'style'),
@@ -366,7 +355,7 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
 
                 graph_title = 'Application Curves'
                 overview_fig = curve_utils.get_graph_fig(result_df, curves, curves_color, curves_transparency, markers_color, markers_transparency,
-                                                graph_title, labels['bw'], labels['lat'], stress_score_config['colorscale'], color_bar)
+                                                graph_title, labels['bw'], labels['lat'], stress_score_config['colorscale'], color_bar, showAll=True)
 
                 return overview_fig, sampling_label
 
@@ -376,8 +365,15 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
             for curve in overview_fig['data'][:-1]:
                 curve['line']['color'] = curves_color
         elif input_id == 'curves-transparency-slider':
+
+            totalValues = len(curves) - 1
+            transparencyRange = range(0, (totalValues*2) + 3, 2)
+            curve_opacity_step = curves_transparency / len(transparencyRange)
+            i=0
             for curve in overview_fig['data'][:-1]:
-                curve['opacity'] = curves_transparency
+                curve['opacity'] = curves_transparency - curve_opacity_step * i
+                i = i + 1
+
         elif input_id == 'time-range-slider':
             # Apply a mask to filter data within the specified time range
             mask = (df_overview['timestamp'] >= time_range[0] * 1e9) & (df_overview['timestamp'] < time_range[1] * 1e9)

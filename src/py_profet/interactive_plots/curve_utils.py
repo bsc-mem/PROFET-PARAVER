@@ -40,13 +40,13 @@ def filter_df(df, node_name=None, i_socket=None, i_mc=None, time_range=(), bw_ra
 
 
 def get_graph_fig(df, curves, curves_color, curves_transparency, markers_color, markers_transparency,
-                  graph_title, x_title, y_title, stress_score_scale=None, color_bar=None):
+                  graph_title, x_title, y_title, stress_score_scale=None, color_bar=None, showAll = False):
     fig = make_subplots(rows=1, cols=1)
     # if curves_color != "none":
 
     try:
 
-        fig = get_curves_fig(curves, fig, curves_color, curves_transparency)
+        fig = get_curves_fig(curves, fig, curves_color, curves_transparency, showAll)
 
         # plot application bw-lat dots
         dots_fig = get_application_memory_dots_fig(df, markers_color, stress_score_scale, markers_transparency)
@@ -74,6 +74,7 @@ def get_graph_fig(df, curves, curves_color, curves_transparency, markers_color, 
         )        
         return fig
     except Exception as e:
+
         fig.add_annotation(
                 text="Something went wrong<br><sup>Please reload the page</sup>",
                 xref="paper",
@@ -117,17 +118,58 @@ def get_curves(curves_path, cpu_freq):
                 }
     return curves
 
-def get_curves_fig(curves, fig, color='black', transparency=1):
-    for i, w_ratio in enumerate(range(0, 50, 10)):
+def get_curves_fig(curves, fig, color='black', transparency=1, showAll = False):
+
+    totalValues = len(curves) - 1
+
+    if showAll:
+        # Since we may not always have all the curves from 0 to 100, we need to calculate the range of the curves to show all the curves
+        # To do so, we know the length of the curves will give us the total amount of readings we have. To know the ratios, we need to multiply by 2 since the increment is in steps of 2%
+        # We also need to add 2 to the total amount of values since we need to add the min and max values
+        rang = range((totalValues*2), -2, -2)
+        transparencyRange = range(0, (totalValues*2) + 3, 2)
+    else:
+        # In case we don't want to show all the curves we simply use the range of 0% to 50% with steps of 10%
+        rang = range(0, 50, 10)
+        transparencyRange = range(0, 51, 10)
+
+    for i, w_ratio in enumerate(rang):
+
+        #This chooses which values are shown in the legend.
+        # Right now the legend includes the first and last curve.
+        show_in_legend = ((i == 0) or (i == len(rang) - 1)) and showAll
+
         curve_fig = px.line(x=curves[w_ratio]['bandwidths'], y=curves[w_ratio]['latencies'], color_discrete_sequence=[color])
-        curve_opacity_step = transparency / len(range(0, 51, 10))
+        curve_opacity_step = transparency / len(transparencyRange)
         curve_transparency = transparency - curve_opacity_step * i
-        curve_fig.update_traces(opacity=max(0, curve_transparency))
+        curve_fig.update_traces(
+            hovertemplate="Bandwidth (BW): %{x}<br>Latency: %{y}<br>Write Ratio (WR): " + str(w_ratio) + "%<extra></extra>",
+            opacity=max(0, curve_transparency),
+            showlegend=show_in_legend,
+            name=f'Rd:Wr {100-w_ratio}:{w_ratio}',
+        )
         curve_text = f'{w_ratio}%' if curve_transparency > 0 else ''
         fig.add_trace(curve_fig.data[0])
-        fig.add_annotation(x=curves[w_ratio]['bandwidths'][-1], y=curves[w_ratio]['latencies'][-1] + 15,
+        if not showAll:
+            fig.add_annotation(x=curves[w_ratio]['bandwidths'][-1], y=curves[w_ratio]['latencies'][-1] + 15,
                             text=curve_text, showarrow=False, arrowhead=1)
+        
+
+    if showAll:
+        fig.update_layout(legend=dict(
+            yanchor="top",
+            y=0.99,
+            xanchor="left",
+            x=0.01,
+            orientation='h',
+            font=dict(
+                size=16
+            )
+
+        ))
+    
     return fig
+
 
 def get_application_memory_dots_fig(df, color, stress_score_scale=None, opacity=0.01):
     if 'bw' not in df.columns or 'lat' not in df.columns:
