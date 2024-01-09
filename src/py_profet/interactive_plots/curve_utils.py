@@ -165,7 +165,7 @@ def get_curves_fig(curves, fig, color='black', transparency=1, showAll = False):
     if color == 'Blue':
         cmap = plt.get_cmap('Blues')
         # Play with this value to make the curves darker or lighter
-        darkest_color = cmap(0.4)
+        darkest_color = cmap(0.8)
 
     for i, w_ratio in enumerate(rang):
 
