@@ -12,6 +12,9 @@ import utils
 import overview
 import pdf_gen
 
+import matplotlib.pyplot as plt
+
+
 def apply_to_hierarchy(func, system_arch):
     # apply func to each node, socket and mc
     results = []
@@ -361,17 +364,42 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
 
         # Handle callback logic. This is triggered by a single input.
         if input_id == 'curves-color-dropdown':
-            for curve in overview_fig['data'][:-1]:
-                curve['line']['color'] = curves_color
+            if curves_color == 'blue':
+                cmap = plt.get_cmap('Blues')
+                darkest_color = cmap(0.8)  # Adjust as needed
+                curve_index = 0
+                for curve in overview_fig['data'][:-1]:
+                    curve_opacity_step = curves_transparency / len(overview_fig['data'][:-1])
+                    curve_transparency = curves_transparency - curve_opacity_step * curve_index
+                    curve_color = list(darkest_color)
+                    curve_color[3] = max(0.1, curve_transparency)
+                    curve['line']['color'] = 'rgba' + str(tuple(curve_color))
+                    curve['opacity'] = 1
+                    curve_index += 1
+            else:
+                for curve in overview_fig['data'][:-1]:
+                    curve['line']['color'] = curves_color
         elif input_id == 'curves-transparency-slider':
-
-            totalValues = len(curves) - 1
-            transparencyRange = range(0, (totalValues*2) + 3, 2)
-            curve_opacity_step = curves_transparency / len(transparencyRange)
-            i=0
-            for curve in overview_fig['data'][:-1]:
-                curve['opacity'] = curves_transparency - curve_opacity_step * i
-                i = i + 1
+            if curves_color == 'blue':
+                cmap = plt.get_cmap('Blues')
+                darkest_color = cmap(0.8)  # Adjust as needed
+                curve_index = 0
+                for curve in overview_fig['data'][:-1]:
+                    curve_opacity_step = curves_transparency / len(overview_fig['data'][:-1])
+                    curve_transparency = curves_transparency - curve_opacity_step * curve_index
+                    curve_color = list(darkest_color)
+                    curve_color[3] = max(0.1, curve_transparency)
+                    curve['line']['color'] = 'rgba' + str(tuple(curve_color))
+                    curve['opacity'] = 1
+                    curve_index += 1
+            else:
+                totalValues = len(curves) - 1
+                transparencyRange = range(0, (totalValues*2) + 3, 2)
+                curve_opacity_step = curves_transparency / len(transparencyRange)
+                i=0
+                for curve in overview_fig['data'][:-1]:
+                    curve['opacity'] = curves_transparency - curve_opacity_step * i
+                    i = i + 1
 
         elif input_id == 'time-range-slider':
             # Apply a mask to filter data within the specified time range

@@ -6,6 +6,8 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import matplotlib.pyplot as plt
+
 
 # Font size for the entire figure
 font_size = 35
@@ -160,21 +162,41 @@ def get_curves_fig(curves, fig, color='black', transparency=1, showAll = False):
         rang = range(0, 50, 10)
         transparencyRange = range(0, 51, 10)
 
+    if color == 'Blue':
+        cmap = plt.get_cmap('Blues')
+        # Play with this value to make the curves darker or lighter
+        darkest_color = cmap(0.4)
+
     for i, w_ratio in enumerate(rang):
 
         #This chooses which values are shown in the legend.
         # Right now the legend includes the first and last curve.
         show_in_legend = ((i == 0) or (i == len(rang) - 1)) and showAll
 
-        curve_fig = px.line(x=curves[w_ratio]['bandwidths'], y=curves[w_ratio]['latencies'], color_discrete_sequence=[color])
         curve_opacity_step = transparency / len(transparencyRange)
         curve_transparency = transparency - curve_opacity_step * i
+
+        if color == 'blue':
+            curve_color = list(darkest_color)
+            curve_color[3] = max(0, curve_transparency)
+
+        if color == 'blue':
+            curve_fig = px.line(x=curves[w_ratio]['bandwidths'], y=curves[w_ratio]['latencies'], color_discrete_sequence=['rgba'+str(tuple(curve_color))])
+        else:
+            curve_fig = px.line(x=curves[w_ratio]['bandwidths'], y=curves[w_ratio]['latencies'], color_discrete_sequence=[color])
+
         curve_fig.update_traces(
             hovertemplate="Bandwidth (BW): %{x}<br>Latency: %{y}<br>Write Ratio (WR): " + str(w_ratio) + "%<extra></extra>",
-            opacity=max(0, curve_transparency),
+            
             showlegend=show_in_legend,
             name=f'Rd:Wr {100-w_ratio}:{w_ratio}',
         )
+
+        if color != 'blue':
+            curve_fig.update_traces(
+                opacity=max(0, curve_transparency),
+            )
+
         curve_text = f'{w_ratio}%' if curve_transparency > 0 else ''
         fig.add_trace(curve_fig.data[0])
         if not showAll:
