@@ -353,9 +353,8 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
                 if markers_color == 'stress_score':
                     color_bar = curve_utils.get_color_bar(labels, stress_score_config)
 
-                graph_title = 'Application Curves'
                 overview_fig = curve_utils.get_graph_fig(result_df, curves, curves_color, curves_transparency, markers_color, markers_transparency,
-                                                graph_title, labels['bw'], labels['lat'], stress_score_config['colorscale'], color_bar, showAll=True)
+                                                labels['bw'], labels['lat'], stress_score_config['colorscale'], color_bar, showAll=True)
 
                 return overview_fig, sampling_label
 
