@@ -197,6 +197,7 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
             current_figures = states[:third]
             figs_metadata = states[third:third*2]
             bw_balances = states[third*2:]
+            font_size = 25
 
             if len(callback_context.triggered) > 1:
                 # Reprocess all charts. This can happen in multiple circumstances:
@@ -204,7 +205,7 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
                 # - Loading a new config file (all inputs are passed as context)
                 color_bar = None
                 if markers_color == 'stress_score':
-                    color_bar = curve_utils.get_color_bar(labels, stress_score_config)
+                    color_bar = curve_utils.get_color_bar(labels, stress_score_config, font_size)
 
                 figures = []
                 new_bw_balances = []
@@ -229,7 +230,7 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
                             new_bw_balances.append(replace_after_char(bw_balances[k], ':', f' {bw_balance:.1f}%'))
                             graph_title = f'Memory channel {id_mc}' if len(mcs) > 1 else f'Socket {i_socket}'
                             fig = curve_utils.get_graph_fig(filt_df, curves, curves_color, curves_transparency, markers_color, markers_transparency,
-                                                            graph_title, labels['bw'], labels['lat'], stress_score_config['colorscale'], color_bar)
+                                                            graph_title, labels['bw'], labels['lat'], stress_score_config['colorscale'], color_bar, font_size, showAll=False)
                             figures.append(fig)
                 return tuple(np.append(figures, new_bw_balances))
 
@@ -312,6 +313,7 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
         # Get the current state of the overview chart
         overview_fig = states[0]
         sampling_label = states[1]
+        font_size = 35
 
         # Get the ID of the input that triggered the callback
         input_id = callback_context.triggered[0]['prop_id'].split('.')[0]
@@ -351,10 +353,11 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
                 raise Exception('The dataframe does not contain the required columns for the overview chart.')
             else:
                 if markers_color == 'stress_score':
-                    color_bar = curve_utils.get_color_bar(labels, stress_score_config)
+                    color_bar = curve_utils.get_color_bar(labels, stress_score_config, font_size)
 
+                graph_title = ''
                 overview_fig = curve_utils.get_graph_fig(result_df, curves, curves_color, curves_transparency, markers_color, markers_transparency,
-                                                labels['bw'], labels['lat'], stress_score_config['colorscale'], color_bar, showAll=True)
+                                                         graph_title, labels['bw'], labels['lat'], stress_score_config['colorscale'], color_bar, font_size, showAll=True)
 
                 return overview_fig, sampling_label
 

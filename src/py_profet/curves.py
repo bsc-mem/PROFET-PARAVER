@@ -83,8 +83,8 @@ def check_units(bw_units: str) -> bool:
 def get_closest_read_ratio(read_ratio: float, curves_read_ratios: list, display_warnings: bool = True):
     closest_curve_read_ratio = min(curves_read_ratios, key=lambda x: abs(x - read_ratio))
 
-    # TODO hardcoded difference of 2% between ratios
-    if abs(closest_curve_read_ratio - read_ratio) > 2 and display_warnings:
+    # TODO hardcoded difference of 5% between ratios
+    if abs(closest_curve_read_ratio - read_ratio) > 5 and display_warnings:
         read_ratio_mismatch_warning(read_ratio, closest_curve_read_ratio)
 
     return int(closest_curve_read_ratio)

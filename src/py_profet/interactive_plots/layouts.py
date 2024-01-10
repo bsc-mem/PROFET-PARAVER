@@ -166,7 +166,7 @@ def get_curve_graphs_sidebar(df: pd.DataFrame):
         ], id='marker-transparency-section', className='sidebar-element'),
     ], className='sidebar')
 
-    # keep the side bar in a collapsed state, so we can hide it when the charts tab is not selected
+    # Keep the side bar in a collapsed state, so we can hide it when the charts tab is not selected
     return dbc.Collapse([sidebar], id="sidebar")
 
 
@@ -229,7 +229,7 @@ def get_graphs_container(system_arch: dict, id_prefix: str, max_elements: int = 
     return dbc.Container(chart_rows, id=f'{id_prefix}-graphs-container', fluid=True)
 
 
-def get_overview_container(system_arch: dict, id_prefix: str, max_elements: int = None):
+def get_overview_container():
     container = dbc.Container([], id=f'app-overview-container', fluid=True)
 
     col = dbc.Col([
@@ -248,13 +248,13 @@ def get_overview_container(system_arch: dict, id_prefix: str, max_elements: int 
 def get_curve_graphs_tab(system_arch: dict, max_elements: int = None):
     return get_graphs_container(system_arch, "curves", max_elements)
 
-def get_overview_tab(system_arch: dict, max_elements: int = None):
-    return get_overview_container(system_arch, "overview", max_elements)
+def get_overview_tab():
+    return get_overview_container()
 
 def get_main_content(df: pd.DataFrame, config: dict, system_arch: dict, max_elements: int = None, expert: bool = False):
     system_info_tab = get_summary_tab(df, config, system_arch)
     curves_tab = get_curve_graphs_tab(system_arch, max_elements)
-    overview_tab = get_overview_tab(system_arch, max_elements)
+    overview_tab = get_overview_tab()
 
     t = [
         dbc.Tab(system_info_tab, label="Summary", tab_id="summary-tab"),
