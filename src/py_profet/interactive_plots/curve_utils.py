@@ -21,6 +21,7 @@ def get_color_bar(labels, stress_score_config, font_size=25):
         'cmax': stress_score_config['max'],
     }
 
+
 def filter_df(df, node_name=None, i_socket=None, i_mc=None, time_range=(), bw_range=(), lat_range=()):
     mask = np.ones(len(df), dtype=bool)
     if node_name is not None:
@@ -36,8 +37,6 @@ def filter_df(df, node_name=None, i_socket=None, i_mc=None, time_range=(), bw_ra
     if len(lat_range):
         mask &= (df['lat'] >= lat_range[0]) & (df['lat'] < lat_range[1])
     return df[mask]
-
-
 
 
 def get_graph_fig(df, curves, curves_color, curves_transparency, markers_color, markers_transparency,
@@ -110,7 +109,6 @@ def get_graph_fig(df, curves, curves_color, curves_transparency, markers_color, 
         return fig
 
 
-
 def get_curves(curves_path, cpu_freq):
     curves = {}
     # Load and process curves
@@ -137,6 +135,7 @@ def get_curves(curves_path, cpu_freq):
                 }
     return curves
 
+
 def get_curves_fig(curves, fig, color='black', transparency=1, font_size=25, showAll=False):
     if showAll:
         # Take the curve write ratios (keys) in descending order
@@ -156,7 +155,7 @@ def get_curves_fig(curves, fig, color='black', transparency=1, font_size=25, sho
         curve_fig = px.line(x=curves[w_ratio]['bandwidths'], y=curves[w_ratio]['latencies'], color_discrete_sequence=[color])
         curve_transparency = transparency - curve_opacity_step * i
         curve_fig.update_traces(
-            hovertemplate="Bandwidth (BW): %{x}<br>Latency: %{y}<br>Write Ratio (WR): " + str(w_ratio) + "%<extra></extra>",
+            hovertemplate="Bandwidth: %{x:.1f} GB/s<br>Latency: %{y:.1f} ns<br>Write Ratio: " + str(round(w_ratio, 0)) + "%<extra></extra>",
             opacity=max(0, curve_transparency),
             showlegend=show_in_legend,
             name=f'Rd:Wr {100-w_ratio}:{w_ratio}',
@@ -192,10 +191,13 @@ def get_application_memory_dots_fig(df, color, stress_score_scale=None, opacity=
         return None
 
     if color == 'stress_score':
-        dots_fig = px.scatter(df, x='bw', y='lat', color='stress_score', color_continuous_scale=stress_score_scale, )
+        dots_fig = px.scatter(df, x='bw', y='lat', color='stress_score', color_continuous_scale=stress_score_scale)
     else:
         dots_fig = px.scatter(df, x='bw', y='lat', color_discrete_sequence=[color])
 
-    marker_opts = dict(size=14, opacity=opacity)
-    dots_fig.update_traces(marker=marker_opts)
+    dots_fig.update_traces(
+        marker=dict(size=14, opacity=0.8),
+        text=df['wr'].round(0),
+        hovertemplate="Bandwidth: %{x:.1f} GB/s<br>Latency: %{y:.1f} ns<br>Stress Score: %{marker.color:.1f}<br>Write Ratio: %{text}%<extra></extra>",
+    )
     return dots_fig
