@@ -146,7 +146,9 @@ def get_curves_fig(curves, fig, color='black', transparency=1, font_size=25, sho
         step = int(len(curves) / n_curves_to_show)
         rang = sorted([list(curves.keys())[i] for i in range(0, len(curves)-1, step)], reverse=True)
 
-    curve_opacity_step = transparency / len(curves)
+    # Minimum transparency allowed for the curves
+    min_curve_transparency = 0.28
+    curve_opacity_step = (transparency - min_curve_transparency) / len(curves)
     for i, w_ratio in enumerate(rang):
         # This chooses which values are shown in the legend.
         # Right now the legend includes the first and last curve.
