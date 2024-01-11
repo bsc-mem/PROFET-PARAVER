@@ -21,7 +21,7 @@ import layouts
 import utils
 import curve_utils
 
-# define a custom continuous color scale for stress score
+# Define a custom continuous color scale for stress score
 stress_score_config = {
     'min': 0,
     'max': 1,
@@ -70,7 +70,7 @@ def save_pdf(trace_file: str):
     store_pdf_file_path = os.path.join(store_pdf_path, pdf_filename)
     default_fig = make_subplots(rows=1, cols=1)
     default_fig = curve_utils.get_curves_fig(curves, default_fig)
-    # get application plot memory dots with default options
+    # Get application plot memory dots with default options
     dots_fig = utils.get_application_memory_dots_fig(df, stress_score_config['colorscale'])
     default_fig.add_trace(dots_fig.data[0])
     default_fig.update_xaxes(title=labels['bw'])
@@ -82,18 +82,18 @@ def save_pdf(trace_file: str):
     print()
 
 if __name__ == '__main__':
-    # read and process arguments
+    # Read and process arguments
     args = parse_args()
     labels = {'bw': 'Bandwidth (GB/s)', 'lat': 'Latency (ns)',
               'timestamp': 'Timestamp (ns)', 'stress_score': 'Stress score'}
     config_json = get_config(args.config_file)
 
-    # load and process trace
+    # Load and process trace
     # trace_file = '../prv_profet_visualizations/traces/petar_workshop/xhpcg.mpich-x86-64_10ms.chop1.profet.prv'
     current_dir = os.path.dirname(os.path.realpath(__file__))
     # store_df_path = os.path.join(current_dir, 'dash_traces/')
     # TODO replace only the extension! .prv could be included in the middle of the file as a name
-    # do it for all other cases (e.g. .pdf below)
+    # Do it for all other cases (e.g. .pdf below)
     row_file_path = args.trace_file.replace('.prv', '.row')
     if args.trace_file.endswith('.prv'):
         df = utils.prv_to_df(args.trace_file, row_file_path, config_json, args.keep_original, args.save_feather)
@@ -101,19 +101,19 @@ if __name__ == '__main__':
         df = pd.read_feather(args.trace_file)
     else:
         raise Exception(f'Unkown trace file extension ({args.trace_file.split(".")[-1]}) from {args.trace_file}.')
-    
-    # get system architecture (nodes, sockets per node, mcs per socket) in a dict form
+
+    # Get system architecture (nodes, sockets per node, mcs per socket) in a dict form
     grouped = df.groupby(['node_name', 'socket'])['mc'].unique()
     system_arch = defaultdict(dict)
     for (a, b), unique_c in grouped.items():
         system_arch[a][b] = sorted(unique_c.tolist())
     
-    # allow a maximum of elements to display. Randomly undersample if there are more elements than the limit
+    # Allow a maximum of elements to display. Randomly undersample if there are more elements than the limit
 
-    # reset index to avoid problems with the sampling
+    # Reset index to avoid problems with the sampling
     df = df.reset_index(drop=True)
 
-    # save a copy of the original dataframe
+    # Save a copy of the original dataframe
     df_overview = df.copy()
 
     max_elements = 10000
@@ -158,10 +158,10 @@ if __name__ == '__main__':
     else:
         max_elements = None
 
-    # load and process curves
+    # Load and process curves
     curves = curve_utils.get_curves(args.curves_path, config_json['cpu_freq'])
 
-    # save a pdf file with a default chart
+    # Save a pdf file with a default chart
     if args.plot_pdf:
         save_pdf(args.trace_file)
 
