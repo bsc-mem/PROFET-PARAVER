@@ -162,7 +162,7 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
         return dict(content=config_json, filename=filename)
 
     if expert:
-        #If expert is enabled, we need to add the logic of the node selection for the curves.
+        # If expert is enabled, we need to add the logic of the node selection for the curves.
         @app.callback(
             # The style attribute is used to hide the container of the curves of the nodes that are not selected
             [Output(f'curves-node-{node_name}-container', 'style') for node_name in system_arch.keys()],
@@ -240,18 +240,18 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
             # Handle callback logic. This is triggered by a single input.
             if input_id == 'curves-color-dropdown':
                 for fig in current_figures:
-                    # process curves figures, which are all but the last one.
+                    # Process curves figures, which are all but the last one.
                     for curve in fig['data'][:-1]:
                         curve['line']['color'] = curves_color
             elif input_id == 'curves-transparency-slider':
                 for fig in current_figures:
-                    # process curves figures, which are all but the last one.
+                    # Process curves figures, which are all but the last one.
                     for curve in fig['data'][:-1]:
                         curve['opacity'] = curves_transparency
             elif input_id == 'time-range-slider':
-                # update figures
+                # Update figures
                 for metadata, fig in zip(figs_metadata, current_figures):
-                    # process the dots figure, which is the last one.
+                    # Process the dots figure, which is the last one.
                     mask = (df['timestamp'] >= time_range[0] * 1e9) & (df['timestamp'] < time_range[1] * 1e9)
                     filt_df = curve_utils.filter_df(df, metadata['node_name'], metadata['socket'],
                                             metadata['mc'], time_range=time_range)
@@ -260,7 +260,7 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
                     if markers_color == 'stress_score':
                         fig['data'][-1]['marker']['color'] = filt_df['stress_score']
 
-                # update the bw balance
+                # Update the bw balance
                 new_bw_balances = []
                 for node_name, sockets in system_arch.items():
                     # if node_name not in selected_nodes:
@@ -282,7 +282,7 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
                             new_bw_balances.append(replace_after_char(bw_balances[k], ':', f' {bw_balance:.1f}%'))
             elif input_id == 'markers-color-dropdown':
                 for fig in current_figures:
-                    # process the dots figure, which is the last one.
+                    # Process the dots figure, which is the last one.
                     if markers_color == 'stress_score':
                         mask = (df['timestamp'] >= time_range[0] * 1e9) & (df['timestamp'] < time_range[1] * 1e9)
                         filt_df = df.loc[mask]
@@ -291,8 +291,9 @@ def register_callbacks(app, df, df_overview, curves, config, system_arch, trace_
                         fig['data'][-1]['marker']['color'] = markers_color
             elif input_id == 'markers-transparency-slider':
                 for fig in current_figures:
-                    # process the dots figure, which is the last one.
-                    fig['data'][-1]['marker']['opacity'] = markers_transparency
+                    if 'data' in fig and len(fig['data']):
+                        # Process the dots figure, which is the last one.
+                        fig['data'][-1]['marker']['opacity'] = markers_transparency
 
             return tuple(np.append(current_figures, new_bw_balances))
 
