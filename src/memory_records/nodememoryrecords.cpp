@@ -145,9 +145,9 @@ unordered_map<string, double>NodeMemoryRecords::processMemoryMetrics(ProfetPyAda
   // cout << socketID << " " << readBW << " " << writeBW << " " << writeRatio << " " << bandwidth << endl;
 
   // Get computed memory metrics
-  auto [maxBandwidth, latency, leadOffLatency, maxLatency, stressScore] = profetPyAdapter.computeMemoryMetrics(cpuFreqGHz, metrics["writeRatio"],
-                                                                                                               metrics["bandwidth"],
-                                                                                                               displayWarnings);
+  auto [returnedBandwidth, maxBandwidth, latency, leadOffLatency, maxLatency, stressScore] = profetPyAdapter.computeMemoryMetrics(cpuFreqGHz, metrics["writeRatio"],
+                                                                                                                                  metrics["bandwidth"],
+                                                                                                                                  displayWarnings);
   // cout << maxBandwidth << " " << latency << " " << leadOffLatency << " " << maxLatency << endl;
 
   if (latency == -1) {
@@ -156,11 +156,13 @@ unordered_map<string, double>NodeMemoryRecords::processMemoryMetrics(ProfetPyAda
       cerr << "Warning: Erroneous recorded bandwidth. Setting write ratio to " << -metrics["writeRatio"] * 100 << "% and bandwidth to " << round(-metrics["bandwidth"]) << " GB/s" << endl;
     }
     metrics["writeRatio"] = -metrics["writeRatio"] * 100;
-    metrics["bandwidth"] = -metrics["bandwidth"];
+    metrics["bandwidth"] = -returnedBandwidth;
     return metrics;
   }
 
   metrics["writeRatio"] = metrics["writeRatio"] * 100;
+  // Overwrite measured bw with the returned one, just in case PROFET gives a different value for whatever reason (e.g. casting if overshoot)
+  metrics["bandwidth"] = returnedBandwidth;
   metrics["maxBandwidth"] = maxBandwidth;
   metrics["latency"] = latency;
   metrics["leadOffLatency"] = leadOffLatency;

@@ -177,7 +177,9 @@ def get_memory_properties_from_bw(bws: list, lats: list, cpu_freq: float, write_
 
     return {
         'write_ratio': write_ratio,
-        'bandwidth': bandwidth,
+        # TODO: Condition applied for the sigmetrics paper only.
+        # Basically, if we're on the max latency, cast bw to the maximum to avoid displaying overshoot in the plots
+        'bandwidth': bandwidth if pred_lat < max_lat else max_bw,
         'max_bandwidth': max_bw,
         'latency': pred_lat if pred_lat == -1 else pred_lat / cpu_freq,
         'lead_off_latency': lead_off_lat / cpu_freq,

@@ -160,7 +160,7 @@ void ProfetPyAdapter::printSupportedSystems() {
     PyObject_CallObject(printSupportedSystemsFn, pArgs);
 }
 
-tuple<double, double, double, double, double> ProfetPyAdapter::computeMemoryMetrics(double cpuFreqGHz, double writeRatio, double bandwidth, bool displayWarnings) {
+tuple<double, double, double, double, double, double> ProfetPyAdapter::computeMemoryMetrics(double cpuFreqGHz, double writeRatio, double bandwidth, bool displayWarnings) {
     // Get dictionary with computed memory values
     PyObject* memoryMetricsFn = getFunctionFromProfetIntegration("get_memory_properties_from_bw");
     // Make sure string arguments are built with .c_str()
@@ -174,14 +174,14 @@ tuple<double, double, double, double, double> ProfetPyAdapter::computeMemoryMetr
     raisePyErrorIfNull(memDict, "ERROR getting Python dictionary with memory values.");
 
     // Get values of dictionary elements
-    // double returnedBandwidth = getPyDictDouble(memDict, "bandwidth");
+    double returnedBandwidth = getPyDictDouble(memDict, "bandwidth");
     double maxBandwidth = getPyDictDouble(memDict, "max_bandwidth");
     double latency = getPyDictDouble(memDict, "latency");
     double leadOffLatency = getPyDictDouble(memDict, "lead_off_latency");
     double maxLatency = getPyDictDouble(memDict, "max_latency");
     double stressScore = getPyDictDouble(memDict, "stress_score");
 
-    return {maxBandwidth, latency, leadOffLatency, maxLatency, stressScore};
+    return {returnedBandwidth, maxBandwidth, latency, leadOffLatency, maxLatency, stressScore};
 }
 
 void ProfetPyAdapter::runDashApp(string traceFilePath, double precision, double cpuFreq, bool expertMode, bool keepOriginalTraceFile) {

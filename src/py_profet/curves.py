@@ -173,7 +173,7 @@ class Curve:
         check_ratio(read_ratio)
 
         # factor to allow a limit of 5% overshoot
-        self.bw_grace_factor = 1.05
+        self.bw_grace_factor = 0.05
 
         if len(bws) != len(lats):
             raise Exception(f'Number of bandwidths ({len(bws)}) and latencies ({len(lats)}) do not match.')
@@ -239,15 +239,15 @@ class Curve:
         max_bw = self.get_max_bw()
         # measured bandwidth is above the curve
         if bw > max_bw:
-            if bw < max_bw * self.bw_grace_factor:
+            if bw < max_bw * (1 + self.bw_grace_factor):
                 max_lat = self.get_max_lat()
                 if self.display_warnings:
                     bw_high_warning(self.read_ratio, bw_mbps, bw_units='MB/s', max_bw=max_bw, max_lat=max_lat)
                 return max_lat
+
             # show warning and return -1 when bandwidth is above-off the curve
-            else:
-                if self.display_warnings:
-                    bw_overshoot_warning(self.read_ratio, bw_mbps, bw_units='MB/s', max_bw=self.get_max_bw())
+            if self.display_warnings:
+                bw_overshoot_warning(self.read_ratio, bw_mbps, bw_units='MB/s', max_bw=self.get_max_bw())
             return -1
 
         # i = bisect.bisect_left(self.bws, bw)
@@ -299,7 +299,9 @@ class Curve:
             return None
 
         if at_least_one_none:
-            lat, lead_off_lat, max_lat = self.get_lat(bandwidth, bw_units), self.get_lead_off_lat(), self.get_max_lat()
+            lat = self.get_lat(bandwidth, bw_units)
+            lead_off_lat = self.get_lead_off_lat()
+            max_lat = self.get_max_lat()
         # Couldn't we assume that idx - 1 has lower BW and latency than idx?
         bw_prev, bw_post, lat_prev, lat_post = self._get_pre_and_post_bw_and_lat(idx)
         # prev and post bw are in MB/s
