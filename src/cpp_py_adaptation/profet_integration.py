@@ -71,24 +71,24 @@ def check_curves_exist(df: pd.DataFrame, cpu_model: str, memory_system: str):
 #         raise Exception(err_msg)
 
 
-def read_db(py_profet_path: str) -> pd.DataFrame:
+def read_db(data_path: str) -> pd.DataFrame:
     # read DB
-    df = pd.read_csv(os.path.join(py_profet_path, 'cpu_memory_db.csv'))
+    df = pd.read_csv(os.path.join(data_path, 'cpu_memory_db.csv'))
     return df
 
 
-def print_supported_systems(py_profet_path: str) -> None:
+def print_supported_systems(data_path: str) -> None:
     # print supported systems from DB
-    df = read_db(py_profet_path)
+    df = read_db(data_path)
     print('CPU - DRAM')
     print('-----------------')
     for _, row in df.iterrows():
         print(f"{row['pmu_type']} {row['cpu_microarchitecture']} {row['cpu_model']} - {row['memory_system']}")
 
 
-def get_row_from_db(py_profet_path: str, cpu_model: str, memory_system: str) -> dict:
+def get_row_from_db(data_path: str, cpu_model: str, memory_system: str) -> dict:
     # get PMU type and microarchitecture from DB
-    df = read_db(py_profet_path)
+    df = read_db(data_path)
     check_curves_exist(df, cpu_model, memory_system)
 
     filt_df = df[(df['cpu_model'] == cpu_model) & (df['memory_system'] == memory_system)]
@@ -98,27 +98,27 @@ def get_row_from_db(py_profet_path: str, cpu_model: str, memory_system: str) -> 
     return filt_df.iloc[0].to_dict()
 
 
-def get_curves_path(py_profet_path: str, cpu_model: str, memory_system: str, pmu_type: str = None, cpu_microarch: str = None) -> str:
+def get_curves_path(data_path: str, cpu_model: str, memory_system: str, pmu_type: str = None, cpu_microarch: str = None) -> str:
     if pmu_type is None or cpu_microarch is None:
         # Get data from DB
-        row = get_row_from_db(py_profet_path, cpu_model, memory_system)
+        row = get_row_from_db(data_path, cpu_model, memory_system)
         pmu_type = row["pmu_type"]
         cpu_microarch = row["cpu_microarchitecture"]
     else:
         # check it here because get_row_from_db also checks it, so if this function is not executed on the previous if,
         # we have to make the check here
-        df = pd.read_csv(os.path.join(py_profet_path, 'cpu_memory_db.csv'))
+        df = pd.read_csv(os.path.join(data_path, 'cpu_memory_db.csv'))
         check_curves_exist(df, cpu_model, memory_system)
 
     # build curves path
-    bw_lats_folder = 'bw_lat_curves'
+    bw_lats_folder = os.path.join(data_path, 'bw_lat_curves')
     curves_folder = f'{memory_system}__{pmu_type}__{cpu_microarch}__{cpu_model}'
-    return os.path.join(py_profet_path, bw_lats_folder, curves_folder)
+    return os.path.join(data_path, bw_lats_folder, curves_folder)
 
 
-def set_curves(py_profet_path: str, cpu_model: str, memory_system: str) -> bool:
+def set_curves(data_path: str, cpu_model: str, memory_system: str) -> bool:
     global curves
-    curves_path = get_curves_path(py_profet_path, cpu_model, memory_system)
+    curves_path = get_curves_path(data_path, cpu_model, memory_system)
     curves = Curves(curves_path, display_warnings=display_warnings)
     return True
 

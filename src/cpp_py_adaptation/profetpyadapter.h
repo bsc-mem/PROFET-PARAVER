@@ -48,7 +48,7 @@ class ProfetPyAdapter {
     vector<double> availableReadRatios;
     string projectSrcPath;
     string profetIntegrationPath;
-    string pyProfetPath;
+    string projectDataPath;
     PyObject* sysPath;
     PyObject* profetIntegrationModule;
 
@@ -74,7 +74,7 @@ class ProfetPyAdapter {
   private:
     PyObject* getFunctionFromProfetIntegration(string fnName);
     void setDisplayWarnings(bool displayWarnings);
-    void setCurves(string pyProfetPath, string cpuModel, string memorySystem);
+    void setCurves(string projectDataPath, string cpuModel, string memorySystem);
 
 };
 

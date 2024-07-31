@@ -35,7 +35,7 @@ ProfetPyAdapter::ProfetPyAdapter(string projectPath, string cpuModel, string mem
     // Set display warnings in Python module
     setDisplayWarnings(displayWarnings);
     // Set the curves in the Python module
-    setCurves(pyProfetPath, cpuModel, memorySystem);
+    setCurves(projectDataPath, cpuModel, memorySystem);
     // Set the curves in C++ maps
     setCurvesBwsLats(curvesPath, curves, pyCurves);
 }
@@ -48,8 +48,8 @@ ProfetPyAdapter::~ProfetPyAdapter() {
 void ProfetPyAdapter::setPathVariables(string projectPath) {
     this->projectPath = projectPath;
     projectSrcPath = projectPath + "src/";
+    projectDataPath = projectPath + "data/";
     profetIntegrationPath = projectSrcPath + "cpp_py_adaptation/";
-    pyProfetPath = projectSrcPath + "py_profet/";
 }
 
 void ProfetPyAdapter::loadProfetIntegrationModule() {
@@ -68,7 +68,7 @@ PyObject* ProfetPyAdapter::getRowFromDB() {
     PyObject* rowDbFn = getFunctionFromProfetIntegration("get_row_from_db");
     // Get curves path
     // Make sure string arguments are built with .c_str()
-    PyObject* pArgs = Py_BuildValue("(sss)", pyProfetPath.c_str(), cpuModel.c_str(), memorySystem.c_str());
+    PyObject* pArgs = Py_BuildValue("(sss)", projectDataPath.c_str(), cpuModel.c_str(), memorySystem.c_str());
     PyObject* row = PyObject_CallObject(rowDbFn, pArgs);
     raisePyErrorIfNull(row, "ERROR getting Python dictionary with memory values.");
 
@@ -79,7 +79,7 @@ string ProfetPyAdapter::getCurvesPath() {
     // Get curves path
     PyObject* curvesFn = getFunctionFromProfetIntegration("get_curves_path");
     // Make sure string arguments are built with .c_str()
-    PyObject* pArgs = Py_BuildValue("(sssss)", pyProfetPath.c_str(), cpuModel.c_str(), memorySystem.c_str(), pmuType.c_str(), cpuMicroarch.c_str());
+    PyObject* pArgs = Py_BuildValue("(sssss)", projectDataPath.c_str(), cpuModel.c_str(), memorySystem.c_str(), pmuType.c_str(), cpuMicroarch.c_str());
     PyObject* curvesPath = PyObject_CallObject(curvesFn, pArgs);
     raisePyErrorIfNull(curvesPath, "ERROR getting Python dictionary with memory values.");
 
@@ -151,14 +151,14 @@ string ProfetPyAdapter::getCurvesPath() {
 void ProfetPyAdapter::checkSystemSupported() {
     PyObject* checkSystemSupportedFn = getFunctionFromProfetIntegration("check_curves_exist");
     // Make sure string arguments are built with .c_str()
-    PyObject* pArgs = Py_BuildValue("(sss)", pyProfetPath.c_str(), cpuModel.c_str(), memorySystem.c_str());
+    PyObject* pArgs = Py_BuildValue("(sss)", projectDataPath.c_str(), cpuModel.c_str(), memorySystem.c_str());
     PyObject_CallObject(checkSystemSupportedFn, pArgs);
     // raisePyErrorIfNull(curvesPath, "ERROR checking  values.");
 }
 
 void ProfetPyAdapter::printSupportedSystems() {
     PyObject* printSupportedSystemsFn = getFunctionFromProfetIntegration("print_supported_systems");
-    PyObject* pArgs = Py_BuildValue("(s)", pyProfetPath.c_str());
+    PyObject* pArgs = Py_BuildValue("(s)", projectDataPath.c_str());
     PyObject_CallObject(printSupportedSystemsFn, pArgs);
 }
 
@@ -198,7 +198,7 @@ void ProfetPyAdapter::runDashApp(string traceFilePath, double precision, double 
     o << setw(4) << dashConfig << endl;
 
     // Python call for running dash
-    string dashPlotsPath = pyProfetPath + "interactive_plots/dash_plots.py";
+    string dashPlotsPath = projectPath + "/src/interactive_plots/dash_plots.py";
     string expert = "";
     if (expertMode) {
         expert = "--expert";
@@ -251,10 +251,10 @@ void ProfetPyAdapter::setDisplayWarnings(bool displayWarnings) {
     raisePyErrorIfNull(status, "ERROR setting display_warnings in Python module.");
 }
 
-void ProfetPyAdapter::setCurves(string pyProfetPath, string cpuModel, string memorySystem) {
+void ProfetPyAdapter::setCurves(string projectDataPath, string cpuModel, string memorySystem) {
     PyObject* setCurvesFn = getFunctionFromProfetIntegration("set_curves");
     // Make sure string arguments are built with .c_str()
-    PyObject* pArgs = Py_BuildValue("(sss)", pyProfetPath.c_str(), cpuModel.c_str(), memorySystem.c_str());
+    PyObject* pArgs = Py_BuildValue("(sss)", projectDataPath.c_str(), cpuModel.c_str(), memorySystem.c_str());
     PyObject* status = PyObject_CallObject(setCurvesFn, pArgs);
     raisePyErrorIfNull(status, "ERROR setting curves in Python module.");
 }
