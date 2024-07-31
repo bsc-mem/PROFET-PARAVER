@@ -3,6 +3,15 @@
 The PROFiling-based EsTimation of performance and energy (PROFET) tool (https://github.com/bsc-mem/PROFET) profiles memory system performance, quantifies the application pressure to the memory system and estimates application performance on hardware platforms with novel memory systems. This is a tool for integrating some of the PROFET functionalities with the Paraver tool (https://github.com/bsc-performance-tools/paraver-kernel) in order to help users understand memory system performance and quantify the pressure their applications put to that system.
 
 
+
+## Prerequisites
+
+- C++17 compatible compiler
+- Python 3.10
+- pip (Python package installer)
+
+
+
 # Installation
 
 Follow the steps below to install PROFET-PARAVER:
