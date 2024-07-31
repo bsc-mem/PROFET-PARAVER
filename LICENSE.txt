@@ -1,6 +1,5 @@
-Copyright (c) 2023, Isaac Boixaderas Coderch
-                    Petar Radojković
-                    Contact: isaac.boixaderas [at] bsc [dot] es
+Copyright (c) 2023, Barcelona Supercomputing Center
+                    Contact: victor.xirau [at] bsc [dot] es
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
