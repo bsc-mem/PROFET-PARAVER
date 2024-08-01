@@ -10,7 +10,6 @@ this file. If not, please visit: https://opensource.org/licenses/BSD-3-Clause
 import os
 import sys
 import inspect
-import json
 import pandas as pd
 
 # Need to add parent folder to path for relative import 
@@ -18,8 +17,13 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 
-from py_profet.curves import Curve
+from profet.curves import Curves, OvershootError
+from profet.metrics import Bandwidth
 
+
+# Curves global variable. Set it with set_curves() function
+curves = None
+display_warnings = True
 
 
 def check_param_types(params: dict):
@@ -27,20 +31,24 @@ def check_param_types(params: dict):
         if not isinstance(values[0], values[1]):
             raise Exception(f'{name} parameter should be of type {values[1].__name__}, {values[0]} was given.')
 
+
 def check_non_negative(params: dict):
     for name, value in params.items():
         if value < 0:
             raise Exception(f'{name} parameter cannot be a negative number, {value} was given.')
+
 
 def check_cpu_supported(df: pd.DataFrame, cpu_model: str):
     if not any(df['cpu_model'] == cpu_model):
         # TODO Add to message: check currently supported models with "program -flag"
         raise Exception(f'Unkown CPU model {cpu_model}. You can check the supported configuration options with the --supported_systems flag.')
 
+
 def check_memory_supported(df: pd.DataFrame, memory_system: str):
     if not any(df['memory_system'] == memory_system):
         # TODO Add to message: check currently supported models with "program -flag"
         raise Exception(f'Unkown memory system {memory_system}. You can check the supported configuration options with the --supported_systems flag.')
+
 
 def check_curves_exist(df: pd.DataFrame, cpu_model: str, memory_system: str):
     # check if curves exist for the specified system
@@ -63,24 +71,24 @@ def check_curves_exist(df: pd.DataFrame, cpu_model: str, memory_system: str):
 #         raise Exception(err_msg)
 
 
-def read_db(py_profet_path: str) -> pd.DataFrame:
+def read_db(data_path: str) -> pd.DataFrame:
     # read DB
-    df = pd.read_csv(os.path.join(py_profet_path, 'cpu_memory_db.csv'))
+    df = pd.read_csv(os.path.join(data_path, 'cpu_memory_db.csv'))
     return df
 
 
-def print_supported_systems(py_profet_path: str) -> None:
+def print_supported_systems(data_path: str) -> None:
     # print supported systems from DB
-    df = read_db(py_profet_path)
+    df = read_db(data_path)
     print('CPU - DRAM')
     print('-----------------')
     for _, row in df.iterrows():
         print(f"{row['pmu_type']} {row['cpu_microarchitecture']} {row['cpu_model']} - {row['memory_system']}")
 
 
-def get_row_from_db(py_profet_path: str, cpu_model: str, memory_system: str) -> dict:
+def get_row_from_db(data_path: str, cpu_model: str, memory_system: str) -> dict:
     # get PMU type and microarchitecture from DB
-    df = read_db(py_profet_path)
+    df = read_db(data_path)
     check_curves_exist(df, cpu_model, memory_system)
 
     filt_df = df[(df['cpu_model'] == cpu_model) & (df['memory_system'] == memory_system)]
@@ -90,63 +98,67 @@ def get_row_from_db(py_profet_path: str, cpu_model: str, memory_system: str) -> 
     return filt_df.iloc[0].to_dict()
 
 
-def get_curves_path(py_profet_path: str, cpu_model: str, memory_system: str, pmu_type: str = None, cpu_microarch: str = None) -> str:
+def get_curves_path(data_path: str, cpu_model: str, memory_system: str, pmu_type: str = None, cpu_microarch: str = None) -> str:
     if pmu_type is None or cpu_microarch is None:
         # Get data from DB
-        row = get_row_from_db(py_profet_path, cpu_model, memory_system)
+        row = get_row_from_db(data_path, cpu_model, memory_system)
         pmu_type = row["pmu_type"]
         cpu_microarch = row["cpu_microarchitecture"]
     else:
         # check it here because get_row_from_db also checks it, so if this function is not executed on the previous if,
         # we have to make the check here
-        df = pd.read_csv(os.path.join(py_profet_path, 'cpu_memory_db.csv'))
+        df = pd.read_csv(os.path.join(data_path, 'cpu_memory_db.csv'))
         check_curves_exist(df, cpu_model, memory_system)
 
     # build curves path
-    bw_lats_folder = 'bw_lat_curves'
+    bw_lats_folder = os.path.join(data_path, 'bw_lat_curves')
     curves_folder = f'{memory_system}__{pmu_type}__{cpu_microarch}__{cpu_model}'
-    return os.path.join(py_profet_path, bw_lats_folder, curves_folder)
+    return os.path.join(data_path, bw_lats_folder, curves_folder)
 
 
-def get_curves_available_read_ratios(curves_path: str) -> list:
-    if curves_path.endswith('.json'):
-        with open(curves_path, 'r') as f:
-            curves_json = json.load(f)
-            return list(curves_json.keys())
+def set_curves(data_path: str, cpu_model: str, memory_system: str) -> bool:
+    global curves
+    curves_path = get_curves_path(data_path, cpu_model, memory_system)
+    curves = Curves(curves_path, display_warnings=display_warnings)
+    return True
+
+
+def set_display_warnings(display_w: int) -> bool:
+    global display_warnings
+    if (display_w == 0):
+        display_warnings = False
     else:
-        if not os.path.isdir(curves_path):
-            raise Exception(f'Path {curves_path} should be a directory or a json file.')
-        read_ratios = [float(f.split('_')[1].replace('.txt', '')) for f in os.listdir(curves_path) if 'bwlat_' in f and f.endswith('.txt')]
-        return read_ratios
+        display_warnings = True
+    return True
+
+
+def get_curves_available_read_ratios() -> list:
+    if curves is None:
+        raise Exception('Curves are not set. Please call set_curves() function first.')
+    return curves.get_read_ratios()
     
 
-def get_curve(curves_path: str, read_ratio: float):
-    return Curve(read_ratio, curves_path)
+def get_curve(read_ratio: float):
+    return curves.get_curve(read_ratio)
 
 
-def get_memory_properties_from_bw(bws: list, lats: list, cpu_freq: float, write_ratio: float,
-                                  curve_read_ratio: float, bandwidth: float, display_warnings: int) -> dict:
+def get_memory_properties_from_bw(cpu_freq_ghz: float, write_ratio: float,
+                                  curve_read_ratio: float, bandwidth_gbs: float) -> dict:
     # bws: list of bandwidths in MB/s
     # lats: list of latencies in CPU cycles
     # write_ratio:
-    # bandwidth: bandwidth in GB/s
+    # bandwidth_gbs: bandwidth in GB/s
 
     # Validate parameters
     check_param_types({
         # 'Memory system': (memory_system, str),
         'Write ratio': (write_ratio, float),
-        'Bandwidth': (bandwidth, float),
+        'Bandwidth': (bandwidth_gbs, float),
     })
     check_non_negative({
         'Write ratio': write_ratio,
-        'Bandwidth': bandwidth,
+        'Bandwidth': bandwidth_gbs,
     })
-
-    # convert display_warnings to boolean
-    if (display_warnings == 0):
-        display_warnings = False
-    else:
-        display_warnings = True
     
     # print(f'Write ratio: {write_ratio}')
     # print(f'Bandwidth: {round(bandwidth, 2)} GB/s')
@@ -156,32 +168,41 @@ def get_memory_properties_from_bw(bws: list, lats: list, cpu_freq: float, write_
     # specific_curves_path = f'{memory_system}__{pmu_type}__{cpu_microarch}__{cpu_model}'
     # full_curves_path = os.path.join(project_path, 'py_profet', 'bw_lat_curves', specific_curves_path)
     # get latencies and bandwidths from curve (in CPU cycles and GB/s, respectively)
-    curve_obj = Curve(curve_read_ratio, bws=bws, lats=lats, display_warnings=display_warnings)
+    curve_obj = curves.get_curve(curve_read_ratio)
 
     # predicted latency in curve
-    pred_lat = curve_obj.get_lat(bandwidth, bw_units='GB/s')
+    current_bw_gbs = Bandwidth(bandwidth_gbs, 'GBps')
+    try:
+        pred_lat = curve_obj.get_lat(current_bw_gbs)
+    except OvershootError as e:
+        # print(f'WARNING: Overshoot error: {e}')
+        pred_lat = None
+
+    # maximum bw
+    max_bw_gbs = curve_obj.get_max_bw('GBps')
     # maximum latency (in CPU cycles) and bandwidth (GB/s) for the given read ratio
-    max_bw = curve_obj.get_max_bw()
     max_lat = curve_obj.get_max_lat()
     # lead-off latency
     lead_off_lat = curve_obj.get_lead_off_lat()
-    stress_score = curve_obj.get_stress_score(bandwidth, bw_units='GB/s', lat=pred_lat,
-                                              lead_off_lat=lead_off_lat, max_lat=max_lat)
+    # stress score
+    # print(curve_obj.lats)
+    # print(max_lat, lead_off_lat)
+    stress_score = curve_obj.get_stress_score(current_bw_gbs, pred_lat, lead_off_lat, max_lat)
     if stress_score is None:
         stress_score = -1
 
-    # print(f'Write ratio: {write_ratio}; Bw: {round(bandwidth, 2)} GB/s; Max. BW: {max_bw}')
+    # print(f'Write ratio: {round(write_ratio, 2)}; Curve RR: {curve_read_ratio}, Bw: {current_bw_gbs}; Max. BW: {max_bw_gbs}')
     # print(f'Lat: {pred_lat}; Max. Lat: {max_lat}; Lead-off Lat: {lead_off_lat}')
-    # print(f'Stress score: {stress_score}')
+    # print(f'Stress score: {round(stress_score, 2)}')
     # print()
 
     return {
         'write_ratio': write_ratio,
-        'bandwidth': bandwidth,
-        'max_bandwidth': max_bw,
-        'latency': pred_lat if pred_lat == -1 else pred_lat / cpu_freq,
-        'lead_off_latency': lead_off_lat / cpu_freq,
-        'max_latency': max_lat / cpu_freq,
+        'bandwidth': bandwidth_gbs,
+        'max_bandwidth': max_bw_gbs.value,
+        'latency': -1 if pred_lat is None else pred_lat.value / cpu_freq_ghz,
+        'lead_off_latency': lead_off_lat.value / cpu_freq_ghz,
+        'max_latency': max_lat.value / cpu_freq_ghz,
         'stress_score': stress_score,
     }
 

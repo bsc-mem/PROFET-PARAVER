@@ -146,8 +146,7 @@ unordered_map<string, double>NodeMemoryRecords::processMemoryMetrics(ProfetPyAda
 
   // Get computed memory metrics
   auto [maxBandwidth, latency, leadOffLatency, maxLatency, stressScore] = profetPyAdapter.computeMemoryMetrics(cpuFreqGHz, metrics["writeRatio"],
-                                                                                                               metrics["bandwidth"],
-                                                                                                               displayWarnings);
+                                                                                                               metrics["bandwidth"]);
   // cout << maxBandwidth << " " << latency << " " << leadOffLatency << " " << maxLatency << endl;
 
   if (latency == -1) {

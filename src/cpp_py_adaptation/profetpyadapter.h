@@ -48,7 +48,7 @@ class ProfetPyAdapter {
     vector<double> availableReadRatios;
     string projectSrcPath;
     string profetIntegrationPath;
-    string pyProfetPath;
+    string projectDataPath;
     PyObject* sysPath;
     PyObject* profetIntegrationModule;
 
@@ -67,12 +67,14 @@ class ProfetPyAdapter {
 
     void printSupportedSystems();
 
-    tuple<double, double, double, double, double> computeMemoryMetrics(double cpuFreqGHz, double writeRatio, double bandwidth, bool displayWarnings);
+    tuple<double, double, double, double, double> computeMemoryMetrics(double cpuFreqGHz, double writeRatio, double bandwidth);
 
     void runDashApp(string traceFilePath, double precision, double cpuFreq, bool expertMode, bool keepOriginalTraceFile);
 
   private:
     PyObject* getFunctionFromProfetIntegration(string fnName);
+    void setDisplayWarnings(bool displayWarnings);
+    void setCurves(string projectDataPath, string cpuModel, string memorySystem);
 
 };
 

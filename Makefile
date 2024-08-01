@@ -21,10 +21,22 @@ $(shell mkdir -p bin/)
 SRC_CPP_FILES := $(shell find src/ -name '*.cpp')
 SRC_CC_FILES := $(shell find src/ -name '*.cc')
 
-all:
+# path to the PROFET submodule in the libs folder
+PROFET_PATH := libs/PROFET
+
+all: install_profet compile_cpp
+
+install_profet:
+	@command -v pip > /dev/null 2>&1 || { echo >&2 "pip is required but not installed. Please install pip and try again."; exit 1; }
+	@echo "Installing Python dependencies from ${PROFET_PATH}..."
+	@pip install -e ${PROFET_PATH}
+
+compile_cpp:
 	g++ -Wall -fPIE -std=c++17 \
-      $(PY_CFLAGS) \
-      -I libs/paraver-kernel/utils/traceparser \
-      -I libs/boost_1_79_0 \
-      -I libs/json-develop/ \
-      -o bin/profet $(SRC_CPP_FILES) $(SRC_CC_FILES) $(PY_LDFLAGS)
+	$(PY_CFLAGS) \
+	-I libs/paraver-kernel/utils/traceparser \
+	-I libs/boost_1_79_0 \
+	-I libs/json-develop/ \
+	-o bin/profet-prv $(SRC_CPP_FILES) $(SRC_CC_FILES) $(PY_LDFLAGS)
+
+.PHONY: all install_profet compile_cpp
