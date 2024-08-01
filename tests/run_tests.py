@@ -47,7 +47,7 @@ def test_with_parameters(raw_file: str, processed_file: str, config_file: str, p
     if not omit_original_trace:
         flags += '--keep-original '
 
-    profet_command = f'./bin/profet {raw_file} {processed_file} {config_file} {flags}'
+    profet_command = f'./bin/profet-prv {raw_file} {processed_file} {config_file} {flags}'
     print(profet_command)
     profet_exit_code = os.system(profet_command)
     if profet_exit_code != 0:
