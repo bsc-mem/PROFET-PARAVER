@@ -160,6 +160,7 @@ if __name__ == "__main__":
     for (a, b), unique_c in grouped.items():
         system_arch[a][b] = sorted(unique_c.tolist())
 
+    # Print all node names:
     # Allow a maximum of elements to display. Randomly undersample if there are more elements than the limit
 
     # Reset index to avoid problems with the sampling

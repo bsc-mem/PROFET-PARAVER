@@ -546,6 +546,8 @@ def register_callbacks(
                     color_bar = curve_utils.get_color_bar(
                         labels, stress_score_config, font_size
                     )
+                else:
+                    color_bar = None
 
                 graph_title = ""
                 overview_fig = curve_utils.get_graph_fig(
