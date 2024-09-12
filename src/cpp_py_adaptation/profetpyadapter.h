@@ -28,7 +28,7 @@
 #include "single_include/nlohmann/json.hpp"
 
 using namespace std;
-namespace fs = std::filesystem;
+namespace fs = std::__fs::filesystem;
 using json = nlohmann::json;
 
 

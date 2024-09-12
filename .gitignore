@@ -10,3 +10,4 @@ bin/
 *.toc
 *.out
 .vscode/
+env/
