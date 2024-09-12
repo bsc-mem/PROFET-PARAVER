@@ -58,11 +58,13 @@ def register_callbacks(
 
     # Hide the overview tab specific options when the tab is not active.
     @app.callback(
+        Output(f"overview-sampling-mode-section", "style"),
         Output(f"sampling-section", "style"),
         Input("tabs", "active_tab"),
     )
     def hide_only_overview_sidebar_options(active_tab):
-        return {"display": "none"} if active_tab == "curves-tab" else {}
+        style = {"display": "none"} if active_tab == "curves-tab" else {}
+        return style, style
 
     # There is no node selection in the overview tab. This is why it's hidden when the tab is active.
     @app.callback(
