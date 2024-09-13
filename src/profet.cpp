@@ -30,7 +30,7 @@
 
 using namespace std;
 namespace pt = boost::property_tree;
-namespace fs = std::filesystem;
+namespace fs = std::__fs::filesystem;
 
 #include "prvparse.h"
 #include "progress.h"

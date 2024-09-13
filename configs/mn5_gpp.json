@@ -1,0 +1,6 @@
+{
+    "memory_system": "ddr5_4800",
+    "cpu_model": "xeon_platinum_8480",
+    "cpu_freq_ghz": 2,
+    "cache_line_bytes": 64
+}
