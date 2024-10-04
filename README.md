@@ -61,8 +61,8 @@ Parameters:
 	-e, --expert
 		Enables expert mode for interactive plotting. If --plot-interactive is not set, --expert is ignored.
 	
-	-o, --omit-original
-		Omit the first application of the original trace in the output trace file.
+	-k, --keep-original
+		Keeps the first application of the original trace in the output trace file.
 		
 	-w, --no-warnings
 		Suppress warning messages.
