@@ -371,7 +371,8 @@ def register_callbacks(
                 for fig in current_figures:
                     # process curves figures, which are all but the last one.
                     for curve in fig["data"][:-1]:
-                        curve["line"]["color"] = curves_color
+                        if "line" in curve:
+                            curve["line"]["color"] = curves_color
             elif input_id == "curves-transparency-slider":
                 for fig in current_figures:
                     # process curves figures, which are all but the last one.
@@ -566,14 +567,24 @@ def register_callbacks(
                     color_bar,
                     font_size,
                     showAll=True,
+                    showRdWrBar=True,
                 )
 
                 return overview_fig, sampling_label
 
         # Handle callback logic. This is triggered by a single input.
         if input_id == "curves-color-dropdown":
+            num_curves = len(overview_fig["data"][:-1]) - 1
             for curve in overview_fig["data"][:-1]:
-                curve["line"]["color"] = curves_color
+                if "line" in curve:
+                    curve["line"]["color"] = curves_color
+                else:
+                    shades = curve_utils.get_shades(curves_color, num_curves)
+
+                    curve["marker"]["colorscale"] = [
+                        [i / (num_curves - 1), shade] for i, shade in enumerate(shades)
+                    ]
+
         elif input_id == "curves-transparency-slider":
 
             totalValues = len(curves) - 1
@@ -629,7 +640,22 @@ def register_callbacks(
                 overview_fig["layout"]["title"]["font"]["size"] = font_size
             overview_fig["layout"]["xaxis"]["title"]["font"]["size"] = font_size
             overview_fig["layout"]["yaxis"]["title"]["font"]["size"] = font_size
-            overview_fig["layout"]["legend"]["font"] = dict(size=font_size)
+
+            for curve in overview_fig["data"][:-1]:
+                if "line" not in curve:
+                    curve["marker"]["colorbar"]["tickfont"]["size"] = font_size - (
+                        font_size / 5
+                    )
+                    curve["marker"]["colorbar"]["title"]["font"]["size"] = font_size - (
+                        font_size / 5
+                    )
+                    curve["marker"]["colorbar"]["y"] = max(0, -0.005 * font_size + 0.98)
+                    if font_size > 30:
+                        curve["marker"]["colorbar"]["x"] = 0.23
+                    elif font_size > 35:
+                        curve["marker"]["colorbar"]["x"] = 0.33
+                    else:
+                        curve["marker"]["colorbar"]["x"] = 0.18
             if "coloraxis" in overview_fig["layout"]:
                 overview_fig["layout"]["coloraxis"]["colorbar"]["tickfont"][
                     "size"

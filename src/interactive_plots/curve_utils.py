@@ -1,16 +1,14 @@
+import colorsys
 import os
 
 import numpy as np
+import pandas as pd  # Ensure pandas is imported
 import plotly.express as px
+import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 
 def get_color_bar(labels, stress_score_config, font_size=25):
-    # if toggled_time:
-    #     return {
-    #         'colorbar': {'title': labels['timestamp'],},
-    #         'colorscale': 'burg',
-    #     }
     return {
         "colorbar": {
             "title": labels["stress_score"],
@@ -64,12 +62,19 @@ def get_graph_fig(
     color_bar=None,
     font_size=25,
     showAll=False,
+    showRdWrBar=False,
 ):
     fig = make_subplots(rows=1, cols=1)
 
     try:
         fig = get_curves_fig(
-            curves, fig, curves_color, curves_transparency, font_size, showAll
+            curves,
+            fig,
+            curves_color,
+            curves_transparency,
+            font_size,
+            showAll,
+            showRdWrBar,
         )
 
         # Plot application bw-lat dots
@@ -87,6 +92,7 @@ def get_graph_fig(
 
         # Update the layout with a title
         fig.update_layout(
+            margin=dict(t=50),
             title={
                 "text": graph_title,
                 "font": {
@@ -96,10 +102,10 @@ def get_graph_fig(
                 },
                 "x": 0.5,
                 "xanchor": "center",
-            }
+            },
         )
 
-        # These liens ensure the background is white, and there is a box around the plot
+        # Ensure the background is white, and there is a box around the plot
         fig.update_layout(
             paper_bgcolor="white",
             plot_bgcolor="white",
@@ -119,7 +125,8 @@ def get_graph_fig(
             ),
         )
         return fig
-    except Exception:
+    except Exception as e:
+        print(f"Error in get_graph_fig: {e}")
         fig.add_annotation(
             text="Something went wrong<br><sup>Please reload the page</sup>",
             xref="paper",
@@ -140,9 +147,7 @@ def get_curves(curves_path, cpu_freq):
     curves = {}
     # Load and process curves
     for curve_file in os.listdir(curves_path):
-        # for curve_file in os.listdir(curves_dir):
         if "bwlat_" in curve_file:
-            # with open( os.path.join(curves_dir, curve_file) ) as f:
             with open(os.path.join(curves_path, curve_file)) as f:
                 bws = []
                 lats = []
@@ -153,10 +158,8 @@ def get_curves(curves_path, cpu_freq):
                     bws.append(float(sp[0]) / 1000)
                     lats.append(float(sp[1]))
                 # Add special case of bw = 0 (then latency is the minimum recorded).
-                # TODO it'd be better to use the Curve module instead of hardcoding a bw of 0 to the lowest latency (this behavior might change at some point)
                 bws.append(0)
                 lats.append(lats[-1])
-                # read_ratio = int(curve_file.split("_")[1].replace(".txt", ""))
                 curves[100 - read_ratio] = {
                     "bandwidths": bws[::-1],
                     "latencies": np.array(lats[::-1]) / cpu_freq,
@@ -164,8 +167,50 @@ def get_curves(curves_path, cpu_freq):
     return curves
 
 
+def get_shades(color_name_or_hex, num_shades):
+    # Custom dictionary mapping color names to hex codes
+    color_mapping = {
+        "black": "#000000",
+        "red": "#FF0000",
+        "green": "#008000",
+        "blue": "#0000FF",
+    }
+
+    # Convert the color name to hex
+    if color_name_or_hex.startswith("#"):
+        hex_color = color_name_or_hex
+    else:
+        color_name = color_name_or_hex.lower()
+        hex_color = color_mapping.get(color_name)
+        if hex_color is None:
+            raise ValueError(f"Color name '{color_name}' not recognized.")
+
+    # Convert hex to RGB
+    hex_color = hex_color.lstrip("#")
+    r_base = int(hex_color[0:2], 16)
+    g_base = int(hex_color[2:4], 16)
+    b_base = int(hex_color[4:6], 16)
+
+    # Generate shades from base color to white
+    shades = []
+    for i in range(num_shades):
+        ratio = i / (num_shades - 1)
+        r = int(r_base + (255 - r_base) * ratio)
+        g = int(g_base + (255 - g_base) * ratio)
+        b = int(b_base + (255 - b_base) * ratio)
+        new_hex = "#{:02x}{:02x}{:02x}".format(r, g, b)
+        shades.append(new_hex)
+    return shades
+
+
 def get_curves_fig(
-    curves, fig, color="black", transparency=1, font_size=25, showAll=False
+    curves,
+    fig,
+    color="black",
+    transparency=1,
+    font_size=25,
+    showAll=False,
+    showRdWrBar=False,
 ):
     if showAll:
         # Take the curve write ratios (keys) in descending order
@@ -173,35 +218,46 @@ def get_curves_fig(
     else:
         # Show N curves only
         n_curves_to_show = 5
-        step = int(len(curves) / n_curves_to_show)
-        rang = sorted(
-            [list(curves.keys())[i] for i in range(0, len(curves) - 1, step)],
-            reverse=True,
+        step = max(1, int(len(curves) / n_curves_to_show))
+        indices = list(range(0, len(curves), step))
+        selected_keys = [list(sorted(curves.keys()))[i] for i in indices]
+        rang = sorted(selected_keys, reverse=True)
+
+    num_curves = len(rang)
+    curve_opacity_step = transparency / num_curves
+
+    # Generate shades of the color
+
+    shades = get_shades(color, num_curves)
+
+    for i, (w_ratio, shade) in enumerate(zip(rang, shades)):
+        # Determine if the legend should be shown
+        show_in_legend = (
+            ((i == 0) or (i == num_curves - 1)) and showAll and not showRdWrBar
         )
 
-    curve_opacity_step = transparency / len(curves)
-    for i, w_ratio in enumerate(rang):
-        # This chooses which values are shown in the legend.
-        # Right now the legend includes the first and last curve.
-        show_in_legend = ((i == 0) or (i == len(rang) - 1)) and showAll
+        curve_transparency = transparency - curve_opacity_step * i
 
-        curve_fig = px.line(
+        # Use go.Scatter to create the curve
+        curve_fig = go.Scatter(
             x=curves[w_ratio]["bandwidths"],
             y=curves[w_ratio]["latencies"],
-            color_discrete_sequence=[color],
-        )
-        curve_transparency = transparency - curve_opacity_step * i
-        curve_fig.update_traces(
+            mode="lines",
+            line=dict(color=shade),
+            opacity=max(0, curve_transparency),
             hovertemplate="Bandwidth (BW): %{x}<br>Latency: %{y}<br>Write Ratio (WR): "
             + str(w_ratio)
             + "%<extra></extra>",
-            opacity=max(0, curve_transparency),
             showlegend=show_in_legend,
-            name=f"Rd:Wr {100-w_ratio}:{w_ratio}",
+            name=f"Rd:Wr {100 - w_ratio}:{w_ratio}",
         )
-        curve_text = f"{w_ratio}%" if curve_transparency > 0 else ""
-        fig.add_trace(curve_fig.data[0])
+
+        # Convert the trace to a dictionary before adding to the figure
+        curve_trace_dict = curve_fig.to_plotly_json()
+        fig.add_trace(curve_trace_dict)
+
         if not showAll:
+            curve_text = f"{w_ratio}%" if curve_transparency > 0 else ""
             fig.add_annotation(
                 x=curves[w_ratio]["bandwidths"][-1],
                 y=curves[w_ratio]["latencies"][-1] + 15,
@@ -210,7 +266,51 @@ def get_curves_fig(
                 arrowhead=1,
             )
 
-    if showAll:
+    if showRdWrBar:
+        # Prepare data for the color bar
+        min_wr = min(rang)
+        max_wr = max(rang)
+        num_curves = len(rang)
+        colorscale = [[(i / (num_curves - 1)), shade] for i, shade in enumerate(shades)]
+
+        # Add an invisible trace to display the color bar
+        colorbar_trace = go.Scatter(
+            x=[None],
+            y=[None],
+            mode="markers",
+            marker=dict(
+                colorscale=colorscale,
+                showscale=True,
+                cmin=min_wr,
+                cmax=max_wr,
+                color=[min_wr, max_wr],
+                colorbar=dict(
+                    title="Write Ratio (Rd:Wr)",
+                    title_font=dict(size=font_size - 4),
+                    titleside="top",
+                    tickfont=dict(size=font_size - 4),
+                    tickvals=[min_wr, (min_wr + max_wr) / 2, max_wr],
+                    ticktext=["0:100", "50:50", "100:0"],
+                    orientation="h",
+                    x=0.18,
+                    xanchor="center",
+                    # Formula to scale the position of the colorbar according to the font size
+                    y=max(0, -0.005 * font_size + 0.98),
+                    yanchor="bottom",
+                    lenmode="fraction",
+                    len=0.3,
+                    thickness=15,
+                ),
+            ),
+            hoverinfo="none",
+            showlegend=False,
+        )
+
+        # Convert the colorbar trace to a dictionary before adding
+        colorbar_trace_dict = colorbar_trace.to_plotly_json()
+        fig.add_trace(colorbar_trace_dict)
+
+    elif showAll:
         fig.update_layout(
             legend=dict(
                 yanchor="top",
