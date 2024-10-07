@@ -174,7 +174,7 @@ def register_callbacks(
                 ]
                 return [json_file.get(key) for key in return_order]
         except Exception as e:
-            print(e)
+            # print(e)
             return html.Div(["There was an error processing this file."])
 
     @app.callback(
