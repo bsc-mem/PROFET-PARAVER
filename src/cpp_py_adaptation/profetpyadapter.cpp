@@ -197,13 +197,18 @@ void ProfetPyAdapter::runDashApp(string traceFilePath, double precision, double 
     ofstream o(dashConfigFile);
     o << setw(4) << dashConfig << endl;
 
-    // Python call for running dash
-    string dashPlotsPath = projectPath + "/src/interactive_plots/dash_plots.py";
+    if (!projectPath.empty() && projectPath.back() == '/')
+    {
+        projectPath.pop_back();
+    }
+
+    std::string dashPlotsPath = "'" + projectPath + "/src/interactive_plots/dash_plots.py'";
+
     string expert = "";
     if (expertMode) {
         expert = "--expert";
     }
-    string pythonCall = "python3 " + dashPlotsPath + " " + expert + " "  + traceFileAbsPath + " "  + curvesPath + " " + dashConfigFile;
+    string pythonCall = "python3 " + dashPlotsPath + " " + expert + " \'"  + traceFileAbsPath + "\' \'"  + curvesPath + "\' \'" + dashConfigFile + "\'";
     if (keepOriginalTraceFile) {
         pythonCall += " --keep-original";
     }
@@ -213,7 +218,7 @@ void ProfetPyAdapter::runDashApp(string traceFilePath, double precision, double 
     // Create and open a file
     ofstream scriptContent(dashScriptFile);
     string featherTraceFile = regex_replace(traceFileAbsPath, regex(".prv"), ".feather");
-    string scriptPyCall = "python3 " + dashPlotsPath + " " + expert + " "  + featherTraceFile + " "  + curvesPath + " " + dashConfigFile;
+    string scriptPyCall = "python3 " + dashPlotsPath + " " + expert + " \'"  + featherTraceFile + "\' \'"  + curvesPath + "\' \'" + dashConfigFile + "\'";
     if (keepOriginalTraceFile) {
         scriptPyCall += " --keep-original";
     }
