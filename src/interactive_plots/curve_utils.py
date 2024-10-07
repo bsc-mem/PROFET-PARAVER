@@ -195,9 +195,9 @@ def get_shades(color_name_or_hex, num_shades):
     shades = []
     for i in range(num_shades):
         ratio = i / (num_shades - 1)
-        r = int(r_base + (255 - r_base) * ratio)
-        g = int(g_base + (255 - g_base) * ratio)
-        b = int(b_base + (255 - b_base) * ratio)
+        r = int(r_base + (250 - r_base) * ratio)
+        g = int(g_base + (250 - g_base) * ratio)
+        b = int(b_base + (250 - b_base) * ratio)
         new_hex = "#{:02x}{:02x}{:02x}".format(r, g, b)
         shades.append(new_hex)
     return shades
@@ -224,7 +224,7 @@ def get_curves_fig(
         rang = sorted(selected_keys, reverse=True)
 
     num_curves = len(rang)
-    curve_opacity_step = transparency / num_curves
+    curve_opacity_step = (transparency - 0.1) / (num_curves)
 
     # Generate shades of the color
 
@@ -243,7 +243,7 @@ def get_curves_fig(
             x=curves[w_ratio]["bandwidths"],
             y=curves[w_ratio]["latencies"],
             mode="lines",
-            line=dict(color=shade),
+            line=dict(color=color),
             opacity=max(0, curve_transparency),
             hovertemplate="Bandwidth (BW): %{x}<br>Latency: %{y}<br>Write Ratio (WR): "
             + str(w_ratio)
