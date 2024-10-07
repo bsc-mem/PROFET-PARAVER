@@ -128,8 +128,13 @@ namespace boost
             typedef std::size_t result_type;
         };
 #else
+        #ifdef __APPLE__
+        template <typename T>
+        struct hash_base : std::__unary_function<T, std::size_t> {};
+        #else
         template <typename T>
         struct hash_base : std::unary_function<T, std::size_t> {};
+        #endif
 #endif
 
         struct enable_hash_value { typedef std::size_t type; };
