@@ -139,6 +139,7 @@ if __name__ == "__main__":
     # TODO replace only the extension! .prv could be included in the middle of the file as a name
     # Do it for all other cases (e.g. .pdf below)
     row_file_path = args.trace_file.replace(".prv", ".row")
+
     if args.trace_file.endswith(".prv"):
         df = utils.prv_to_df(
             args.trace_file,

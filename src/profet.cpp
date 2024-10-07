@@ -103,7 +103,7 @@ vector<pair<string, string>> memoryMetricLabels = {
 };
 
 void printHelp() {
-  cout << "Usage: profet-prv [OPTION] <input_trace_file.prv> <output_trace_file.prv> <configuration_file.json>\n\n";
+  cout << "Usage: mess-prv [OPTION] <input_trace_file.prv> <output_trace_file.prv> <configuration_file.json>\n\n";
   // cout << "-i, --input=FILE\n"
   //         "\t\tInput prv file\n"
   //         "-o, --output=FILE\n"

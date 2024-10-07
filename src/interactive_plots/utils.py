@@ -106,7 +106,16 @@ def prv_to_df(
                     break
 
                 metric_key = metric_keys[last_metric_digit - 1]
-                val = float(sp[i + 1].strip())
+
+                if sp[i + 1].strip() == "":
+                    print(
+                        f"There is pieces missing in the trace. Try and regenerate the original trace."
+                    )
+                    continue
+
+                val = (
+                    float(100) if sp[i + 1].strip() == "" else float(sp[i + 1].strip())
+                )
 
                 # negative values are set for identifying irregular data, include all of them for now and remove whole negative rows later (see next lines)
                 if val != -1:

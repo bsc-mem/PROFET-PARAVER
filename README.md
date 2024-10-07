@@ -35,16 +35,16 @@ Follow the steps below to install PROFET-PARAVER:
 	pip install -r requirements.txt
 	```
 
-Compile the source code to create a binary `profet-prv` file in the `bin` folder:
+Compile the source code to create a binary `mess-prv` file in the `bin` folder:
 
 	make
 
-To use the `profet-prv` binary with Paraver (https://github.com/bsc-performance-tools/paraver-kernel), add the `bin` folder (where the `profet-prv` binary is located) to your PATH. Refer to https://www.baeldung.com/linux/path-variable for instructions on modifying the Linux PATH variable. Future versions of PROFET-PARAVER will streamline this step.
+To use the `mess-prv` binary with Paraver (https://github.com/bsc-performance-tools/paraver-kernel), add the `bin` folder (where the `mess-prv` binary is located) to your PATH. Refer to https://www.baeldung.com/linux/path-variable for instructions on modifying the Linux PATH variable. Future versions of PROFET-PARAVER will streamline this step.
 
 
 # Usage
 
-	./bin/profet-prv [OPTION] <input_trace_file.prv> <output_trace_file.prv> <configuration_file.json>
+	./bin/mess-prv [OPTION] <input_trace_file.prv> <output_trace_file.prv> <configuration_file.json>
 
 Parameters:
 
