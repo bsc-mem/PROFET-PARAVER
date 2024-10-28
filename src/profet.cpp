@@ -279,10 +279,16 @@ vector<string> getNodeNames(RowFileParser<> inRowFile, int nNodes) {
   vector<string> nodeNames;
   for (int i = 0; i < nNodes; i++) {
     string nodeLabel = inRowFile.getRowLabel(TTraceLevel::NODE, i);
-    if (nodeLabel != "") {
+    if (nodeLabel != "" and find(nodeNames.begin(), nodeNames.end(), nodeLabel) == nodeNames.end() and nodeLabel != "\n") {
       nodeNames.push_back(nodeLabel);
     }
   }
+
+  cout << "Node names: ";
+  for (const auto &nodeName : nodeNames) {
+    cout << nodeName << " ";
+  }
+
   return nodeNames;
 }
 
@@ -616,6 +622,10 @@ int main(int argc, char *argv[]) {
   int nNodes = resourceModel.totalNodes();
   vector<string> nodeNames = getNodeNames(inRowFile, nNodes);
   checkNodeNames(nodeNames, rowInputFile, nNodes);
+
+  //Remove any empty node name:
+  // nodeNames.erase(remove(nodeNames.begin(), nodeNames.end(), ""), nodeNames.end());
+
 
   vector<NodeMemoryRecords> nodes(nNodes);
   for (int iNode = 0; iNode < nNodes; iNode++) {

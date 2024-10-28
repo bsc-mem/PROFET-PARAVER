@@ -253,7 +253,7 @@ def get_curve_graphs_sidebar(df: pd.DataFrame):
                         max=1,
                         step=0.005,
                         marks=marks_time_sampling,
-                        value=[0.5],
+                        value=[0],
                     ),
                 ],
                 id="sampling-section",
@@ -454,7 +454,7 @@ def get_main_content(
         t.append(
             dbc.Tab(curves_tab, label="Detailed Socket Curves", tab_id="curves-tab")
         )
-    tabs = dbc.Tabs(t, id="tabs", active_tab="summary-tab")
+    tabs = dbc.Tabs(t, id="tabs", active_tab="app-overview-tab")
 
     return html.Div(
         [
