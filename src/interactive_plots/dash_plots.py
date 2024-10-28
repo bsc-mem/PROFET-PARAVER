@@ -235,5 +235,5 @@ if __name__ == "__main__":
         max_elements,
         args.expert,
     )
-    app.run_server(debug=False)
+    app.run_server(debug=True)
     # app.run_server(debug=True)

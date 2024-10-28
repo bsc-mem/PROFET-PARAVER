@@ -18,21 +18,24 @@ def get_node_names(row_file_path):
                 node_counter = 1
                 continue
             if node_counter:
+                if l.strip() == "" or l.strip().startswith("#"):
+                    continue
                 node_names.append(l.strip())
                 node_counter += 1
                 if node_counter > n_nodes:
                     # all node names have been read
                     break
 
+    difference = n_nodes - len(node_names)
     node_names = [name for name in node_names if name]
 
-    return node_names
+    return node_names, difference
 
 
 def prv_to_df(
     trace_file_path, row_file_path, config_json, keep_original, save_feather=False
 ):
-    node_names = get_node_names(row_file_path)
+    node_names, offset = get_node_names(row_file_path)
     num_lines = sum(1 for _ in open(trace_file_path))
 
     rand_lines = []
@@ -85,13 +88,14 @@ def prv_to_df(
 
             sp = line.split(":")
             row = defaultdict()
+
             row["node"] = int(sp[2])
 
             if keep_original and row["node"] == 1:
                 # skip first application (original trace values) when it is excluded
                 continue
 
-            row["node_name"] = node_names[row["node"] - 1]
+            row["node_name"] = node_names[row["node"] - 1 - offset]
             row["socket"] = int(sp[3])
             row["mc"] = int(sp[4])
             row["timestamp"] = int(sp[5])
@@ -129,6 +133,12 @@ def prv_to_df(
                     # we've processed the last metric key we want, no need to continue (even if there are other events pending)
                     break
 
+            # if row["lat"] == 0 and row["stress_score"] == 0:
+            #     if len(df):
+            #         row["lat"] = df[-1]["lat"]
+            #         row["stress_score"] = df[-1]["stress_score"]
+            # if "lat" in row and "stress_score" in row:
+            #     if row["lat"] != 0 and row["stress_score"] != 0:
             df.append(row)
 
         print("Loading is 100% complete.")

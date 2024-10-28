@@ -140,24 +140,51 @@ unordered_map<string, double>NodeMemoryRecords::processMemoryMetrics(ProfetPyAda
   }
 
   metrics["writeRatio"] = writeBW / (readBW + writeBW);
-  // cout << writeBW << " " << readBW << " " << writeRatio << endl;
+  //cout << writeBW << " " << readBW << " " << writeRatio << endl;
   metrics["bandwidth"] = readBW + writeBW;
   // cout << socketID << " " << readBW << " " << writeBW << " " << writeRatio << " " << bandwidth << endl;
 
   // Get computed memory metrics
-  auto [maxBandwidth, latency, leadOffLatency, maxLatency, stressScore] = profetPyAdapter.computeMemoryMetrics(cpuFreqGHz, metrics["writeRatio"],
+  auto [maxBandwidth, latency, leadOffLatency, maxLatency, stressScore, newBW] = profetPyAdapter.computeMemoryMetrics(cpuFreqGHz, metrics["writeRatio"],
                                                                                                                metrics["bandwidth"]);
   // cout << maxBandwidth << " " << latency << " " << leadOffLatency << " " << maxLatency << endl;
-
-  if (latency == -1) {
-    // If latency is -1, it means that bandwidth was off the charts, return negative metrics
+  if (newBW != metrics["bandwidth"]) {
+    // If the computed bandwidth is different from the one calculated with the read and write bandwidths, return negative metrics
     if (displayWarnings) {
-      cerr << "Warning: Erroneous recorded bandwidth. Setting write ratio to " << -metrics["writeRatio"] * 100 << "% and bandwidth to " << round(-metrics["bandwidth"]) << " GB/s" << endl;
+      //Show message showing the difference between BW print newBw and metrics bandwidth
+      // cout << "Warning: Computed bandwidth is different from the one calculated with the read and write bandwidths." << endl;
+      // cout << "Computed bandwidth: " << newBW << " GB/s" << endl;
+      // cout << "Calculated bandwidth: " << metrics["bandwidth"] << " GB/s" << endl;
     }
-    metrics["writeRatio"] = -metrics["writeRatio"] * 100;
-    metrics["bandwidth"] = -metrics["bandwidth"];
+
+    metrics["writeRatio"] = -metrics["writeRatio"];
+    metrics["bandwidth"] = newBW;
+    meanReads = -meanReads;
+    meanWrites = -meanWrites;
+  }
+
+  if(latency > maxLatency || newBW > maxBandwidth) {
+    // If latency is greater than maxLatency, return negative metrics
+    if (displayWarnings) {
+      cerr << "Warning: Latency is greater than maxLatency. Setting write ratio to " << metrics["writeRatio"] * 100 << "% and bandwidth to " << round(metrics["bandwidth"]) << " GB/s" << endl;
+    }
+
+    metrics["latency"] = maxLatency;
+     metrics["bandwidth"] = maxBandwidth;
+    metrics["stressScore"] = 1;
+
     return metrics;
   }
+  
+  // if (latency <= 0) {
+  //   // If latency is -1, it means that bandwidth was off the charts, return negative metrics
+  //   if (displayWarnings) {
+  //     cerr << "Warning: Erroneous recorded bandwidth. Setting write ratio to " << -metrics["writeRatio"] * 100 << "% and bandwidth to " << round(-metrics["bandwidth"]) << " GB/s" << endl;
+  //   }
+  //   metrics["writeRatio"] = -metrics["writeRatio"] * 100;
+  //   metrics["bandwidth"] = -metrics["bandwidth"];
+  //   return metrics;
+  // }
 
   metrics["writeRatio"] = metrics["writeRatio"] * 100;
   metrics["maxBandwidth"] = maxBandwidth;

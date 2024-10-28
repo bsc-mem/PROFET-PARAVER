@@ -189,6 +189,8 @@ def get_memory_properties_from_bw(
         }
     )
 
+    stress_score = -1
+
     # print(f'Write ratio: {write_ratio}')
     # print(f'Bandwidth: {round(bandwidth, 2)} GB/s')
 
@@ -197,15 +199,36 @@ def get_memory_properties_from_bw(
     # specific_curves_path = f'{memory_system}__{pmu_type}__{cpu_microarch}__{cpu_model}'
     # full_curves_path = os.path.join(project_path, 'py_profet', 'bw_lat_curves', specific_curves_path)
     # get latencies and bandwidths from curve (in CPU cycles and GB/s, respectively)
+
     curve_obj = curves.get_curve(curve_read_ratio)
 
     # predicted latency in curve
     current_bw_gbs = Bandwidth(bandwidth_gbs, "GBps")
-    try:
+
+    # if current_bw_gbs > curve_obj.get_max_bw("GBps"):
+    #     bandwidth_gbs = curve_obj.get_max_bw("GBps").value
+    #     current_bw_gbs = Bandwidth(bandwidth_gbs, "GBps")
+
+    if current_bw_gbs > curve_obj.get_max_bw("GBps") * (1.05):
+        current_bw_gbs = curve_obj.get_max_bw("GBps")
+        bandwidth_gbs = current_bw_gbs.value
         pred_lat = curve_obj.get_lat(current_bw_gbs)
-    except OvershootError as e:
-        # print(f'WARNING: Overshoot error: {e}')
-        pred_lat = None
+        stress_score = 1
+
+    else:
+        try:
+            pred_lat = curve_obj.get_lat(current_bw_gbs)
+        except OvershootError as e:
+            print(f"WARNING: Overshoot error: {e}")
+            max_bw_gbs = curve_obj.get_max_bw("GBps")
+            print(f"Maximum bandwidth: {max_bw_gbs}")
+            print(f"Current bandwidth: {current_bw_gbs}")
+            print(f"Maximum latency: { curve_obj.get_max_lat()}")
+            print()
+            # bandwidth_gbs = max_bw_gbs
+            # current_bw_gbs = max_bw_gbs
+            # pred_lat = curve_obj.get_lat(current_bw_gbs)
+            pred_lat = None
 
     # maximum bw
     max_bw_gbs = curve_obj.get_max_bw("GBps")
@@ -216,11 +239,15 @@ def get_memory_properties_from_bw(
     # stress score
     # print(curve_obj.lats)
     # print(max_lat, lead_off_lat)
-    stress_score = curve_obj.get_stress_score(
-        current_bw_gbs, pred_lat, lead_off_lat, max_lat
-    )
+    if stress_score == -1:
+        stress_score = curve_obj.get_stress_score(
+            current_bw_gbs, pred_lat, lead_off_lat, max_lat
+        )
     if stress_score is None:
         stress_score = -1
+
+    if pred_lat.value == 0:
+        print(f"WARNING: Predicted latency is 0. This is likely an error.")
 
     # print(f'Write ratio: {round(write_ratio, 2)}; Curve RR: {curve_read_ratio}, Bw: {current_bw_gbs}; Max. BW: {max_bw_gbs}')
     # print(f'Lat: {pred_lat}; Max. Lat: {max_lat}; Lead-off Lat: {lead_off_lat}')
