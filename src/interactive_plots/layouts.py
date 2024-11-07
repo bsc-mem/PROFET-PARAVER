@@ -253,7 +253,7 @@ def get_curve_graphs_sidebar(df: pd.DataFrame):
                         max=1,
                         step=0.005,
                         marks=marks_time_sampling,
-                        value=[0],
+                        value=[0.5],
                     ),
                 ],
                 id="sampling-section",

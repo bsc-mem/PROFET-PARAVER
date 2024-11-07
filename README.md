@@ -35,6 +35,7 @@ Follow the steps below to install PROFET-PARAVER:
 	pip install -r requirements.txt
 	```
 
+
 Compile the source code to create a binary `mess-prv` file in the `bin` folder:
 
 	make
@@ -78,6 +79,49 @@ Parameters:
 		
 	-h, --help, ?
 		Show help.
+
+# Creating Traces
+
+To generate compatible memory traces, use **EXTRAE** to collect uncore (off-core) counters that capture memory controller activity. These counters provide insights into memory stress and data movement across channels. For instance:
+
+- **CAS_COUNT_RD / CAS_COUNT_WR**: Measures the count of read/write operations by the memory controller.
+  
+**Required Counters**: At minimum, gather `CAS_COUNT_RD` and `CAS_COUNT_WR` from each Integrated Memory Controller (IMC) per socket. Collecting these counters provides the detailed memory metrics that PROFET-PARAVER requires.
+
+### Using EXTRAE with Different Architectures
+
+EXTRAE utilizes the **PAPI** library to access performance counters, which provides compatibility with multiple architectures. The necessary counters for memory profiling are automatically expanded by PAPI, allowing you to:
+
+- Provide `CAS_COUNT_RD` and `CAS_COUNT_WR` counters directly accessible through IMCs.
+  
+However, PAPI’s automatic expansion is generally limited to CPU architectures. For other types of hardware, like **GPUs**, these uncore counters are currently not unsupported through this integration. Thus, profiling with EXTRAE and PAPI currently applies only to CPU-based memory systems.
+
+### Allocating Processes for Uncore Monitoring
+
+EXTRAE requires additional processes to handle uncore counter monitoring, beyond those used for the main application. This ensures sufficient resources for gathering memory activity data without impacting application performance. To allocate these processes, adjust your job script as follows:
+
+1. **Define Counters in XML**:
+    Add the `<uncore>` tag in your EXTRAE configuration file (`extrae.xml`) to specify required counters:
+
+    ```
+    <counters enabled="yes">
+      <uncore enabled="yes">
+        UNC_M_CAS_COUNT:RD,UNC_M_CAS_COUNT:WR
+      </uncore>
+    </counters>
+    ```
+
+2. **Allocate Extra Processes in the Job Script**:
+   Request additional processes per node dedicated to reading uncore counters. This ensures EXTRAE has the resources needed to handle the uncore data collection separately from your application’s main processes.
+
+    ```
+    #SBATCH --ntasks=<app_tasks + (uncore_processes x node)>
+    #SBATCH --constraint=perfparanoid
+	
+    module load gcc extrae
+    $EXTRAE_HOME/bin/extrae-uncore ./extrae.xml libseqtrace.so ./application
+    ```
+
 
 
 # Tests
