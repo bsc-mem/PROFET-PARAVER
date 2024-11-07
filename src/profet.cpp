@@ -30,7 +30,11 @@
 
 using namespace std;
 namespace pt = boost::property_tree;
+#ifdef __APPLE__
 namespace fs = std::__fs::filesystem;
+#else
+namespace fs = std::filesystem;
+#endif
 
 #include "prvparse.h"
 #include "progress.h"
