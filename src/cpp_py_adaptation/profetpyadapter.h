@@ -28,7 +28,11 @@
 #include "single_include/nlohmann/json.hpp"
 
 using namespace std;
+#ifdef __APPLE__
 namespace fs = std::__fs::filesystem;
+#else
+namespace fs = std::filesystem;
+#endif
 using json = nlohmann::json;
 
 
