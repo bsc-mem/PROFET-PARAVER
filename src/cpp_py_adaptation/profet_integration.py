@@ -43,6 +43,7 @@ def check_non_negative(params: dict):
 
 
 def check_cpu_supported(df: pd.DataFrame, cpu_model: str):
+
     if not any(df["cpu_model"] == cpu_model):
         # TODO Add to message: check currently supported models with "program -flag"
         raise Exception(
@@ -60,6 +61,10 @@ def check_memory_supported(df: pd.DataFrame, memory_system: str):
 
 def check_curves_exist(df: pd.DataFrame, cpu_model: str, memory_system: str):
     # check if curves exist for the specified system
+    # Check if df is of type string:
+    if not isinstance(df, pd.DataFrame):
+        df = read_db(df)
+    
     check_cpu_supported(df, cpu_model)
     check_memory_supported(df, memory_system)
 
@@ -83,6 +88,7 @@ def check_curves_exist(df: pd.DataFrame, cpu_model: str, memory_system: str):
 def read_db(data_path: str) -> pd.DataFrame:
     # read DB
     df = pd.read_csv(os.path.join(data_path, "cpu_memory_db.csv"))
+
     return df
 
 
@@ -175,6 +181,8 @@ def get_memory_properties_from_bw(
     # bandwidth_gbs: bandwidth in GB/s
 
     # Validate parameters
+
+    
     check_param_types(
         {
             # 'Memory system': (memory_system, str),

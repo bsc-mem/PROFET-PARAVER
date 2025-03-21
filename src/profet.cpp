@@ -283,6 +283,7 @@ vector<string> getNodeNames(RowFileParser<> inRowFile, int nNodes) {
   vector<string> nodeNames;
   for (int i = 0; i < nNodes; i++) {
     string nodeLabel = inRowFile.getRowLabel(TTraceLevel::NODE, i);
+    replace(nodeLabel.begin(), nodeLabel.end(), '.', '-');
     if (nodeLabel != "" and find(nodeNames.begin(), nodeNames.end(), nodeLabel) == nodeNames.end() and nodeLabel != "\n") {
       nodeNames.push_back(nodeLabel);
     }
