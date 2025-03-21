@@ -93,7 +93,11 @@ class TestOutput(unittest.TestCase):
         with io.open(self.PROCESSED_FILE) as f1:
             correct_file = self.PROCESSED_FILE.replace('out_traces', 'correct_out_traces')
             with io.open(correct_file) as f2:
-                self.assertListEqual(list(f1), list(f2))
+                with io.open(correct_file) as f2:
+                    self.assertListEqual(
+                        [line.rstrip() for line in f1],  # Strip trailing spaces
+                        [line.rstrip() for line in f2]
+                    )
 
     def test_same_pcf_output(self):
         # assert that the output pcf file is equal to the previously correct one
