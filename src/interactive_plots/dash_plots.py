@@ -85,7 +85,7 @@ def get_config(config_file_path: str):
 def get_dash_app(
     df, config_json: dict, system_arch: dict, max_elements: int, expert: bool
 ):
-    app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+    app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], title="Mess")
     app.layout = layouts.get_layout(df, config_json, system_arch, max_elements, expert)
     return app
 
@@ -235,5 +235,5 @@ if __name__ == "__main__":
         max_elements,
         args.expert,
     )
-    app.run_server(debug=True)
+    app.run(debug=True)
     # app.run_server(debug=True)
