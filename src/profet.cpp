@@ -93,6 +93,7 @@ string getProjectPath() {
 const string PROJECT_PATH = getProjectPath();
 constexpr int PRECISION = 2; // Decimal precision for memory metrics
 constexpr int PROFET_BASE_EVENT_TYPE = 94000000; // Base event type for Profet events in Paraver
+#define VERSION "1.0.0"
 // Order of the metrics in the output trace file, given by the keys in the metrics map with their name label
 vector<pair<string, string>> memoryMetricLabels = {
   {"writeRatio", "Write ratio"},
@@ -129,13 +130,14 @@ void printHelp() {
           "-p, --print-supported-systems\n"
           "\t\tShow supported systems\n"
           "-h, --help, ?\n"
+          "-v, --version\n"
           "\t\tShow help\n";
   exit(1);
 }
 
 tuple<string, string, string, bool, bool, bool, int, int, int> processArgs(int argc, char** argv) {
   // const char* const short_opts = "i:o:c:w";
-  const char* const short_opts = "mekwqIph";
+  const char* const short_opts = "mekwqIphv";
   const option long_opts[] = {
           // {"input", required_argument, nullptr, 'i'},
           // {"output", required_argument, nullptr, 'o'},
@@ -148,6 +150,7 @@ tuple<string, string, string, bool, bool, bool, int, int, int> processArgs(int a
           {"plot-interactive", no_argument, nullptr, 'I'},
           {"print-supported-systems", no_argument, nullptr, 'p'},
           {"help", no_argument, nullptr, 'h'},
+          {"version", no_argument, nullptr, 'v'},
           {nullptr, no_argument, nullptr, 0}
   };
   
@@ -170,8 +173,10 @@ tuple<string, string, string, bool, bool, bool, int, int, int> processArgs(int a
       case 'e':
           expert = true;
           break;
-
-      case 'k':
+      case 'v':
+          std::cout << "mess-prv version " << VERSION << std::endl;
+          exit(0);
+      case 'k': 
           keepOriginalTrace = true;
           break;
 
