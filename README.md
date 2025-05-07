@@ -1,6 +1,6 @@
-# PROFET-PARAVER
+# Mess-Paraver
 
-The PROFiling-based EsTimation of performance and energy (PROFET) tool (https://github.com/bsc-mem/PROFET) profiles memory system performance, quantifies the application pressure to the memory system and estimates application performance on hardware platforms with novel memory systems. This is a tool for integrating some of the PROFET functionalities with the Paraver tool (https://github.com/bsc-performance-tools/paraver-kernel) in order to help users understand memory system performance and quantify the pressure their applications put to that system.
+The [Mess Benchmark](https://github.com/bsc-mem/Mess-benchmark) profiles memory system performance and helps quantify the application pressure to the memory system This is a tool for integrating some of the Mess functionalities with the Paraver tool (https://github.com/bsc-performance-tools/paraver-kernel) in order to help users understand memory system performance and quantify the pressure their applications put to that system.
 
 
 
@@ -14,13 +14,13 @@ The PROFiling-based EsTimation of performance and energy (PROFET) tool (https://
 
 # Installation
 
-Follow the steps below to install PROFET-PARAVER:
+Follow the steps below to install Mess-Paraver:
 
 1. Clone the repository and enter the directory, ensuring you install submodules with the --recursive-submodules flag:
 
 	```
-	git clone --recurse-submodules https://github.com/bsc-mem/PROFET-PARAVER.git
-	cd PROFET-PARAVER/
+	git clone --recurse-submodules https://github.com/bsc-mem/Mess-Paraver.git
+	cd Mess-Paraver/
 	```
 
 2. In case you've cloned the directory without the `--recursive-submodules` flag, you can still install the submodules by running:
@@ -40,7 +40,7 @@ Compile the source code to create a binary `mess-prv` file in the `bin` folder:
 
 	make
 
-To use the `mess-prv` binary with Paraver (https://github.com/bsc-performance-tools/paraver-kernel), add the `bin` folder (where the `mess-prv` binary is located) to your PATH. Refer to https://www.baeldung.com/linux/path-variable for instructions on modifying the Linux PATH variable. Future versions of PROFET-PARAVER will streamline this step.
+To use the `mess-prv` binary with Paraver (https://github.com/bsc-performance-tools/paraver-kernel), add the `bin` folder (where the `mess-prv` binary is located) to your PATH. Refer to https://www.baeldung.com/linux/path-variable for instructions on modifying the Linux PATH variable. Future versions of Mess-Paraver will streamline this step.
 
 
 # Usage
@@ -86,7 +86,7 @@ To generate compatible memory traces, use **EXTRAE** to collect uncore (off-core
 
 - **CAS_COUNT_RD / CAS_COUNT_WR**: Measures the count of read/write operations by the memory controller.
   
-**Required Counters**: At minimum, gather `CAS_COUNT_RD` and `CAS_COUNT_WR` from each Integrated Memory Controller (IMC) per socket. Collecting these counters provides the detailed memory metrics that PROFET-PARAVER requires.
+**Required Counters**: At minimum, gather `CAS_COUNT_RD` and `CAS_COUNT_WR` from each Integrated Memory Controller (IMC) per socket. Collecting these counters provides the detailed memory metrics that Mess-Paraver requires.
 
 ### Using EXTRAE with Different Architectures
 
@@ -135,4 +135,4 @@ This command first compiles the source code to ensure the latest version is bein
 
 # License
 
-The PROFET-PARAVER code is released under the BSD-3 [License](LICENSE.txt).
+The Mess-Paraver code is released under the BSD-3 [License](LICENSE.txt).
