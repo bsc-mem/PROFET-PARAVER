@@ -452,9 +452,9 @@ def get_main_content(
     # Add expert tabs
     if expert:
         t.append(
-            dbc.Tab(curves_tab, label="Detailed Socket Curves", tab_id="curves-tab")
+            dbc.Tab(curves_tab, label="Detailed Curves", tab_id="curves-tab")
         )
-    tabs = dbc.Tabs(t, id="tabs", active_tab="app-overview-tab")
+    tabs = dbc.Tabs(t, id="tabs", active_tab="summary-tab")
 
     return html.Div(
         [

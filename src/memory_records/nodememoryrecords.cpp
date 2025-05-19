@@ -110,7 +110,7 @@ tuple<bool, unsigned long long, int, int> NodeMemoryRecords::isProcessableData(b
 }
 
 
-unordered_map<string, double>NodeMemoryRecords::processMemoryMetrics(ProfetPyAdapter &profetPyAdapter, int socketID, int mcID, bool allowEmptyQueues) {
+unordered_map<string, double>NodeMemoryRecords::processMemoryMetrics(ProfetPyAdapter &profetPyAdapter, int socketID, int mcID, bool allowEmptyQueues, bool groupMCs) {
   // Compute the necessary memory stress metrics and write them in the output file.
   // Pre: bandwidths have to be processable (there is the function "isProcessableData" for checking it before calling this method)
   
@@ -146,7 +146,7 @@ unordered_map<string, double>NodeMemoryRecords::processMemoryMetrics(ProfetPyAda
 
   // Get computed memory metrics
   auto [maxBandwidth, latency, leadOffLatency, maxLatency, stressScore, newBW] = profetPyAdapter.computeMemoryMetrics(cpuFreqGHz, metrics["writeRatio"],
-                                                                                                               metrics["bandwidth"]);
+                                                                                                               metrics["bandwidth"], groupMCs, this->MCsPerSocket[socketID].size());
   // cout << maxBandwidth << " " << latency << " " << leadOffLatency << " " << maxLatency << endl;
   if (newBW != metrics["bandwidth"]) {
     // If the computed bandwidth is different from the one calculated with the read and write bandwidths, return negative metrics
@@ -170,7 +170,7 @@ unordered_map<string, double>NodeMemoryRecords::processMemoryMetrics(ProfetPyAda
     }
 
     metrics["latency"] = maxLatency;
-     metrics["bandwidth"] = maxBandwidth;
+    metrics["bandwidth"] = maxBandwidth;
     metrics["stressScore"] = 1;
 
     return metrics;

@@ -63,6 +63,7 @@ def get_graph_fig(
     font_size=25,
     showAll=False,
     showRdWrBar=False,
+    is_mc=[]
 ):
     fig = make_subplots(rows=1, cols=1)
 
@@ -75,11 +76,12 @@ def get_graph_fig(
             font_size,
             showAll,
             showRdWrBar,
+            is_mc
         )
 
         # Plot application bw-lat dots
         dots_fig = get_application_memory_dots_fig(
-            df, markers_color, stress_score_scale, markers_transparency
+            df, markers_color, stress_score_scale, markers_transparency, is_mc
         )
         if dots_fig is None:
             return None
@@ -211,6 +213,7 @@ def get_curves_fig(
     font_size=25,
     showAll=False,
     showRdWrBar=False,
+    is_mc=[]
 ):
     if showAll:
         # Take the curve write ratios (keys) in descending order
@@ -218,6 +221,7 @@ def get_curves_fig(
     else:
         # Show N curves only
         n_curves_to_show = 5
+      
         step = max(1, int(len(curves) / n_curves_to_show))
         indices = list(range(0, len(curves), step))
         selected_keys = [list(sorted(curves.keys()))[i] for i in indices]
@@ -240,7 +244,7 @@ def get_curves_fig(
 
         # Use go.Scatter to create the curve
         curve_fig = go.Scatter(
-            x=curves[w_ratio]["bandwidths"],
+            x=curves[w_ratio]["bandwidths"] if len(is_mc) < 2 else [bw / len(is_mc) for bw in curves[w_ratio]["bandwidths"]],
             y=curves[w_ratio]["latencies"],
             mode="lines",
             line=dict(color=color),
@@ -259,7 +263,7 @@ def get_curves_fig(
         if not showAll:
             curve_text = f"{w_ratio}%" if curve_transparency > 0 else ""
             fig.add_annotation(
-                x=curves[w_ratio]["bandwidths"][-1],
+                x=curves[w_ratio]["bandwidths"][-1] if len(is_mc) < 2 else curves[w_ratio]["bandwidths"][-1] / len(is_mc),
                 y=curves[w_ratio]["latencies"][-1] + 15,
                 text=curve_text,
                 showarrow=False,
@@ -327,7 +331,7 @@ def get_curves_fig(
     return fig
 
 
-def get_application_memory_dots_fig(df, color, stress_score_scale=None, opacity=0.01):
+def get_application_memory_dots_fig(df, color, stress_score_scale=None, opacity=0.01, is_mc=[]):
     if "bw" not in df.columns or "lat" not in df.columns:
         print("Error: bw or lat not in df.columns")
         return None

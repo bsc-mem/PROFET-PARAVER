@@ -61,7 +61,7 @@ class NodeMemoryRecords {
     bool areAllSocketsEmpty();
 
     tuple<bool, unsigned long long, int, int> isProcessableData(bool allowEmptyQueues);
-    unordered_map<string, double> processMemoryMetrics(ProfetPyAdapter &profetPyAdapter, int socketID, int mcID, bool allowEmptyQueues);
+    unordered_map<string, double> processMemoryMetrics(ProfetPyAdapter &profetPyAdapter, int socketID, int mcID, bool allowEmptyQueues, bool groupMCs);
 
     void printSocketsQueues();
     void printFinalMessage();

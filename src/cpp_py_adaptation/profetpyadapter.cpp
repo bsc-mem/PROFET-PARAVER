@@ -162,14 +162,15 @@ void ProfetPyAdapter::printSupportedSystems() {
     PyObject_CallObject(printSupportedSystemsFn, pArgs);
 }
 
-tuple<double, double, double, double, double, double> ProfetPyAdapter::computeMemoryMetrics(double cpuFreqGHz, double writeRatio, double bandwidth) {
+tuple<double, double, double, double, double, double> ProfetPyAdapter::computeMemoryMetrics(double cpuFreqGHz, double writeRatio, double bandwidth, bool groupMCs, int MCsPerSocket) {
     // Get dictionary with computed memory values
     PyObject* memoryMetricsFn = getFunctionFromProfetIntegration("get_memory_properties_from_bw");
     // Make sure string arguments are built with .c_str()
     double readRatio = 1 - writeRatio;
     double closestReadRatio = getClosestValue(availableReadRatios, readRatio);
-    PyObject* pArgs = PyTuple_Pack(4, PyFloat_FromDouble(cpuFreqGHz), PyFloat_FromDouble(writeRatio),
-                                   PyFloat_FromDouble(closestReadRatio), PyFloat_FromDouble(bandwidth));
+    PyObject* pArgs = PyTuple_Pack(6, PyFloat_FromDouble(cpuFreqGHz), PyFloat_FromDouble(writeRatio),
+                                   PyFloat_FromDouble(closestReadRatio), PyFloat_FromDouble(bandwidth), PyBool_FromLong(static_cast<long>(groupMCs)),
+                                   PyLong_FromLong(MCsPerSocket));
     PyObject* memDict = PyObject_CallObject(memoryMetricsFn, pArgs);
     raisePyErrorIfNull(memDict, "ERROR getting Python dictionary with memory values.");
 

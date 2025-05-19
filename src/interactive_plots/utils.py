@@ -89,6 +89,11 @@ def prv_to_df(
             sp = line.split(":")
             row = defaultdict()
 
+            if len(sp) < 6:
+                print(
+                    f"Line {i} is not valid. It has less than 6 elements. Skipping it."
+                )
+                continue
             row["node"] = int(sp[2])
 
             if keep_original and row["node"] == 1:

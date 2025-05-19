@@ -71,7 +71,7 @@ class ProfetPyAdapter {
 
     void printSupportedSystems();
 
-    tuple<double, double, double, double, double, double> computeMemoryMetrics(double cpuFreqGHz, double writeRatio, double bandwidth);
+    tuple<double, double, double, double, double, double> computeMemoryMetrics(double cpuFreqGHz, double writeRatio, double bandwidth, bool groupMCs, int MCsPerSocket);
 
     void runDashApp(string traceFilePath, double precision, double cpuFreq, bool expertMode, bool keepOriginalTraceFile);
 
