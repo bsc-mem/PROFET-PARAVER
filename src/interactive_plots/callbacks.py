@@ -358,6 +358,7 @@ def register_callbacks(
                                 stress_score_config["colorscale"],
                                 color_bar,
                                 font_size,
+                                is_mc=mcs,
                                 showAll=False,
                             )
                             figures.append(fig)

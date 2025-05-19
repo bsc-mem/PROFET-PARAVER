@@ -426,6 +426,7 @@ bool processAndWriteMemoryMetricsIfPossible(vector<NodeMemoryRecords> &nodes,
                                             ProfetPyAdapter &profetPyAdapter,
                                             bool allowEmptyQueues,
                                             bool keepOriginalTrace,
+                                            bool groupMCs,
                                             multimap<TRecordTime, MyRecord> &outputRecords,
                                             ProcessModel<> outputProcessModel,
                                             ResourceModel<> outputResourceModel,
@@ -455,7 +456,7 @@ bool processAndWriteMemoryMetricsIfPossible(vector<NodeMemoryRecords> &nodes,
     NodeMemoryRecords &node = nodes[smallestTimeINode];
     // cout << "Process " << smallestMCTime << " " << smallestTimeSocketID << " " << smallestTimeMCID << endl;
     unordered_map<string, double> lastWrittenMetrics = node.getLastWrittenMetrics(smallestTimeSocketID, smallestTimeMCID);
-    unordered_map<string, double> metrics = node.processMemoryMetrics(profetPyAdapter, smallestTimeSocketID, smallestTimeMCID, allowEmptyQueues);
+    unordered_map<string, double> metrics = node.processMemoryMetrics(profetPyAdapter, smallestTimeSocketID, smallestTimeMCID, allowEmptyQueues, groupMCs);
     // cout << "Example metrics: " << metrics[0] << " " << metrics[1] << endl;
 
     // Convert metrics to int because prv files do not accept decimals. The number of decimal places is specified in the pcf file
@@ -715,7 +716,7 @@ int main(int argc, char *argv[]) {
       bool allowEmptyQueues = false;
       bool processed;
       do {
-        processed = processAndWriteMemoryMetricsIfPossible(nodes, profetPyAdapter, allowEmptyQueues, keepOriginalTrace, outputRecords,
+        processed = processAndWriteMemoryMetricsIfPossible(nodes, profetPyAdapter, allowEmptyQueues, keepOriginalTrace, !perSocket, outputRecords,
                                                            outputProcessModel, resourceModel, outputTraceBody, outputTraceFile);
       } while (processed);
 
@@ -731,7 +732,7 @@ int main(int argc, char *argv[]) {
   bool allowEmptyQueues = true;
   bool processed;
   do {
-    processed = processAndWriteMemoryMetricsIfPossible(nodes, profetPyAdapter, allowEmptyQueues, keepOriginalTrace, outputRecords,
+    processed = processAndWriteMemoryMetricsIfPossible(nodes, profetPyAdapter, allowEmptyQueues, keepOriginalTrace, !perSocket, outputRecords,
                                                        outputProcessModel, resourceModel, outputTraceBody, outputTraceFile);
   } while (processed);
 
