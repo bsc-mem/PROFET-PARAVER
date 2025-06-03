@@ -545,7 +545,7 @@ int main(int argc, char *argv[]) {
   auto [memorySystem, cpuModel, cpuFreqGHz, cacheLineBytes] = readConfigFile(configFile);
 
   if (displayText){
-    cout << "Running PROFET..." << endl;
+    cout << "Running Mess..." << endl;
   }
 
   // Init progress bar

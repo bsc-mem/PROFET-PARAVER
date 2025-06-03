@@ -6,17 +6,24 @@ terms of the BSD-3 license.
 You should have received a copy of the BSD-3 license with
 this file. If not, please visit: https://opensource.org/licenses/BSD-3-Clause
 """
+import inspect, os, sys, pathlib, platform
 
-import inspect
-import os
-import sys
+def _add_private_wheels():
+    exe_dir = pathlib.Path(sys.executable).resolve().parent
+    arch    = "python_libs_x86_64" if platform.machine() == "x86_64" else "python_libs_arm64"
+    wheel   = exe_dir / arch
+    if wheel.is_dir():
+        sys.path.insert(0, str(wheel))
 
-import pandas as pd
+_add_private_wheels()
+
 
 # Need to add parent folder to path for relative import
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
+
+import pandas as pd
 
 from profet.curves import Curves, OvershootError
 from profet.metrics import Bandwidth

@@ -54,7 +54,7 @@ void ProfetPyAdapter::setPathVariables(string projectPath) {
 
 void ProfetPyAdapter::loadProfetIntegrationModule() {
     // profetIntegrationPath must be initialized
-
+    
     // Set relative path (current directory) for importing modules
     sysPath = PySys_GetObject((char*)"path");
     PyList_Append(sysPath, PyUnicode_FromString(profetIntegrationPath.c_str()));
