@@ -10,7 +10,18 @@ this file. If not, please visit: https://opensource.org/licenses/BSD-3-Clause
 import argparse
 import json
 import os
+import inspect, os, sys, pathlib, platform
 from collections import defaultdict
+
+def _add_private_wheels():
+    arch    = "python_libs_x86_64" if platform.machine() == "x86_64" else "python_libs_arm64"
+    script_dir = pathlib.Path(__file__).resolve().parent
+    base_dir = script_dir.parent.parent 
+    wheel   = base_dir / "bin" / arch
+    if wheel.is_dir():
+        sys.path.insert(0, str(wheel))
+
+_add_private_wheels()
 
 import curve_utils
 import dash_bootstrap_components as dbc
