@@ -244,6 +244,9 @@ def get_memory_properties_from_bw(
             # current_bw_gbs = max_bw_gbs
             # pred_lat = curve_obj.get_lat(current_bw_gbs)
             try:
+                current_bw_gbs = curve_obj.get_max_bw("GBps")
+                bandwidth_gbs = current_bw_gbs.value / mcs_per_socket if group_by_mc else current_bw_gbs.value
+                pred_lat = curve_obj.get_lat(current_bw_gbs)
                 pred_lat = curve_obj.get_lat(current_bw_gbs / mcs_per_socket if group_by_mc else current_bw_gbs)
             except:
                 print("Warning, something happened")

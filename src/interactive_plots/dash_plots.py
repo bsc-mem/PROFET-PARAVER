@@ -13,6 +13,8 @@ import os
 import inspect, os, sys, pathlib, platform
 from collections import defaultdict
 
+import socket 
+
 def _add_private_wheels():
     arch    = "python_libs_x86_64" if platform.machine() == "x86_64" else "python_libs_arm64"
     script_dir = pathlib.Path(__file__).resolve().parent
@@ -92,6 +94,24 @@ def get_config(config_file_path: str):
         config = json.load(f)
     return config
 
+def find_free_port(start_port=8050, max_port=8100):
+    """
+    Try binding to ports [start_port, start_port+1, ..., max_port].
+    Return the first port that isn’t in use. Raise RuntimeError if none free.
+    """
+    for port in range(start_port, max_port + 1):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            # SO_REUSEADDR lets us rebind in TIME_WAIT, but the main check is if bind() fails
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            try:
+                sock.bind(("127.0.0.1", port))
+                # If bind succeeds, that port is free. Close and return it.
+                return port
+            except OSError:
+                # Port is in use, try the next one
+                continue
+
+    raise RuntimeError(f"No free ports in range {start_port}–{max_port}.")
 
 def get_dash_app(
     df, config_json: dict, system_arch: dict, max_elements: int, expert: bool
@@ -196,10 +216,10 @@ if __name__ == "__main__":
         sampled_node_socket_indices = []
 
         for node_name, sockets in system_arch.items():
-            for socket in sockets:
+            for s in sockets:
                 # Sort stress scores to select representative data points
                 node_socket_data = df[
-                    (df["node_name"] == node_name) & (df["socket"] == socket)
+                    (df["node_name"] == node_name) & (df["socket"] == s)
                 ]
 
                 # Check if there are enough data points to sample
@@ -246,5 +266,14 @@ if __name__ == "__main__":
         max_elements,
         args.expert,
     )
-    app.run(debug=False)
+    try:
+        port_to_use = find_free_port(start_port=8050, max_port=8100)
+    except RuntimeError as e:
+        print("ERROR:", e)
+        exit(1)
+
+    # ---- Run the app on that port ----
+    print(f"Starting server on http://127.0.0.1:{port_to_use}/")
+    app.run(host="127.0.0.1", port=port_to_use, debug=False)
+    # app.run(debug=False)
     # app.run_server(debug=True)

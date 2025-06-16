@@ -552,6 +552,16 @@ def register_callbacks(
                     )
                 else:
                     color_bar = None
+                
+                all_mcs = []
+                for node_name, sockets in system_arch.items():
+                    df_node = curve_utils.filter_df(
+                        df, node_name, time_range=time_range
+                    )
+                    bw_per_socket = df_node.groupby("socket")["bw"].mean()
+                    for i_socket, mcs in sockets.items():
+                        all_mcs = mcs
+                        break
 
                 graph_title = ""
                 overview_fig = curve_utils.get_graph_fig(
@@ -569,6 +579,7 @@ def register_callbacks(
                     font_size,
                     showAll=True,
                     showRdWrBar=True,
+                    is_mc=all_mcs,
                 )
 
                 return overview_fig, sampling_label
