@@ -139,7 +139,7 @@ def get_graph_fig(
         )
         return fig
     except Exception as e:
-        # print(f"Error in get_graph_fig: {e}")
+        print(f"Error in get_graph_fig: {e}")
         fig.add_annotation(
             text="Something went wrong<br><sup>Please reload the page</sup>",
             xref="paper",
@@ -300,9 +300,11 @@ def get_curves_fig(
                 cmax=max_wr,
                 color=[min_wr, max_wr],
                 colorbar=dict(
-                    title="Write Ratio (Rd:Wr)",
-                    title_font=dict(size=font_size - 4),
-                    titleside="top",
+                    title=dict(
+                        text="Write Ratio (Rd:Wr)",
+                        side="top",
+                        font=dict(size=font_size - 4),
+                    ),
                     tickfont=dict(size=font_size - 4),
                     tickvals=[min_wr, (min_wr + max_wr) / 2, max_wr],
                     ticktext=["0:100", "50:50", "100:0"],
