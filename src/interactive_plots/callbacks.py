@@ -521,7 +521,7 @@ def register_callbacks(
 
                 if sampling_mode == "stress":
                     result_df = grouped.apply(
-                        lambda x: x.loc[x["stress_score"].idxmax()]
+                        lambda x: x.loc[x["stress_score"].idxmax()], include_groups=False
                     ).reset_index(drop=True)
                 elif sampling_mode == "mean":
                     aggregation_dict["stress_score"] = "mean"

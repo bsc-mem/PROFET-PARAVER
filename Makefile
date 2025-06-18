@@ -21,21 +21,21 @@ $(shell mkdir -p bin/)
 SRC_CPP_FILES := $(shell find src/ -name '*.cpp')
 SRC_CC_FILES := $(shell find src/ -name '*.cc')
 
-# path to the PROFET submodule in the libs folder
-PROFET_PATH := libs/PROFET
-PROFET_WHEEL_BUILD_DIR := $(PROFET_PATH)/dist # Temporary directory for profet wheel
+# path to the MESS submodule in the libs folder
+MESS_PATH := libs/MESS
+MESS_WHEEL_BUILD_DIR := $(MESS_PATH)/dist # Temporary directory for mess wheel
 
-all: install_profet compile_cpp bundle_python_libs
+all: install_mess compile_cpp bundle_python_libs
 
 clean:
 	@echo "Cleaning up..."
 	@rm -rf bin/
 	@echo "Cleaned up."
 
-install_profet:
+install_mess:
 	@command -v pip > /dev/null 2>&1 || { echo >&2 "pip is required but not installed. Please install pip and try again."; exit 1; }
-	@echo "Installing Python dependencies from ${PROFET_PATH}..."
-	@python3 -m pip install -e ${PROFET_PATH}
+	@echo "Installing Python dependencies from ${MESS_PATH}..."
+	@python3 -m pip install -e ${MESS_PATH}
 
 compile_cpp:
 	g++ -Wall -Wno-c++11-narrowing -fPIE -std=c++17 \
@@ -62,11 +62,11 @@ bundle_python_libs:
 	@python3 -m pip install --no-compile --no-cache-dir \
 		--target="$(WHEEL_DIR)" -r "$(REQ_FILE)"
 	
-	# Install PROFET directly into WHEEL_DIR
-	@echo "Installing PROFET into $(WHEEL_DIR)..."
+	# Install MESS directly into WHEEL_DIR
+	@echo "Installing MESS into $(WHEEL_DIR)..."
 	@python3 -m pip install --no-compile --no-cache-dir --no-deps \
-		--target="$(WHEEL_DIR)" "$(PROFET_PATH)"
+		--target="$(WHEEL_DIR)" "$(MESS_PATH)"
 	
-.PHONY: all install_profet compile_cpp bundle_python_libs
+.PHONY: all install_mess compile_cpp bundle_python_libs
 
 
