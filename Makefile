@@ -43,7 +43,7 @@ compile_cpp:
 	-I libs/paraver-kernel/utils/traceparser \
 	-I libs/boost_1_79_0 \
 	-I libs/json-develop/ \
-	-o bin/mess-prv $(SRC_CPP_FILES) $(SRC_CC_FILES) $(PY_LDFLAGS)
+	-o bin/mess-prv $(SRC_CPP_FILES) $(SRC_CC_FILES) $(PY_LDFLAGS) -lstdc++fs
 
 REQ_FILE    ?= requirements.txt
 

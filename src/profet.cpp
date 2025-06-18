@@ -13,7 +13,17 @@
 #include <unordered_map>
 #include <cmath>
 #include <queue>
-#include <filesystem>
+#if (defined(__GNUC__) && __GNUC__ < 8 && !defined(__clang__))
+  #include <experimental/filesystem>
+  namespace fs = std::experimental::filesystem;
+#else
+  #include <filesystem>
+  #ifdef __APPLE__
+    namespace fs = std::__fs::filesystem;
+  #else
+    namespace fs = std::filesystem;
+  #endif
+#endif
 #include <libgen.h>
 #include <unistd.h>
 #include <getopt.h>
