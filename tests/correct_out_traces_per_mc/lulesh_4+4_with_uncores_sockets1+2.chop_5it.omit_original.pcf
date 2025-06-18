@@ -15,12 +15,12 @@ STATES
 STATES_COLOR
 
 EVENT_TYPE
-0   94000001    Write ratio
-0   94000002    Bandwidth
-0   94000003    Maximum bandwidth
-0   94000004    Latency
-0   94000005    Lead-off latency
-0   94000006    Maximum latency
+0   94000001    Write ratio (% of writes)
+0   94000002    Bandwidth (GB/s)
+0   94000003    Maximum bandwidth (GB/s)
+0   94000004    Latency (ns)
+0   94000005    Lead-off latency (ns)
+0   94000006    Maximum latency (ns)
 0   94000007    Stress score
 0   94000008    Mean number of memory reads per second
 0   94000009    Mean number of memory writes per second
