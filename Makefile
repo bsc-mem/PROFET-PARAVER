@@ -22,7 +22,7 @@ SRC_CPP_FILES := $(shell find src/ -name '*.cpp')
 SRC_CC_FILES := $(shell find src/ -name '*.cc')
 
 # path to the MESS submodule in the libs folder
-MESS_PATH := libs/MESS
+MESS_PATH := libs/PROFET
 MESS_WHEEL_BUILD_DIR := $(MESS_PATH)/dist # Temporary directory for mess wheel
 
 all: install_mess compile_cpp bundle_python_libs
