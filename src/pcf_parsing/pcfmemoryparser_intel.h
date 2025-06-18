@@ -10,6 +10,8 @@
 #ifndef PCFMMEMORYPARSERINTEL_H
 #define PCFMMEMORYPARSERINTEL_H
 
+#include <string>
+
 using namespace std;
 
 #include "pcfmemoryparser.h"
