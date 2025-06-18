@@ -13,16 +13,18 @@
 #include <unordered_map>
 #include <cmath>
 #include <queue>
-#if (defined(__GNUC__) && __GNUC__ < 8 && !defined(__clang__))
-  #include <experimental/filesystem>
-  namespace fs = std::experimental::filesystem;
-#else
+#if __has_include(<filesystem>)
   #include <filesystem>
-  #ifdef __APPLE__
+  #if defined(__APPLE__) && defined(_LIBCPP_VERSION) && _LIBCPP_VERSION < 8000 // Older Apple libc++ might use __fs
     namespace fs = std::__fs::filesystem;
   #else
     namespace fs = std::filesystem;
   #endif
+#elif __has_include(<experimental/filesystem>)
+  #include <experimental/filesystem>
+  namespace fs = std::experimental::filesystem;
+#else
+  #error "C++17 filesystem or experimental/filesystem header not found."
 #endif
 #include <libgen.h>
 #include <unistd.h>
@@ -40,11 +42,6 @@
 
 using namespace std;
 namespace pt = boost::property_tree;
-#ifdef __APPLE__
-namespace fs = std::__fs::filesystem;
-#else
-namespace fs = std::filesystem;
-#endif
 
 #include "prvparse.h"
 #include "progress.h"
