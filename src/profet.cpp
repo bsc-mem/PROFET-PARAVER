@@ -96,12 +96,12 @@ constexpr int PROFET_BASE_EVENT_TYPE = 94000000; // Base event type for Profet e
 #define VERSION "1.0.0"
 // Order of the metrics in the output trace file, given by the keys in the metrics map with their name label
 vector<pair<string, string>> memoryMetricLabels = {
-  {"writeRatio", "Write ratio"},
-  {"bandwidth", "Bandwidth"},
-  {"maxBandwidth", "Maximum bandwidth"},
-  {"latency", "Latency"},
-  {"leadOffLatency", "Lead-off latency"},
-  {"maxLatency", "Maximum latency"},
+  {"writeRatio", "Write ratio (%% of writes)"},
+  {"bandwidth", "Bandwidth (GB/s)"},
+  {"maxBandwidth", "Maximum bandwidth (GB/s)"},
+  {"latency", "Latency (ns)"},
+  {"leadOffLatency", "Lead-off latency (ns)"},
+  {"maxLatency", "Maximum latency (ns)"},
   {"stressScore", "Stress score"},
   {"meanReads", "Mean number of memory reads per second"},
   {"meanWrites", "Mean number of memory writes per second"}
