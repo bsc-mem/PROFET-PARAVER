@@ -61,7 +61,7 @@ void ProfetPyAdapter::loadProfetIntegrationModule() {
 
     // Load PROFET integration module
     profetIntegrationModule = PyImport_ImportModule("profet_integration");
-    raisePyErrorIfNull(profetIntegrationModule, "ERROR when importing \"profet_integration\" module.");
+    raisePyErrorIfNull(profetIntegrationModule, "ERROR when importing \"mess_integration\" module.");
 }
 
 PyObject* ProfetPyAdapter::getRowFromDB() {

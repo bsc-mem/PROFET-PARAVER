@@ -10,8 +10,9 @@
 #ifndef PCFMMEMORYPARSERKUNPENG_H
 #define PCFMMEMORYPARSERKUNPENG_H
 
-using namespace std;
+#include <string>
 
+using namespace std;
 #include "pcfmemoryparser.h"
 
 class PCFMemoryParserKunpeng : public PCFMemoryParser {
