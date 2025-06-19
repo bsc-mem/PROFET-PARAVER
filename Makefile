@@ -1,17 +1,26 @@
+PYTHON ?= python3
+
+# Validate Python version
+PYTHON_VERSION_OK := $(shell "$(PYTHON)" -c 'import sys; print("ok" if sys.version_info >= (3,7) else "bad")' 2>/dev/null || echo "bad")
+
+ifeq ($(PYTHON_VERSION_OK),bad)
+$(error "$(PYTHON)" is missing or too old. Use 'make PYTHON=/path/to/python3.11' to specify manually)
+endif
+
 
 # extract python flags for compilation
-PY_VERSION_FULL := $(wordlist 2, 4, $(subst ., ,$(shell python3 --version 2>&1)))
+PY_VERSION_FULL := $(wordlist 2, 4, $(subst ., ,$(shell "$(PYTHON)" --version 2>&1)))
 PY_VERSION_MAJOR := $(word 1, ${PY_VERSION_FULL})
 PY_VERSION_MINOR := $(word 2, ${PY_VERSION_FULL})
 # PY_VERSION_PATCH := $(word 3, ${PY_VERSION_FULL})
 
-PY_CFLAGS  := $(shell python3-config --cflags)
+PY_CFLAGS  := $(shell "$(PYTHON)-config" --cflags)
 
 # use libs or embed depending on python version
 ifeq ($(shell expr $(PY_VERSION_MINOR) \<= 6), 1)
-	PY_LDFLAGS := $(shell python3-config --ldflags --libs)
+	PY_LDFLAGS := $(shell "$(PYTHON)-config" --ldflags --libs)
 else
-	PY_LDFLAGS := $(shell python3-config --ldflags --embed)
+	PY_LDFLAGS := $(shell "$(PYTHON)-config" --ldflags --embed)
 endif
 
 # create bin directory if it does not exist
@@ -35,7 +44,7 @@ clean:
 install_mess:
 	@command -v pip > /dev/null 2>&1 || { echo >&2 "pip is required but not installed. Please install pip and try again."; exit 1; }
 	@echo "Installing Python dependencies from ${MESS_PATH}..."
-	@python3 -m pip install -e ${MESS_PATH}
+	@$(PYTHON) -m pip install -e ${MESS_PATH}
 
 compile_cpp:
 	g++ -Wall -Wno-c++11-narrowing -fPIE -std=c++17 \
@@ -59,12 +68,12 @@ bundle_python_libs:
 	@mkdir -p "$(WHEEL_DIR)"
 	
 	# Install dependencies from main requirements.txt
-	@python3 -m pip install --no-compile --no-cache-dir \
+	@$(PYTHON) -m pip install --no-compile --no-cache-dir \
 		--target="$(WHEEL_DIR)" -r "$(REQ_FILE)"
 	
 	# Install MESS directly into WHEEL_DIR
 	@echo "Installing MESS into $(WHEEL_DIR)..."
-	@python3 -m pip install --no-compile --no-cache-dir --no-deps \
+	@$(PYTHON) -m pip install --no-compile --no-cache-dir --no-deps \
 		--target="$(WHEEL_DIR)" "$(MESS_PATH)"
 	
 .PHONY: all install_mess compile_cpp bundle_python_libs
