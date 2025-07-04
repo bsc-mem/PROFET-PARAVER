@@ -13,15 +13,19 @@ import os
 import inspect, os, sys, pathlib, platform
 from collections import defaultdict
 
-import socket 
+import socket
+
 
 def _add_private_wheels():
-    arch    = "python_libs_x86_64" if platform.machine() == "x86_64" else "python_libs_arm64"
+    arch = (
+        "python_libs_x86_64" if platform.machine() == "x86_64" else "python_libs_arm64"
+    )
     script_dir = pathlib.Path(__file__).resolve().parent
-    base_dir = script_dir.parent.parent 
-    wheel   = base_dir / "bin" / arch
+    base_dir = script_dir.parent.parent
+    wheel = base_dir / "bin" / arch
     if wheel.is_dir():
         sys.path.insert(0, str(wheel))
+
 
 _add_private_wheels()
 
@@ -94,6 +98,7 @@ def get_config(config_file_path: str):
         config = json.load(f)
     return config
 
+
 def find_free_port(start_port=8050, max_port=8100):
     """
     Try binding to ports [start_port, start_port+1, ..., max_port].
@@ -112,6 +117,7 @@ def find_free_port(start_port=8050, max_port=8100):
                 continue
 
     raise RuntimeError(f"No free ports in range {start_port}–{max_port}.")
+
 
 def get_dash_app(
     df, config_json: dict, system_arch: dict, max_elements: int, expert: bool
