@@ -215,9 +215,8 @@ def get_curves_path(
         pmu_type = row["pmu_type"]
         cpu_microarch = row["cpu_microarchitecture"]
     else:
-        # check it here because get_row_from_db also checks it, so if this function is not executed on the previous if,
-        # we have to make the check here
-        df = pd.read_csv(os.path.join(data_path, "cpu_memory_db.csv"))
+        # df = pd.read_csv(os.path.join(data_path, "cpu_memory_db.csv"))
+        df = read_db(data_path)
         check_curves_exist(df, cpu_model, memory_system)
 
     # build curves path
