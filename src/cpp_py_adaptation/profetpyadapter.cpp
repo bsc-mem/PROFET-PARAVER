@@ -207,56 +207,118 @@ void ProfetPyAdapter::runDashApp(string traceFilePath, double precision, double 
     //Mess-Paraver/bin/src --> 
 
     
-    std::string dashPlotsPath = "'" + projectPath + "/src/interactive_plots/dash_plots.py'";
-    // Replace in dash plots path if there is a // and move away the bin from there
+    // The path we start with, before any corrections
+    std::string originalPath = projectPath;
+    fs::path basePath;
     
-    // Check for double slashes in path
-    size_t doubleSlashPos = projectPath.find("//");
-    if (doubleSlashPos != string::npos) {
-        // Get the part before the double slash
-        string beforeDoubleSlash = projectPath.substr(0, doubleSlashPos);
-        
-        // Get the part after the double slash
-        string afterDoubleSlash = projectPath.substr(doubleSlashPos + 2);
-        
-        // Check if there's a bin/ pattern after the double slash followed by Mess-Paraver/src
-        size_t binPos = afterDoubleSlash.find("bin/");
-        if (binPos != string::npos && binPos == 0) {
-            // Move 'bin/' between the parts
-            string correctedPath = beforeDoubleSlash + "/bin/" + afterDoubleSlash.substr(4);
-            
-            // Create a filesystem path object for the corrected dash_plots.py path
-            fs::path dashPlotsFilePath = fs::path(correctedPath) / "src/interactive_plots/dash_plots.py";
-            
-            // Check if the corrected path exists
-            if (fs::exists(dashPlotsFilePath)) {
-                // Update the path if it exists
-                dashPlotsPath = "'" + correctedPath + "/src/interactive_plots/dash_plots.py'";
-                cerr << "Path corrected to: " << dashPlotsPath << endl;
-            } else {
-                // Try another correction approach: simply replacing double slashes
-                string simpleCorrectedPath = beforeDoubleSlash + "/" + afterDoubleSlash;
-                dashPlotsFilePath = fs::path(simpleCorrectedPath) / "src/interactive_plots/dash_plots.py";
-                
-                if (fs::exists(dashPlotsFilePath)) {
-                    dashPlotsPath = "'" + simpleCorrectedPath + "/src/interactive_plots/dash_plots.py'";
-                    cerr << "Path corrected to: " << dashPlotsPath << endl;
-                } else {
-                    cerr << "Warning: Could not correct path with double slashes: " << projectPath << endl;
-                }
-            }
-        } else {
-            // Simple replacement of double slash with single slash
-            string simpleCorrectedPath = beforeDoubleSlash + "/" + afterDoubleSlash;
-            fs::path dashPlotsFilePath = fs::path(simpleCorrectedPath) / "src/interactive_plots/dash_plots.py";
-            
-            if (fs::exists(dashPlotsFilePath)) {
-                dashPlotsPath = "'" + simpleCorrectedPath + "/src/interactive_plots/dash_plots.py'";
-                cerr << "Path corrected to: " << dashPlotsPath << endl;
-            } else {
-                cerr << "Warning: Could not correct path with double slashes: " << projectPath << endl;
+    // First attempt - handle the double slash issue if present
+    std::string initialCorrectedPath = projectPath;
+    size_t doubleSlashPos = initialCorrectedPath.find("//");
+    if (doubleSlashPos != std::string::npos) {
+        // Simple replacement of double slash with single slash
+        initialCorrectedPath = initialCorrectedPath.substr(0, doubleSlashPos) + "/" + initialCorrectedPath.substr(doubleSlashPos + 2);
+        std::cerr << "Fixed double slash: " << initialCorrectedPath << std::endl;
+    }
+    
+    try {
+        basePath = fs::path(initialCorrectedPath);
+    } catch(const std::exception& e) {
+        std::cerr << "Error creating path from " << initialCorrectedPath << ": " << e.what() << std::endl;
+        basePath = fs::current_path();
+    }
+    
+    // Find the Mess-Paraver directory using an algorithm similar to _find_mp_root in Python
+    fs::path messParaverRoot;
+    bool found = false;
+    
+    // 1. Check if the base path or any ancestor is named "Mess-Paraver"
+    fs::path currentPath = basePath;
+    while (!found && !currentPath.empty()) {
+        if (fs::exists(currentPath) && fs::is_directory(currentPath)) {
+            if (currentPath.filename().string().find("Mess-Paraver") != std::string::npos) {
+                messParaverRoot = currentPath;
+                found = true;
+                std::cerr << "Found Mess-Paraver at ancestor: " << messParaverRoot.string() << std::endl;
+                break;
             }
         }
+        if (currentPath.has_parent_path() && currentPath != currentPath.parent_path()) {
+            currentPath = currentPath.parent_path();
+        } else {
+            break;
+        }
+    }
+    
+    // 2. If not found, try to locate it with limited BFS under existing directories
+    if (!found) {
+        // Find the first existing parent directory to start search from
+        fs::path searchRoot = basePath;
+        while (!searchRoot.empty() && !fs::exists(searchRoot)) {
+            if (searchRoot.has_parent_path() && searchRoot != searchRoot.parent_path()) {
+                searchRoot = searchRoot.parent_path();
+            } else {
+                break;
+            }
+        }
+        
+        if (fs::exists(searchRoot)) {
+            std::cerr << "Searching for Mess-Paraver under " << searchRoot.string() << std::endl;
+            try {
+                // Recursive search with depth limit
+                int maxDepth = 3;
+                std::function<bool(const fs::path&, int)> searchDir = [&](const fs::path& dir, int depth) {
+                    if (depth > maxDepth) return false;
+                    
+                    try {
+                        for (const auto& entry : fs::directory_iterator(dir)) {
+                            if (fs::is_directory(entry.path())) {
+                                if (entry.path().filename().string().find("Mess-Paraver") != std::string::npos) {
+                                    messParaverRoot = entry.path();
+                                    found = true;
+                                    std::cerr << "Found Mess-Paraver at: " << messParaverRoot.string() << std::endl;
+                                    return true;
+                                }
+                                if (searchDir(entry.path(), depth + 1)) {
+                                    return true;
+                                }
+                            }
+                        }
+                    } catch (const std::exception& e) {
+                        std::cerr << "Error searching directory " << dir.string() << ": " << e.what() << std::endl;
+                    }
+                    return false;
+                };
+                
+                searchDir(searchRoot, 0);
+            } catch (const std::exception& e) {
+                std::cerr << "Error during directory search: " << e.what() << std::endl;
+            }
+        }
+    }
+    
+    // Generate the path to dash_plots.py
+    std::string dashPlotsPath;
+    if (found) {
+        // Check different possible locations for interactive_plots directory
+        std::vector<fs::path> possiblePaths = {
+            messParaverRoot / "src" / "interactive_plots" / "dash_plots.py",
+            messParaverRoot / "bin" / "src" / "interactive_plots" / "dash_plots.py",
+            messParaverRoot / ".." / "bin" / "src" / "interactive_plots" / "dash_plots.py"
+        };
+        
+        for (const auto& path : possiblePaths) {
+            if (fs::exists(path)) {
+                dashPlotsPath = "'" + path.string() + "'";
+                std::cerr << "Found dash_plots.py at: " << path.string() << std::endl;
+                break;
+            }
+        }
+    }
+    
+    // If still not found, fall back to original path with a warning
+    if (dashPlotsPath.empty()) {
+        std::cerr << "Warning: Could not find dash_plots.py, falling back to original path" << std::endl;
+        dashPlotsPath = "'" + projectPath + "/src/interactive_plots/dash_plots.py'";
     }
     
 
