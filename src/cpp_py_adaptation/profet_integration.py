@@ -38,6 +38,7 @@ from profet.metrics import Bandwidth
 # Curves global variable. Set it with set_curves() function
 curves = None
 display_warnings = True
+new_data_path = None
 
 
 def check_param_types(params: dict):
@@ -210,6 +211,7 @@ def get_curves_path(
     pmu_type: str = None,
     cpu_microarch: str = None,
 ) -> str:
+    global new_data_path
     if pmu_type is None or cpu_microarch is None:
         # Get data from DB
         row = get_row_from_db(data_path, cpu_model, memory_system)
@@ -219,8 +221,12 @@ def get_curves_path(
         # df = pd.read_csv(os.path.join(data_path, "cpu_memory_db.csv"))
         print(f"Data path: {data_path}")
         df, data_path = read_db(data_path)
+        new_data_path = data_path
         print(f"Fixed Data path: {data_path}")
         check_curves_exist(df, cpu_model, memory_system)
+
+    if new_data_path is not None or data_path != new_data_path:
+        data_path = new_data_path
 
     # build curves path
     bw_lats_folder = os.path.join(data_path, "bw_lat_curves")
