@@ -152,7 +152,7 @@ def read_db(data_path: str) -> pd.DataFrame:
 
     if p.suffix.lower() == ".csv":
         if p.is_file():
-            return pd.read_csv(p), data_path
+            return pd.read_csv(p), p
 
     if p.is_dir():
         direct = p / filename
@@ -217,18 +217,24 @@ def get_curves_path(
         cpu_microarch = row["cpu_microarchitecture"]
     else:
         # df = pd.read_csv(os.path.join(data_path, "cpu_memory_db.csv"))
+        print(f"Data path: {data_path}")
         df, data_path = read_db(data_path)
+        print(f"Fixed Data path: {data_path}")
         check_curves_exist(df, cpu_model, memory_system)
 
     # build curves path
     bw_lats_folder = os.path.join(data_path, "bw_lat_curves")
     curves_folder = f"{memory_system}__{pmu_type}__{cpu_microarch}__{cpu_model}"
+    print(f"Bw lat folder: {bw_lats_folder}")
+    print(f"Curves folder: {curves_folder}")
+    print(f"Curves path: {os.path.join(data_path, bw_lats_folder, curves_folder)}")
     return os.path.join(data_path, bw_lats_folder, curves_folder)
 
 
 def set_curves(data_path: str, cpu_model: str, memory_system: str) -> bool:
     global curves
     curves_path = get_curves_path(data_path, cpu_model, memory_system)
+    print(f"Curves path: {curves_path}")
     curves = Curves(curves_path, display_warnings=display_warnings)
     return True
 
