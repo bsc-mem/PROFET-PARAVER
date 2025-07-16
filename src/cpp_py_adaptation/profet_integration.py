@@ -152,18 +152,19 @@ def read_db(data_path: str) -> pd.DataFrame:
 
     if p.suffix.lower() == ".csv":
         if p.is_file():
-            return pd.read_csv(p)
+            return pd.read_csv(p), data_path
 
     if p.is_dir():
         direct = p / filename
         if direct.is_file():
-            return pd.read_csv(direct)
+            return pd.read_csv(direct), p
 
     mp_root = _find_mp_root(p)
     if mp_root:
         data_path = mp_root / "data" / filename
+        new_data = mp_root / "data"
         if data_path.is_file():
-            return pd.read_csv(data_path)
+            return pd.read_csv(data_path), new_data
 
     tried = []
     if p.suffix.lower() == ".csv":
@@ -177,7 +178,7 @@ def read_db(data_path: str) -> pd.DataFrame:
 
 
 def print_supported_systems(data_path: str) -> None:
-    df = read_db(data_path)
+    df, _ = read_db(data_path)
     print("CPU - DRAM")
     print("-----------------")
     for _, row in df.iterrows():
@@ -188,7 +189,7 @@ def print_supported_systems(data_path: str) -> None:
 
 def get_row_from_db(data_path: str, cpu_model: str, memory_system: str) -> dict:
     # get PMU type and microarchitecture from DB
-    df = read_db(data_path)
+    df, data_path = read_db(data_path)
     check_curves_exist(df, cpu_model, memory_system)
 
     filt_df = df[
@@ -216,7 +217,7 @@ def get_curves_path(
         cpu_microarch = row["cpu_microarchitecture"]
     else:
         # df = pd.read_csv(os.path.join(data_path, "cpu_memory_db.csv"))
-        df = read_db(data_path)
+        df, data_path = read_db(data_path)
         check_curves_exist(df, cpu_model, memory_system)
 
     # build curves path
