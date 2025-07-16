@@ -204,7 +204,61 @@ void ProfetPyAdapter::runDashApp(string traceFilePath, double precision, double 
         projectPath.pop_back();
     }
 
+    //Mess-Paraver/bin/src --> 
+
+    
     std::string dashPlotsPath = "'" + projectPath + "/src/interactive_plots/dash_plots.py'";
+    // Replace in dash plots path if there is a // and move away the bin from there
+    
+    // Check for double slashes in path
+    size_t doubleSlashPos = projectPath.find("//");
+    if (doubleSlashPos != string::npos) {
+        // Get the part before the double slash
+        string beforeDoubleSlash = projectPath.substr(0, doubleSlashPos);
+        
+        // Get the part after the double slash
+        string afterDoubleSlash = projectPath.substr(doubleSlashPos + 2);
+        
+        // Check if there's a bin/ pattern after the double slash followed by Mess-Paraver/src
+        size_t binPos = afterDoubleSlash.find("bin/");
+        if (binPos != string::npos && binPos == 0) {
+            // Move 'bin/' between the parts
+            string correctedPath = beforeDoubleSlash + "/bin/" + afterDoubleSlash.substr(4);
+            
+            // Create a filesystem path object for the corrected dash_plots.py path
+            fs::path dashPlotsFilePath = fs::path(correctedPath) / "src/interactive_plots/dash_plots.py";
+            
+            // Check if the corrected path exists
+            if (fs::exists(dashPlotsFilePath)) {
+                // Update the path if it exists
+                dashPlotsPath = "'" + correctedPath + "/src/interactive_plots/dash_plots.py'";
+                cerr << "Path corrected to: " << dashPlotsPath << endl;
+            } else {
+                // Try another correction approach: simply replacing double slashes
+                string simpleCorrectedPath = beforeDoubleSlash + "/" + afterDoubleSlash;
+                dashPlotsFilePath = fs::path(simpleCorrectedPath) / "src/interactive_plots/dash_plots.py";
+                
+                if (fs::exists(dashPlotsFilePath)) {
+                    dashPlotsPath = "'" + simpleCorrectedPath + "/src/interactive_plots/dash_plots.py'";
+                    cerr << "Path corrected to: " << dashPlotsPath << endl;
+                } else {
+                    cerr << "Warning: Could not correct path with double slashes: " << projectPath << endl;
+                }
+            }
+        } else {
+            // Simple replacement of double slash with single slash
+            string simpleCorrectedPath = beforeDoubleSlash + "/" + afterDoubleSlash;
+            fs::path dashPlotsFilePath = fs::path(simpleCorrectedPath) / "src/interactive_plots/dash_plots.py";
+            
+            if (fs::exists(dashPlotsFilePath)) {
+                dashPlotsPath = "'" + simpleCorrectedPath + "/src/interactive_plots/dash_plots.py'";
+                cerr << "Path corrected to: " << dashPlotsPath << endl;
+            } else {
+                cerr << "Warning: Could not correct path with double slashes: " << projectPath << endl;
+            }
+        }
+    }
+    
 
     string expert = "";
     if (expertMode) {
