@@ -239,7 +239,7 @@ void ProfetPyAdapter::runDashApp(string traceFilePath, double precision, double 
             if (currentPath.filename().string().find("Mess-Paraver") != std::string::npos) {
                 messParaverRoot = currentPath;
                 found = true;
-                std::cerr << "Found Mess-Paraver at ancestor: " << messParaverRoot.string() << std::endl;
+                // std::cerr << "Found Mess-Paraver at ancestor: " << messParaverRoot.string() << std::endl;
                 break;
             }
         }
@@ -276,7 +276,7 @@ void ProfetPyAdapter::runDashApp(string traceFilePath, double precision, double 
                                 if (entry.path().filename().string().find("Mess-Paraver") != std::string::npos) {
                                     messParaverRoot = entry.path();
                                     found = true;
-                                    std::cerr << "Found Mess-Paraver at: " << messParaverRoot.string() << std::endl;
+                                    // std::cerr << "Found Mess-Paraver at: " << messParaverRoot.string() << std::endl;
                                     return true;
                                 }
                                 if (searchDir(entry.path(), depth + 1)) {
@@ -310,7 +310,7 @@ void ProfetPyAdapter::runDashApp(string traceFilePath, double precision, double 
         for (const auto& path : possiblePaths) {
             if (fs::exists(path)) {
                 dashPlotsPath = "'" + path.string() + "'";
-                std::cerr << "Found dash_plots.py at: " << path.string() << std::endl;
+                // std::cerr << "Found dash_plots.py at: " << path.string() << std::endl;
                 break;
             }
         }

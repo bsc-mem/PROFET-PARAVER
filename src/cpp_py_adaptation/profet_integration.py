@@ -8,12 +8,10 @@ this file. If not, please visit: https://opensource.org/licenses/BSD-3-Clause
 """
 
 import inspect, os, sys, pathlib, platform
-from pathlib import Path
-from collections import deque
 
 
 def _add_private_wheels():
-    exe_dir = Path(sys.executable).resolve().parent
+    exe_dir = pathlib.Path(sys.executable).resolve().parent
     arch = (
         "python_libs_x86_64" if platform.machine() == "x86_64" else "python_libs_arm64"
     )
@@ -38,7 +36,6 @@ from profet.metrics import Bandwidth
 # Curves global variable. Set it with set_curves() function
 curves = None
 display_warnings = True
-new_data_path = None
 
 
 def check_param_types(params: dict):
@@ -58,14 +55,12 @@ def check_non_negative(params: dict):
 
 
 def check_cpu_supported(df: pd.DataFrame, cpu_model: str):
-    try:
-        if not any(df["cpu_model"] == cpu_model):
-            # TODO Add to message: check currently supported models with "program -flag"
-            raise Exception(
-                f"Unkown CPU model {cpu_model}. You can check the supported configuration options with the --supported_systems flag."
-            )
-    except Exception as e:
-        raise Exception(f"Error checking CPU model: {e}")
+
+    if not any(df["cpu_model"] == cpu_model):
+        # TODO Add to message: check currently supported models with "program -flag"
+        raise Exception(
+            f"Unkown CPU model {cpu_model}. You can check the supported configuration options with the --supported_systems flag."
+        )
 
 
 def check_memory_supported(df: pd.DataFrame, memory_system: str):
@@ -80,7 +75,7 @@ def check_curves_exist(df: pd.DataFrame, cpu_model: str, memory_system: str):
     # check if curves exist for the specified system
     # Check if df is of type string:
     if not isinstance(df, pd.DataFrame):
-        df, _ = read_db(df)
+        df = read_db(df)
 
     check_cpu_supported(df, cpu_model)
     check_memory_supported(df, memory_system)
@@ -102,86 +97,16 @@ def check_curves_exist(df: pd.DataFrame, cpu_model: str, memory_system: str):
 #         raise Exception(err_msg)
 
 
-def _find_mp_root(base: Path, bfs_depth: int = 2) -> Path | None:
-    """
-    Look for an existing “Mess-Paraver” directory by:
-      1. Checking each existing ancestor for name == "Mess-Paraver"
-      2. BFS under each existing ancestor up to bfs_depth levels
-      3. If still not found, full rglob for “Mess-Paraver” under the nearest existing parent
-    """
-    for anc in (base, *base.parents):
-        if not (anc.exists() and anc.is_dir()):
-            continue
-
-        if anc.name.lower() == "mess-paraver":
-            return anc
-
-        queue = deque([(anc, 0)])
-        while queue:
-            curr, depth = queue.popleft()
-            if depth >= bfs_depth:
-                continue
-            for child in curr.iterdir():
-                if child.is_dir():
-                    if child.name.lower() == "mess-paraver":
-                        return child
-                    queue.append((child, depth + 1))
-
-    search_root = next(
-        (anc for anc in (base, *base.parents) if anc.exists()), Path.cwd()
-    )
-    for candidate in search_root.rglob("Mess-Paraver"):
-        if candidate.is_dir():
-            return candidate
-
-    return None
-
-
 def read_db(data_path: str) -> pd.DataFrame:
-    """
-    Robust cpu_memory_db.csv loader.
+    # read DB
+    df = pd.read_csv(os.path.join(data_path, "cpu_memory_db.csv"))
 
-    1) Normalize input (strip, expanduser, resolve).
-    2) If it’s a .csv file and exists, load it immediately.
-    3) If it’s a directory, try <dir>/cpu_memory_db.csv.
-    4) ONLY if both fail, climb/search for the real 'Mess-Paraver' install root:
-         – Check ancestors & BFS up to 2 levels
-         – Then full rglob for a 'Mess-Paraver' folder
-       Then load <MP_root>/data/cpu_memory_db.csv.
-    5) If that still fails, error out listing every path we tried.
-    """
-    filename = "cpu_memory_db.csv"
-    p = Path(data_path.strip()).expanduser().resolve()
-
-    if p.suffix.lower() == ".csv":
-        if p.is_file():
-            return pd.read_csv(p), p
-
-    if p.is_dir():
-        direct = p / filename
-        if direct.is_file():
-            return pd.read_csv(direct), p
-
-    mp_root = _find_mp_root(p)
-    if mp_root:
-        data_path = mp_root / "data" / filename
-        new_data = mp_root / "data"
-        if data_path.is_file():
-            return pd.read_csv(data_path), new_data
-
-    tried = []
-    if p.suffix.lower() == ".csv":
-        tried.append(f"  • direct file: {p}")
-    if p.is_dir():
-        tried.append(f"  • in directory: {p/filename}")
-    tried.append("  • searched ancestors & BFS & rglob for 'Mess-Paraver'")
-    raise FileNotFoundError(
-        "cpu_memory_db.csv not found; attempted:\n" + "\n".join(tried)
-    )
+    return df
 
 
 def print_supported_systems(data_path: str) -> None:
-    df, _ = read_db(data_path)
+    # print supported systems from DB
+    df = read_db(data_path)
     print("CPU - DRAM")
     print("-----------------")
     for _, row in df.iterrows():
@@ -192,7 +117,7 @@ def print_supported_systems(data_path: str) -> None:
 
 def get_row_from_db(data_path: str, cpu_model: str, memory_system: str) -> dict:
     # get PMU type and microarchitecture from DB
-    df, data_path = read_db(data_path)
+    df = read_db(data_path)
     check_curves_exist(df, cpu_model, memory_system)
 
     filt_df = df[
@@ -213,20 +138,16 @@ def get_curves_path(
     pmu_type: str = None,
     cpu_microarch: str = None,
 ) -> str:
-    global new_data_path
     if pmu_type is None or cpu_microarch is None:
         # Get data from DB
         row = get_row_from_db(data_path, cpu_model, memory_system)
         pmu_type = row["pmu_type"]
         cpu_microarch = row["cpu_microarchitecture"]
     else:
-        # df = pd.read_csv(os.path.join(data_path, "cpu_memory_db.csv"))
-        df, data_path = read_db(data_path)
-        new_data_path = data_path
+        # check it here because get_row_from_db also checks it, so if this function is not executed on the previous if,
+        # we have to make the check here
+        df = pd.read_csv(os.path.join(data_path, "cpu_memory_db.csv"))
         check_curves_exist(df, cpu_model, memory_system)
-
-    if new_data_path is not None or data_path != new_data_path:
-        data_path = new_data_path
 
     # build curves path
     bw_lats_folder = os.path.join(data_path, "bw_lat_curves")
@@ -273,6 +194,7 @@ def get_memory_properties_from_bw(
     # write_ratio:
     # bandwidth_gbs: bandwidth in GB/s
 
+    # Validate parameters
     check_param_types(
         {
             # 'Memory system': (memory_system, str),
@@ -289,8 +211,8 @@ def get_memory_properties_from_bw(
 
     stress_score = -1
 
-    # print(f"Write ratio: {write_ratio}")
-    # print(f"Bandwidth: {round(bandwidth, 2)} GB/s")
+    # print(f'Write ratio: {write_ratio}')
+    # print(f'Bandwidth: {round(bandwidth, 2)} GB/s')
 
     # The following 2 commented lines are now executed on profet.cpp.
     # Keep them here for now until we reach a final decision on where this should go.
@@ -301,8 +223,9 @@ def get_memory_properties_from_bw(
     curve_obj = curves.get_curve(curve_read_ratio)
 
     # predicted latency in curve
-    # Use raw bandwidth for per-channel latency prediction
-    current_bw_gbs = Bandwidth(bandwidth_gbs, "GBps")
+    current_bw_gbs = Bandwidth(
+        bandwidth_gbs * mcs_per_socket if group_by_mc else bandwidth_gbs, "GBps"
+    )
 
     # if current_bw_gbs > curve_obj.get_max_bw("GBps"):
     #     bandwidth_gbs = curve_obj.get_max_bw("GBps").value
@@ -310,10 +233,13 @@ def get_memory_properties_from_bw(
 
     if current_bw_gbs > curve_obj.get_max_bw("GBps"):
         current_bw_gbs = curve_obj.get_max_bw("GBps")
+        bandwidth_gbs = (
+            current_bw_gbs.value / mcs_per_socket
+            if group_by_mc
+            else current_bw_gbs.value
+        )
         pred_lat = curve_obj.get_lat(current_bw_gbs)
         stress_score = 1
-        if not group_by_mc:
-            bandwidth_gbs = current_bw_gbs.value
     else:
         try:
             pred_lat = curve_obj.get_lat(current_bw_gbs)
@@ -329,17 +255,13 @@ def get_memory_properties_from_bw(
             # pred_lat = curve_obj.get_lat(current_bw_gbs)
             try:
                 current_bw_gbs = curve_obj.get_max_bw("GBps")
-                bandwidth_gbs = (
-                    current_bw_gbs.value / mcs_per_socket
-                    if group_by_mc
-                    else current_bw_gbs.value
-                )
                 pred_lat = curve_obj.get_lat(current_bw_gbs)
-                pred_lat = curve_obj.get_lat(
-                    current_bw_gbs / mcs_per_socket if group_by_mc else current_bw_gbs
-                )
-            except:
-                print("Warning, something happened")
+                if group_by_mc:
+                    bandwidth_gbs = current_bw_gbs.value / mcs_per_socket
+                else:
+                    bandwidth_gbs = current_bw_gbs.value
+            except Exception as e:
+                print(f"Warning, something happened: {e}")
                 pred_lat = None
                 # return None
 
@@ -387,11 +309,9 @@ def get_memory_properties_from_bw(
         if pred_lat.value == 0:
             print(f"WARNING: Predicted latency is 0. This is likely an error.")
 
-    # print(
-    #     f"Write ratio: {round(write_ratio, 2)}; Curve RR: {curve_read_ratio}, Bw: {current_bw_gbs}; Max. BW: {max_bw_gbs}"
-    # )
-    # print(f"Lat: {pred_lat}; Max. Lat: {max_lat}; Lead-off Lat: {lead_off_lat}")
-    # print(f"Stress score: {round(stress_score, 2)}")
+    # print(f'Write ratio: {round(write_ratio, 2)}; Curve RR: {curve_read_ratio}, Bw: {current_bw_gbs}; Max. BW: {max_bw_gbs}')
+    # print(f'Lat: {pred_lat}; Max. Lat: {max_lat}; Lead-off Lat: {lead_off_lat}')
+    # print(f'Stress score: {round(stress_score, 2)}')
     # print()
 
     return {
