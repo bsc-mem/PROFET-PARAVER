@@ -280,6 +280,6 @@ if __name__ == "__main__":
 
     # ---- Run the app on that port ----
     print(f"Starting server on http://127.0.0.1:{port_to_use}/")
-    app.run(host="127.0.0.1", port=port_to_use, debug=False)
+    app.run(host="127.0.0.1", port=port_to_use, debug=False, use_reloader=False)
     # app.run(debug=False)
     # app.run_server(debug=True)

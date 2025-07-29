@@ -117,17 +117,12 @@ def get_summary_tab(df: pd.DataFrame, config: dict, system_arch: dict):
 def get_curve_graphs_sidebar(df: pd.DataFrame):
     node_names = sorted(df["node_name"].unique())
     # Define marks for sliders
-    marks_time = {
-        i: str(round(i, 1))
-        for i in np.linspace(
-            df["timestamp"].min() / 1e9, df["timestamp"].max() / 1e9, 5
-        )
-    }
-    marks_opacity = {i: str(i) for i in np.linspace(0, 1, 5)}
+    marks_time = {str(round(i, 1)): str(round(i, 1)) for i in np.linspace(df['timestamp'].min() / 1e9, df['timestamp'].max() / 1e9, 5)}
+    marks_opacity = {str(i): str(i) for i in np.linspace(0, 1, 5)}
 
-    marks_font_size = {i: f"{i}" for i in range(15, 40, 10)}
+    marks_font_size = {str(i): str(i) for i in range(15, 40, 10)}
 
-    marks_time_sampling = {i: f"{i}" for i in np.arange(0, 1.25, 0.25)}
+    marks_time_sampling = {str(i): str(i) for i in np.arange(0, 1.25, 0.25)}
 
     sidebar = html.Div(
         [
@@ -371,7 +366,8 @@ def get_graphs_container(system_arch: dict, id_prefix: str, max_elements: int = 
                     [
                         html.Br(),
                         dcc.Graph(
-                            id=f"{id_prefix}-node-{node_name}-socket-{i_socket}-mc-{id_mc}"
+                            id=f"{id_prefix}-node-{node_name}-socket-{i_socket}-mc-{id_mc}",
+                            style={"height": "400px"}
                         ),
                         dcc.Store(
                             id=f"{id_prefix}-node-{node_name}-socket-{i_socket}-mc-{id_mc}-store",
