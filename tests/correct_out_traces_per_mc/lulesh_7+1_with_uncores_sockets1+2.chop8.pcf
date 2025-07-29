@@ -1104,5 +1104,5 @@ EVENT_TYPE
 0   94000007    Stress score
 0   94000008    Mean number of memory reads per second
 0   94000009    Mean number of memory writes per second
-PRECISION 2
+PRECISION 8
 
