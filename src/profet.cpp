@@ -98,7 +98,7 @@ string getProjectPath() {
 }
 
 const string PROJECT_PATH = getProjectPath();
-constexpr int PRECISION = 2; // Decimal precision for memory metrics
+constexpr int PRECISION = 8; // Decimal precision for memory metrics
 constexpr int PROFET_BASE_EVENT_TYPE = 94000000; // Base event type for Profet events in Paraver
 #define VERSION "1.0.0"
 // Order of the metrics in the output trace file, given by the keys in the metrics map with their name label

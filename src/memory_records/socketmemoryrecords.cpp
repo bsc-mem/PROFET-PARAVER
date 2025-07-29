@@ -7,6 +7,8 @@
  */
 
 // socketmemoryrecords.cpp
+#include <iostream>
+#include <iomanip>
 #include "socketmemoryrecords.h"
 using namespace std;
 
@@ -131,6 +133,7 @@ tuple<double, double, double, double> SocketMemoryRecords::processBandwidths(int
             if (reads[id].empty() && writes[id].empty()) {
                 continue;
             }
+
             pair<double, double> bws = processBW(reads[id], writes[id], cacheLineBytes);
             if (bws.first == -1 || bws.second == -1) {
                 invalidBW = true;
@@ -168,6 +171,7 @@ tuple<double, double, double, double> SocketMemoryRecords::processBandwidths(int
         // cout << "reads: " << to_string(reads[mcID].front().n) << "; writes: " << to_string(writes[mcID].front().n) << endl;
         // cout << "reads t0: " << to_string(reads[mcID].front().t0) << "; writes t0: " << to_string(writes[mcID].front().t0) << endl;
         // cout << "reads t1: " << to_string(reads[mcID].front().t1) << "; writes t1: " << to_string(writes[mcID].front().t1) << endl;
+
         pair<double, double> bws = processBW(reads[mcID], writes[mcID], cacheLineBytes);
         readBW = bws.first;
         writeBW = bws.second;

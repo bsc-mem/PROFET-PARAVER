@@ -58,12 +58,14 @@ def check_non_negative(params: dict):
 
 
 def check_cpu_supported(df: pd.DataFrame, cpu_model: str):
-
-    if not any(df["cpu_model"] == cpu_model):
-        # TODO Add to message: check currently supported models with "program -flag"
-        raise Exception(
-            f"Unkown CPU model {cpu_model}. You can check the supported configuration options with the --supported_systems flag."
-        )
+    try:
+        if not any(df["cpu_model"] == cpu_model):
+            # TODO Add to message: check currently supported models with "program -flag"
+            raise Exception(
+                f"Unkown CPU model {cpu_model}. You can check the supported configuration options with the --supported_systems flag."
+            )
+    except Exception as e:
+        raise Exception(f"Error checking CPU model: {e}")
 
 
 def check_memory_supported(df: pd.DataFrame, memory_system: str):
@@ -78,7 +80,7 @@ def check_curves_exist(df: pd.DataFrame, cpu_model: str, memory_system: str):
     # check if curves exist for the specified system
     # Check if df is of type string:
     if not isinstance(df, pd.DataFrame):
-        df = read_db(df)
+        df, _ = read_db(df)
 
     check_cpu_supported(df, cpu_model)
     check_memory_supported(df, memory_system)
@@ -271,7 +273,6 @@ def get_memory_properties_from_bw(
     # write_ratio:
     # bandwidth_gbs: bandwidth in GB/s
 
-    # Validate parameters
     check_param_types(
         {
             # 'Memory system': (memory_system, str),
@@ -288,8 +289,8 @@ def get_memory_properties_from_bw(
 
     stress_score = -1
 
-    # print(f'Write ratio: {write_ratio}')
-    # print(f'Bandwidth: {round(bandwidth, 2)} GB/s')
+    # print(f"Write ratio: {write_ratio}")
+    # print(f"Bandwidth: {round(bandwidth, 2)} GB/s")
 
     # The following 2 commented lines are now executed on profet.cpp.
     # Keep them here for now until we reach a final decision on where this should go.
@@ -300,9 +301,8 @@ def get_memory_properties_from_bw(
     curve_obj = curves.get_curve(curve_read_ratio)
 
     # predicted latency in curve
-    current_bw_gbs = Bandwidth(
-        bandwidth_gbs * mcs_per_socket if group_by_mc else bandwidth_gbs, "GBps"
-    )
+    # Use raw bandwidth for per-channel latency prediction
+    current_bw_gbs = Bandwidth(bandwidth_gbs, "GBps")
 
     # if current_bw_gbs > curve_obj.get_max_bw("GBps"):
     #     bandwidth_gbs = curve_obj.get_max_bw("GBps").value
@@ -310,13 +310,10 @@ def get_memory_properties_from_bw(
 
     if current_bw_gbs > curve_obj.get_max_bw("GBps"):
         current_bw_gbs = curve_obj.get_max_bw("GBps")
-        bandwidth_gbs = (
-            current_bw_gbs.value / mcs_per_socket
-            if group_by_mc
-            else current_bw_gbs.value
-        )
         pred_lat = curve_obj.get_lat(current_bw_gbs)
         stress_score = 1
+        if not group_by_mc:
+            bandwidth_gbs = current_bw_gbs.value
     else:
         try:
             pred_lat = curve_obj.get_lat(current_bw_gbs)
@@ -356,9 +353,30 @@ def get_memory_properties_from_bw(
     # print(curve_obj.lats)
     # print(max_lat, lead_off_lat)
     if stress_score == -1:
-        stress_score = curve_obj.get_stress_score(
-            current_bw_gbs, pred_lat, lead_off_lat, max_lat
-        )
+        # Compute stress score based on socket-level bandwidth when grouping by memory channel
+        if group_by_mc:
+            # scale channel bw to socket-level for stress calculation
+            # get max curve bandwidth and channel-scaled socket bandwidth value
+            max_bw_gbs = curve_obj.get_max_bw("GBps")
+            socket_bw_val = bandwidth_gbs * mcs_per_socket
+            if socket_bw_val > max_bw_gbs.value:
+                socket_bw = max_bw_gbs
+                socket_lat = max_lat
+            else:
+                socket_bw = Bandwidth(socket_bw_val, "GBps")
+                try:
+                    socket_lat = curve_obj.get_lat(socket_bw)
+                except OvershootError:
+                    # saturate to max if overshoot
+                    socket_bw = max_bw_gbs
+                    socket_lat = max_lat
+            stress_score = curve_obj.get_stress_score(
+                socket_bw, socket_lat, lead_off_lat, max_lat
+            )
+        else:
+            stress_score = curve_obj.get_stress_score(
+                current_bw_gbs, pred_lat, lead_off_lat, max_lat
+            )
         if stress_score is None:
             stress_score = 1
 
@@ -369,9 +387,11 @@ def get_memory_properties_from_bw(
         if pred_lat.value == 0:
             print(f"WARNING: Predicted latency is 0. This is likely an error.")
 
-    # print(f'Write ratio: {round(write_ratio, 2)}; Curve RR: {curve_read_ratio}, Bw: {current_bw_gbs}; Max. BW: {max_bw_gbs}')
-    # print(f'Lat: {pred_lat}; Max. Lat: {max_lat}; Lead-off Lat: {lead_off_lat}')
-    # print(f'Stress score: {round(stress_score, 2)}')
+    # print(
+    #     f"Write ratio: {round(write_ratio, 2)}; Curve RR: {curve_read_ratio}, Bw: {current_bw_gbs}; Max. BW: {max_bw_gbs}"
+    # )
+    # print(f"Lat: {pred_lat}; Max. Lat: {max_lat}; Lead-off Lat: {lead_off_lat}")
+    # print(f"Stress score: {round(stress_score, 2)}")
     # print()
 
     return {

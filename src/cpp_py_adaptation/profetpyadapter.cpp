@@ -70,7 +70,7 @@ PyObject* ProfetPyAdapter::getRowFromDB() {
     // Make sure string arguments are built with .c_str()
     PyObject* pArgs = Py_BuildValue("(sss)", projectDataPath.c_str(), cpuModel.c_str(), memorySystem.c_str());
     PyObject* row = PyObject_CallObject(rowDbFn, pArgs);
-    raisePyErrorIfNull(row, "ERROR getting Python dictionary with memory values.");
+    raisePyErrorIfNull(row, "ERROR getting Python dictionary with memory values row.");
 
     return row;
 }
@@ -81,7 +81,7 @@ string ProfetPyAdapter::getCurvesPath() {
     // Make sure string arguments are built with .c_str()
     PyObject* pArgs = Py_BuildValue("(sssss)", projectDataPath.c_str(), cpuModel.c_str(), memorySystem.c_str(), pmuType.c_str(), cpuMicroarch.c_str());
     PyObject* curvesPath = PyObject_CallObject(curvesFn, pArgs);
-    raisePyErrorIfNull(curvesPath, "ERROR getting Python dictionary with memory values.");
+    raisePyErrorIfNull(curvesPath, "ERROR getting Python dictionary with memory values curves.");
 
     // Return PyObject as string
     return _PyUnicode_AsString(curvesPath);
@@ -171,8 +171,9 @@ tuple<double, double, double, double, double, double> ProfetPyAdapter::computeMe
     PyObject* pArgs = PyTuple_Pack(6, PyFloat_FromDouble(cpuFreqGHz), PyFloat_FromDouble(writeRatio),
                                    PyFloat_FromDouble(closestReadRatio), PyFloat_FromDouble(bandwidth), PyBool_FromLong(static_cast<long>(groupMCs)),
                                    PyLong_FromLong(MCsPerSocket));
+    
     PyObject* memDict = PyObject_CallObject(memoryMetricsFn, pArgs);
-    raisePyErrorIfNull(memDict, "ERROR getting Python dictionary with memory values.");
+    raisePyErrorIfNull(memDict, "ERROR getting Python dictionary with memory values memDict.");
 
     // Get values of dictionary elements
     // double returnedBandwidth = getPyDictDouble(memDict, "bandwidth");
